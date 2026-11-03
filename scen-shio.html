@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scen Shio</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--card:#f4f4f6;--bd:#d8d8de;--ac:#2b6cb0;--acfg:#fff;--off:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#15161a;--fg:#eee;--mut:#9aa0aa;--card:#202228;--bd:#34363e;--ac:#5aa0e6;--acfg:#08121f;--off:#ff7b6b}}
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;max-width:900px;margin-inline:auto}
+h1{font-size:19px;margin:4px 0 10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.row>*{flex:1 1 140px;min-width:0}
+input,select,button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px}
+button{cursor:pointer}
+button.on,button.pri{background:var(--ac);color:var(--acfg);border-color:var(--ac)}
+.tabs button{flex:1}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
+#status{font-size:13px;color:var(--mut)}
+#status.err{color:var(--off)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{padding:3px 7px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);font-variant-numeric:tabular-nums;font-size:13px}
+.chip.x{color:var(--off);text-decoration:line-through;opacity:.5}
+pre{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;max-height:320px;overflow:auto;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:13px}
+h2{font-size:15px;margin:0 0 6px}
+.r{color:var(--off);font-weight:700}.g{color:#1a9d6b;font-weight:700}
+.hb{color:#8e24aa;font-weight:800}.hy{color:#a0522d;font-weight:800}.hr{color:var(--off);font-weight:800}.hg{color:#1a9d6b;font-weight:800}.hp{color:#8e44ad;font-weight:800}.ho{color:#e67e22;font-weight:800}
+#rhOut pre{font-size:14px}
+.gw{overflow-x:auto}
+table.gt{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums}
+table.gt th,table.gt td{text-align:center;padding:2px 3px;font-size:14px;min-width:30px}
+table.gt th{background:#dbe7f5;color:#1a1a1a;font-weight:600;border-radius:3px}
+table.gt th.off{background:#ffd0d0;color:#d00000;cursor:pointer}
+table.gt th.on{cursor:pointer}
+table.gt td.dl{cursor:pointer;min-width:34px;touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,0,0,.25)}
+table.gt th[data-del],table.gt th.del,table.gt th[data-resrows]{touch-action:manipulation}
+table.gt td.dl:active{background:#ffd0d0}
+.chip{display:inline-block;background:#8a8a8a;color:#fff;border-radius:3px;padding:2px 9px;margin:2px 3px 2px 0;font-weight:600;cursor:pointer}
+table.gt th.del{background:#8a8a8a;color:#fff;cursor:pointer}
+table.gt td.tg{text-align:left;padding-left:6px;white-space:nowrap}
+table.gt th.no,table.gt td.no{background:#dbe7f5;color:#1a1a1a;border-radius:3px;min-width:24px}
+table.gt td.dt{text-align:left;font-family:monospace;white-space:nowrap}
+table.gt td.c{background:#aaa;color:#fff;border-radius:6px;font-weight:600}
+table.gt td.c.gb{background:#8e24aa}table.gt td.c.gy{background:#a0522d}table.gt td.c.gr{background:#e11d1d}table.gt td.c.gg{background:#1a9d1a}
+@media(prefers-color-scheme:dark){table.gt th,table.gt th.no,table.gt td.no{background:#2a3a52;color:#eee}table.gt th.off{background:#5a2a2a;color:#ff8a8a}}
+</style>
+</head>
+<body>
+<h1>Scen Shio &amp; Jalur</h1>
+
+<div class="card">
+  <div class="row"><div><label>Pasaran</label><select id="market"></select></div></div>
+  <div id="status" style="display:none"></div>
+</div>
+
+<div class="card"><details><summary style="font-weight:700;cursor:pointer">📖 Tabel shio &amp; jalur angka togel</summary>
+<pre style="font-size:13px;line-height:1.5;overflow-x:auto;margin:8px 0 0">SHIO 1  : 01 13 25 37 49 61 73 85 97
+SHIO 2  : 02 14 26 38 50 62 74 86 98
+SHIO 3  : 03 15 27 39 51 63 75 87 99
+SHIO 4  : 04 16 28 40 52 64 76 88 00
+SHIO 5  : 05 17 29 41 53 65 77 89
+SHIO 6  : 06 18 30 42 54 66 78 90
+SHIO 7  : 07 19 31 43 55 67 79 91
+SHIO 8  : 08 20 32 44 56 68 80 92
+SHIO 9  : 09 21 33 45 57 69 81 93
+SHIO 10 : 10 22 34 46 58 70 82 94
+SHIO 11 : 11 23 35 47 59 71 83 95
+SHIO 12 : 12 24 36 48 60 72 84 96
+
+JALUR 1 = SHIO 1, 4, 7, 10
+JALUR 2 = SHIO 2, 5, 8, 11
+JALUR 3 = SHIO 3, 6, 9, 12</pre></details></div>
+
+<div class="card" id="rhCard">
+  <h2>Cari Trek Shio / Jalur</h2>
+  <div class="row">
+    <input id="rhKode" placeholder="Tempel kode rumus, mis. #SDLT_ai_A1_L10-P0-D0_BCGI" style="flex:3 1 220px">
+    <button id="rhPaste" style="flex:0 0 auto">Tempel</button>
+    <button id="rhLoad" class="pri" style="flex:0 0 auto">Load</button>
+    <button id="rhReset" style="flex:0 0 auto">Reset</button>
+  </div>
+  <div class="row">
+    <div><label>Baris uji</label><input id="rhL" type="number" min="3" max="110" value="10"></div>
+    <div><label>Hari</label><select id="rhDay"></select></div>
+    <div><label>Rumus</label><select id="rhVar"></select></div>
+    <div><label>Mode</label><select id="rhMode"><option value="auto">Otomatis</option><option value="man">Manual</option></select></div>
+  </div>
+  <div class="row">
+    <div><label>Kunci 1</label><select id="rhA1"></select></div>
+    <div><label>Mistik 1</label><select id="rhM1"></select></div>
+    <div><label>Op 1</label><select id="rhO1"><option>+</option><option>-</option></select></div>
+    <div><label>Kunci 2</label><select id="rhA2"></select></div>
+    <div><label>Mistik 2</label><select id="rhM2"></select></div>
+    <div><label>Op 2</label><select id="rhO2"><option>+</option><option>-</option></select></div>
+    <div><label>Kunci 3</label><select id="rhA3"></select></div>
+    <div><label>Mistik 3</label><select id="rhM3"></select></div>
+    <div><label>Mistik akhir (.mb)</label><select id="rhM4"></select></div>
+  </div>
+  <div class="row">
+    <div><label>Patah (zonk boleh)</label><select id="rhP"><option value="0">Patah 0</option><option value="1">Patah 1</option><option value="2">Patah 2</option><option value="3">Patah 3</option></select></div>
+    <div><label>Referensi</label><select id="rhRef"><option value="0">Sembunyikan</option><option value="1">Tampilkan</option></select></div>
+    <div id="rhMaxWrap"><input id="rhGate" type="text" inputmode="numeric" maxlength="6" autocomplete="off" aria-label="kode" style="width:120px"><div id="rhFeat" style="display:none"><label>Maks digit basis (otomatis)</label><div style="display:flex;gap:8px;align-items:flex-start"><input id="rhMax" type="number" min="1" max="12" value="5" style="width:80px"><button id="rhFind">Cari trek otomatis</button></div></div></div>
+    <div id="rhManWrap" style="display:none"><label>Basis manual (huruf A–L)</label><input id="rhBase" placeholder="mis. BCGI"></div>
+  </div>
+  <div class="row"><button id="rhPrev">« Prev</button><button id="rhNext" class="pri">Next »</button></div>
+  <div id="rhFindOut" style="font-size:13px"></div>
+  <div id="rhOut" style="font-size:13px">Data result.json belum termuat. Pastikan result.json ada satu folder dengan halaman ini.</div>
+  <div class="row" style="margin-top:8px"><input id="rhCode" readonly placeholder="kode rumus"><button id="rhCopy" style="flex:0 0 auto">Salin rumus</button></div>
+  <div class="row" style="margin-top:8px"><button id="rhCopyRes" class="pri" style="flex:1 1 100%">Salin hasil (+ link)</button></div>
+  <textarea id="rhCopyBox" readonly rows="8" style="display:none;width:100%;margin-top:6px;font-family:monospace"></textarea>
+</div>
+
+<div class="card" id="shBank">
+  <h2>🐲 Bank Shio <span id="shN" style="font-weight:400;font-size:13px"></span></h2>
+  <div class="cm" style="font-size:12.5px;color:#777;margin-bottom:6px">Rumus yang disimpan di sini dihitung ulang dari result terbaru, dan suaranya masuk ke <b>Rekap Bank</b> di tab Bank (Prediksi). Rumus patah (zonk &gt; batas patah) tidak ikut suara.</div>
+  <div class="row"><button id="shSave" class="pri">💾 Simpan rumus di atas</button><button id="shRefresh">↻ Hitung ulang</button><button id="shDelPatah">Hapus patah</button><button id="shDelAll">Kosongkan</button></div>
+  <div class="row"><button id="shGab" class="pri">Gabung (0 dipilih)</button><button id="shPickAll">Pilih semua aktif</button></div>
+  <textarea id="shGabBox" readonly rows="14" style="display:none;width:100%;margin-top:6px;font-family:monospace;font-size:13px"></textarea>
+  <button id="shGabCopy" class="pri" style="display:none;width:100%;margin:6px 0">Salin gabungan</button>
+  <div id="shRekap"></div>
+  <div id="shList"></div>
+  <div class="row" style="margin-top:8px"><button id="shCopyRek" class="pri" style="flex:1 1 100%">Salin rekap shio</button></div>
+  <textarea id="shCopyBox" readonly rows="8" style="display:none;width:100%;margin-top:6px;font-family:monospace"></textarea>
+</div>
+<script>
+// Halaman Rumus Harian — data dari result.json (satu folder) / ?data=alamat / file pilihan (local storage)
+let DATA = [];
+// ===== Tabel Mod: tiap baris memetakan digit 0..9 -> digit lain =====
+const MOD={
+ix:[5,6,7,8,9,0,1,2,3,4], ty:[7,4,9,6,1,8,3,0,5,2], ml:[1,0,5,8,7,2,9,4,3,6], mb:[8,7,6,9,5,4,2,1,0,3],
+m0:[6,5,8,7,9,1,0,3,2,4], m1:[1,0,9,8,7,6,5,4,3,2], m2:[2,8,0,9,7,6,5,4,1,3], m3:[3,2,1,0,9,8,7,6,5,4],
+m4:[6,5,3,2,7,1,0,4,9,8], m5:[5,4,3,2,1,0,9,8,7,6], m6:[6,8,4,5,2,3,0,9,1,7], m7:[7,6,5,4,3,2,1,0,9,8],
+m8:[8,7,6,5,9,3,2,1,0,4], m9:[9,8,7,6,5,4,3,2,1,0], m10:[4,2,1,8,0,6,5,9,3,7], m11:[1,0,5,4,3,2,8,9,6,7],
+m12:[2,7,0,8,6,9,4,1,3,5], m13:[3,9,7,0,6,8,4,2,5,1], m14:[6,5,4,7,2,1,0,3,9,8], m15:[5,6,4,9,2,0,1,8,7,3],
+m16:[3,8,7,0,9,6,5,2,1,4], m17:[9,4,8,6,1,7,3,5,2,0], m18:[8,9,7,4,3,6,5,2,0,1], m19:[7,8,3,2,9,6,5,0,1,4]};
+const $ = id => document.getElementById(id);
+const nums = s => (s.match(/\d+/g) || []).map(Number);
+// ===== Normalisasi JSON (format fleksibel) =====
+// Didukung: [{market,date,result}] | {hk:[{date,result}]} | {hk:{"2026-01-01":"1234"}} | {hk:["1234",...]}
+function normalize(j){
+  const out = [];
+  const pick = (o,ks)=>{for(const k of ks) if(o[k]!=null) return o[k];};
+  const push = (o,m)=>{
+    const r = pick(o,['result','hasil','angka','number','keluaran','nomor','value']);
+    if(r==null) return;
+    const d = String(r).replace(/\D/g,''); if(!d) return;
+    out.push({market:String(pick(o,['market','pasaran','pasar','name'])||m||'default'),
+              date:String(pick(o,['date','tanggal','tgl'])||''), num:d});
+  };
+  const walk = (x,m,k)=>{
+    if(Array.isArray(x)) x.forEach(i=> (i&&typeof i==='object') ? (pick(i,['result','hasil','angka','number','keluaran','nomor','value'])!=null ? push(i,m) : walk(i,m)) : push({result:i},m));
+    else if(x && typeof x==='object'){
+      for(const key in x){
+        const v = x[key];
+        if(v!==null && typeof v!=='object') push({result:v,date:key},m);
+        else walk(v,(['data','results','result','items'].includes(key)?m:key));
+      }
+    }
+  };
+  if(j && typeof j==='object' && !Array.isArray(j) && Object.values(j).some(v=>v && Array.isArray(v.history))){
+    for(const k in j){const v=j[k]; if(v && Array.isArray(v.history)) v.history.forEach(x=>push(x,v.name||k));}
+    return out;
+  }
+  walk(j,'default');
+  return out;
+}
+
+// Sumber otomatis: ?data=... bila ada; kalau tidak, result.json satu folder, lalu situs WongBagus.
+const SITE = 'https://alifavif-cmd.github.io/-WONGBAGUS-PREDICTION-/result.json';
+async function fetchJson(url){
+  const r = await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now());
+  if(!r.ok) throw new Error('HTTP '+r.status+' ('+url+')');
+  return r.json();
+}
+const LS_KEY='rekap_result_json';
+const lsGet=()=>{try{return localStorage.getItem(LS_KEY);}catch(e){return null;}};
+const lsSet=t=>{try{localStorage.setItem(LS_KEY,t);return true;}catch(e){return false;}};
+const lsDel=()=>{try{localStorage.removeItem(LS_KEY);}catch(e){}};
+function applyData(j,label){
+  const keep=$('market').value;
+  DATA = normalize(j);
+  if(!DATA.length) throw new Error('Tidak ada data hasil yang terbaca dari JSON.');
+  const ms = [...new Set(DATA.map(d=>d.market))];
+  $('market').innerHTML = ms.map(m=>`<option>${m}</option>`).join('');
+  if(ms.includes(keep)) $('market').value=keep;
+  $('status').className='';
+  $('status').textContent = `OK (${label}): ${DATA.length} data, ${ms.length} pasaran.`;
+  onData();
+  try{shbRender();}catch(e){}
+}
+async function load(){
+  const q = new URLSearchParams(location.search).get('data');
+  let pu=[];try{pu=(window.__WB_RESULT_URLS&&window.__WB_RESULT_URLS.length?window.__WB_RESULT_URLS:(window.parent&&window.parent.__WB_RESULT_URLS)||[]).slice();}catch(e){}
+  const srcs = q ? [q] : [...pu, 'result.json', SITE];
+  $('status').className=''; $('status').textContent='Memuat…';
+  let errs = [];
+  for(const u of srcs){
+    try{ applyData(await fetchJson(u), u); return; }catch(e){ errs.push(e.message); }
+  }
+  const saved = lsGet();                      // cadangan: file yang dipilih manual (local storage)
+  if(saved){ try{ applyData(JSON.parse(saved),'local storage'); return; }catch(e){ errs.push('local storage: '+e.message); } }
+  $('status').className='err';
+  $('status').textContent = 'Gagal memuat: '+errs.join(' | ');
+}
+
+// data pasaran terpilih, urut terbaru -> terlama
+function series(){
+  const m = $('market').value;
+  let a = DATA.filter(d=>d.market===m);
+  const t = a.map(d=>Date.parse(d.date));
+  if(a.length && t.every(x=>!isNaN(x))) return a.map((d,i)=>[d,t[i]]).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);
+  return a;
+}
+function onData(){ rhRun(); }
+$('market').onchange = () => { rhRun(); };
+
+// ===== Rumus Harian: mesin =====
+const RH_KEYS=(()=>{const o=[];for(const t of ['A','C','K','E','J','Js','J4D','J3D','Jt','Jd'])for(let n=1;n<=20;n++)o.push(t+n);return o;})();
+const RH_MBS=['ix','ty','ml','mb',...Array.from({length:20},(_,i)=>'m'+i)];
+const red=n=>{while(n>=10)n=String(n).split('').reduce((a,b)=>a+ +b,0);return n;};
+const shio=n=>n===0?4:((n-1)%12)+1;           // 00 dihitung 100 → shio 4 (sesuai tabel)
+const jalur=n=>((shio(n)-1)%3)+1;              // jalur 1=shio 1,4,7,10 · 2=2,5,8,11 · 3=3,6,9,12
+function srcDigit(r,t){const d=[...r].map(Number);
+  switch(t){case 'A':return d[0];case 'C':return d[1];case 'K':return d[2];case 'E':return d[3];
+  case 'J':return red(d[2]+d[3]);case 'Js':return Math.abs(d[2]-d[3]);case 'J4D':return red(d[0]+d[1]+d[2]+d[3]);
+  case 'J3D':return red(d[1]+d[2]+d[3]);case 'Jt':return red(d[1]+d[2]);case 'Jd':return red(d[0]+d[1]);}}
+function parseTok(tok){const m=/^(Js|J4D|J3D|Jt|Jd|[ACKEJ])(\d{1,2})$/.exec(tok);return m?{t:m[1],n:+m[2]}:null;}
+// spec = {terms:[{tok,mb}], ops:['+','-'], final}
+function keyVal(ch,i,spec){
+  let v=0;const parts=[];
+  for(let k=0;k<spec.terms.length;k++){
+    const T=spec.terms[k],p=parseTok(T.tok),j=i-(p.n-1);
+    if(j<0)return null;
+    let x=srcDigit(ch[j],p.t);if(T.mb)x=MOD[T.mb][x];
+    parts.push(T.tok+'='+x);
+    v=k===0?x:(spec.ops[k-1]==='+'?red(v+x):Math.abs(v-x));
+  }
+  if(spec.final)v=MOD[spec.final][v];
+  return {v,ref:parts.join(' ')+(spec.terms.length>1||spec.final?' → '+v:'')};
+}
+const D2=(d,a,b)=>d[a]*10+d[b];
+const VARS={
+ sh:{name:'shio belakang (ke)',lab:'s',mod:12,cap:7,mark:d=>[[shio(D2(d,2,3)),'g']]},
+ sht:{name:'shio tengah',lab:'s',mod:12,cap:7,mark:d=>[[shio(D2(d,1,2)),'g']]},
+ shd:{name:'shio depan',lab:'s',mod:12,cap:7,mark:d=>[[shio(D2(d,0,1)),'g']]},
+ jl:{name:'jalur main belakang (ke)',lab:'jalur',mod:3,cap:2,mark:d=>[[jalur(D2(d,2,3)),'g']]},
+ jlt:{name:'jalur main tengah',lab:'jalur',mod:3,cap:2,mark:d=>[[jalur(D2(d,1,2)),'g']]},
+ jld:{name:'jalur main depan',lab:'jalur',mod:3,cap:2,mark:d=>[[jalur(D2(d,0,1)),'g']]},
+};
+const mapEl=(b,v,mod)=>{const x=(b+v)%mod;return mod===10?x:(x||mod);};
+// ch: hasil (oldest->newest, 4 digit). Baris uji i = n-1-L .. n-2 ; baris prediksi i = n-1
+function rhRows(ch,spec,vk,L){
+  const n=ch.length,V=VARS[vk],out=[];
+  for(let i=n-1-L;i<n;i++){
+    if(i<0)return null;
+    const kv=keyVal(ch,i,spec);if(!kv)return null;
+    const row={res:ch[i],v:kv.v,ref:kv.ref,last:i===n-1};
+    if(!row.last)row.marks=V.mark([...ch[i+1]].map(Number));
+    out.push(row);
+  }
+  return out;
+}
+const setOf=(base,v,mod)=>base.map(b=>mapEl(b,v,mod));
+function evalBase(rows,base,mod){
+  let miss=0;
+  for(const r of rows){if(r.last)continue;
+    const S=setOf(base,r.v,mod);
+    if(!r.marks.some(([x])=>S.includes(x)))miss++;}
+  return miss;
+}
+function* combos(m,n,start=0,cur=[]){
+  if(cur.length===n){yield cur.slice();return;}
+  for(let x=start;x<m;x++){cur.push(x);yield* combos(m,n,x+1,cur);cur.pop();}
+}
+function autoBase(rows,vk,P,maxd){
+  const mod=VARS[vk].mod;
+  for(let n=1;n<=Math.min(maxd,mod);n++)
+    for(const b of combos(mod,n))
+      if(evalBase(rows,b,mod)<=P)return b;
+  return null;
+}
+const LET='ABCDEFGHIJKL';
+const baseCode=b=>b.map(x=>LET[x]).join('');
+
+// ===== Rumus Harian: antarmuka =====
+const RH_DAYS=['Harian','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+const RH_DOW=[null,1,2,3,4,5,6,0];               // indeks hari -> getUTCDay
+const RH_VCODE={cb:'cb',ai3d:'ai3d',ai2db:'ai',ai2dt:'ait',ai2dd:'aid',sh:'s',sht:'st',shd:'sd',jl:'jl',jlt:'jlt',jld:'jld',as:'a',cop:'c',kep:'k',eko:'e',ke:'ke',j2d:'j',jt:'jt',jd:'jd'};
+const RH_OPT=(arr,first)=>(first!==undefined?`<option value="">${first}</option>`:'')+arr.map(x=>`<option>${x}</option>`).join('');
+function rhInit(){
+  $('rhVar').innerHTML=Object.entries(VARS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+  $('rhVar').value='sh';
+  $('rhDay').innerHTML=RH_DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  ['rhA1','rhA2','rhA3'].forEach(id=>$(id).innerHTML=RH_OPT(RH_KEYS,'-'));
+  ['rhM1','rhM2','rhM3','rhM4'].forEach(id=>$(id).innerHTML=RH_OPT(RH_MBS,'-'));
+  $('rhA1').value='A1';
+  $('rhMax').value=VARS.sh.cap;
+  $('rhCard').onchange=e=>{
+    rhHid={};
+    if(e.target.id==='rhVar')$('rhMax').value=VARS[$('rhVar').value].cap;
+    if(e.target.id==='rhMode'){
+      const man=$('rhMode').value==='man';$('rhManWrap').style.display=man?'':'none';
+      if(man&&!$('rhBase').value.trim()){$('rhMode').value='auto';const c=rhCompute();$('rhMode').value='man';if(c.ok)$('rhBase').value=baseCode(c.base);}   // mulai dari basis otomatis
+    }
+    rhRun();
+  };
+  $('rhOut').addEventListener('click',e=>{
+    if($('rhMode').value!=='man')return;
+    const rc=e.target.closest&&e.target.closest('[data-resrow]');
+    if(rc){rhHidRows.delete(+rc.dataset.resrow);rhRun();return;}
+    const dr=e.target.closest&&e.target.closest('td[data-delrow]'),rr=e.target.closest&&e.target.closest('th[data-resrows]');
+    if(dr){rhHidRows.add(+dr.dataset.delrow);rhRun();return;}
+    if(rr){rhHidRows.clear();rhRun();return;}
+    const del=e.target.closest&&e.target.closest('th[data-del]'),res=e.target.closest&&e.target.closest('th[data-res]');
+    if(!del&&!res)return;
+    const mod=VARS[$('rhVar').value].mod;let cur=rhParseBase($('rhBase').value,mod)||[];
+    if(del){const b=+del.dataset.del;rhHid[b]=cur.includes(b);cur=cur.filter(x=>x!==b);}
+    else{const b=+res.dataset.res;if(rhHid[b]&&!cur.includes(b))cur.push(b);delete rhHid[b];}
+    $('rhBase').value=cur.sort((x,y)=>x-y).map(x=>LET[x]).join('');
+    rhRun();
+  });
+  // Maks digit + Cari trek otomatis: tersembunyi, muncul setelah kode 240306 diketik di kotak kosong
+  const rhOpen=()=>{$('rhFeat').style.display='';$('rhGate').style.display='none';};
+  try{if(sessionStorage.getItem('rhOpen')==='1')rhOpen();}catch(e){}
+  $('rhGate').addEventListener('input',()=>{
+    if($('rhGate').value.trim()==='240306'){rhOpen();try{sessionStorage.setItem('rhOpen','1');}catch(e){}}
+  });
+  $('rhFind').onclick=rhFindTracks;
+  rhFeatSync();
+  $('rhFindOut').onclick=e=>{const a=e.target.closest&&e.target.closest('a[data-trek]');if(!a)return;e.preventDefault();rhApplyTrek($('rhFindOut')._found[+a.dataset.trek]);};
+  $('rhNext').onclick=()=>rhStep(1); $('rhPrev').onclick=()=>rhStep(-1);
+  $('rhLoad').onclick=rhDecode;
+  $('rhReset').onclick=()=>{rhHid={};['rhA2','rhA3','rhM1','rhM2','rhM3','rhM4'].forEach(id=>$(id).value='');$('rhA1').value='A1';$('rhP').value='0';$('rhDay').value='0';$('rhMode').value='auto';$('rhManWrap').style.display='none';$('rhKode').value='';rhRun();};
+  $('rhCopy').onclick=async()=>{
+    const inp=$('rhCode'),btn=$('rhCopy'),txt=inp.value;
+    const note=t=>{btn.textContent=t;setTimeout(()=>btn.textContent='Salin rumus',1800);};
+    if(!txt){note('Belum ada rumus');return;}
+    let ok=false;
+    try{ if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;} }catch(e){}
+    if(!ok){
+      try{ inp.focus(); inp.select(); inp.setSelectionRange(0,txt.length); ok=document.execCommand('copy'); }catch(e){}
+    }
+    if(ok)note('Tersalin ✓');
+    else{ inp.focus(); inp.select(); inp.setSelectionRange(0,txt.length); note('Tahan kolom kode → Salin'); }
+  };
+  $('rhCopyRes').onclick=rhCopyResult;
+  $('rhCode').onfocus=e=>{const i=e.target;setTimeout(()=>i.setSelectionRange(0,i.value.length),0);};
+  $('rhPaste').onclick=async()=>{
+    try{ const t=await navigator.clipboard.readText(); $('rhKode').value=t; rhDecode(); }
+    catch(e){ $('rhKode').focus(); $('rhOut').innerHTML='<div style="color:var(--off)">Browser tidak mengizinkan tempel otomatis. Tahan kolom kode di atas lalu pilih Tempel.</div>'; }
+  };
+  $('rhKode').addEventListener('paste',()=>setTimeout(rhDecode,50));   // tempel langsung diproses
+}
+function rhSpec(){
+  const a1=$('rhA1').value; if(!a1)return null;
+  const terms=[{tok:a1,mb:$('rhM1').value}],ops=[];
+  const a2=$('rhA2').value;
+  if(a2){ops.push($('rhO1').value);terms.push({tok:a2,mb:$('rhM2').value});
+    const a3=$('rhA3').value;
+    if(a3){ops.push($('rhO2').value);terms.push({tok:a3,mb:$('rhM3').value});}}
+  return {terms,ops,final:$('rhM4').value};
+}
+const rhKeyName=(s,up)=>s.terms.map((T,k)=>(k?s.ops[k-1]:'')+T.tok+(T.mb?`(${up?T.mb.toUpperCase():T.mb})`:'')).join('')+(s.final?'.'+(up?s.final.toUpperCase():s.final):'');
+function rhChain(){
+  let s=series().slice().reverse();                     // terlama -> terbaru
+  const di=+$('rhDay').value;
+  if(di)s=s.filter(d=>{const t=Date.parse(d.date);return !isNaN(t)&&new Date(t).getUTCDay()===RH_DOW[di];});
+  return s.map(d=>d.num.padStart(4,'0').slice(-4));
+}
+function rhParseBase(txt,mod){
+  txt=txt.trim(); if(!txt)return null;
+  let b=/[A-La-l]/.test(txt)?[...txt.toUpperCase().replace(/[^A-L]/g,'')].map(c=>LET.indexOf(c)):txt.split(/[\s,]+/).filter(Boolean).map(x=>(+x)%mod);
+  b=[...new Set(b)].filter(x=>x>=0&&x<mod); return b.length?b:null;
+}
+// hitung; kembalikan {ok:true,...} atau {ok:false,msg}
+function rhCompute(){
+  if(!DATA.length)return {ok:false,msg:'Data result.json belum termuat. Pastikan result.json ada satu folder dengan halaman ini.'};
+  const spec=rhSpec(); if(!spec)return {ok:false,msg:'Pilih kunci dulu (mis. A2).'};
+  const vk=$('rhVar').value,V=VARS[vk];
+  const L=Math.max(3,Math.min(110,parseInt($('rhL').value)||10)),P=+$('rhP').value,maxd=Math.max(1,parseInt($('rhMax').value)||V.cap);
+  const ch=rhChain(),rows=rhRows(ch,spec,vk,L);
+  if(!rows)return {ok:false,msg:`Data kurang: perlu sekitar ${L+10} hasil (ada ${ch.length}). Kurangi baris atau ganti hari.`};
+  let base,miss;
+  if($('rhMode').value==='man'){
+    base=rhParseBase($('rhBase').value,V.mod)||[];
+  }else{
+    base=autoBase(rows,vk,P,maxd);
+    if(!base)return {ok:false,msg:`Tidak ada basis ≤ ${maxd} digit untuk kunci ${rhKeyName(spec,true)} dengan patah ${P}.`};
+  }
+  miss=evalBase(rows,base,V.mod);
+  const maxLag=Math.max(...spec.terms.map(T=>parseTok(T.tok).n-1));
+  const start=ch.length-1-L;
+  const refs=ch.slice(Math.max(0,start-maxLag),start);
+  return {ok:true,spec,vk,V,L,P,rows,base,miss,refs};
+}
+function rhShow(r){
+  const out=$('rhOut');
+  rhLast=r.ok?r:null;
+  if(!r.ok){out.innerHTML=`<div style="color:var(--off)">${r.msg}</div>`;$('rhCode').value='';return;}
+  const {spec,vk,V,L,P,rows,base,miss,refs}=r,mod=V.mod,showRef=$('rhRef').value==='1';
+  const manual=$('rhMode').value==='man';
+  let nTest=L,missShow=miss;
+  if(manual&&rhHidRows.size){const rv=rows.filter((_,i)=>!rhHidRows.has(i));missShow=evalBase(rv,base,mod);nTest=rv.filter(x=>!x.last).length;}
+  const fmt=x=>mod===12?String(x).padStart(2,'0'):String(x);
+  const lines=rows.map(row=>{
+    const S=setOf(base,row.v,mod),cm={};
+    if(!row.last)row.marks.forEach(([x,c])=>{cm[x]=c;});
+    const els=S.map(x=>{const t=fmt(x);return cm[x]?`<span class="h${cm[x]}">${t}</span>`:t;}).join(mod===12?', ':'');
+    const tag=row.last?'??':(row.marks.some(([x])=>S.includes(x))?V.lab:`${V.lab} <span class="r">zonk</span>`);
+    return `${row.res} : ${els} ${tag}`;
+  });
+  const refLines=showRef?refs.map(x=>`${x} :`):[];
+  const lastSet=setOf(base,rows[rows.length-1].v,mod).map(fmt).join(mod===12?', ':'');
+  const code=`#${rhMkt($('market').value)}_${RH_VCODE[vk]}_${rhKeyName(spec,false)}_L${L}-P${P}-D${$('rhDay').value}_${baseCode(base)}`;
+  out.innerHTML=`<b>Rumus ${V.name} ${base.length} Digit</b><br>KEY : <b style="color:var(--ac)">${rhKeyName(spec,true)}</b>`
+    +(manual?`<div style="color:var(--mut);margin:4px 0">Ketuk huruf di atas atau nomor baris untuk menghapus; ketuk huruf/“no” abu-abu di bawah untuk mengembalikan. Merah muda = bukan basis.</div>${rhGrid(r)}`
+            :`<pre style="max-height:none">${refLines.concat(lines).join('\n')}</pre><b>${V.lab} : ${lastSet}</b>`)
+    +`<div style="color:var(--mut);margin-top:4px">Basis ${baseCode(base)} · zonk ${missShow}/${nTest} baris</div>`;
+  $('rhCode').value=code;
+}
+let rhLast=null;
+const RH_LINK='https://angkahoky187-crypto.github.io/MASTER';
+function rhResultText(){
+  const r=rhLast; if(!r)return '';
+  const {spec,V,rows,base,refs}=r,mod=V.mod,showRef=$('rhRef').value==='1';
+  const fmt=x=>mod===12?String(x).padStart(2,'0'):String(x),sep=mod===12?', ':'';
+  const out=[$('market').value,'KEY : '+rhKeyName(spec,true)];
+  if(showRef)refs.forEach(x=>out.push(`${x} :`));
+  rows.forEach(row=>{
+    const S=setOf(base,row.v,mod);
+    const tag=row.last?'??':(row.marks.some(([x])=>S.includes(x))?V.lab:V.lab+' zonk');
+    out.push(`${row.res} : ${S.map(fmt).join(sep)} ${tag}`);
+  });
+  out.push(`${V.lab} : ${setOf(base,rows[rows.length-1].v,mod).map(fmt).join(sep)}`);
+  out.push(RH_LINK);                                   // link selalu dibawa
+  return out.join('\n');
+}
+async function rhCopyResult(){
+  const btn=$('rhCopyRes'),box=$('rhCopyBox'),txt=rhResultText();
+  const note=t=>{btn.textContent=t;setTimeout(()=>btn.textContent='Salin hasil (+ link)',1800);};
+  if(!txt){note('Belum ada hasil');return;}
+  let ok=false;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(e){}
+  if(!ok){
+    box.value=txt;box.style.display='';
+    try{box.focus();box.select();box.setSelectionRange(0,txt.length);ok=document.execCommand('copy');}catch(e){}
+  }
+  if(ok){box.style.display='none';note('Tersalin ✓');}
+  else{box.style.display='';box.focus();box.select();note('Tahan teks → Salin');}
+}
+const rhSort0First=a=>a.slice().sort((x,y)=>x-y);
+const rhSort0Last=a=>a.slice().sort((x,y)=>(x||10)-(y||10));
+const RH_PRED=new Set(['sh','sht','shd','jl','jlt','jld']);
+let rhHid={},rhHidRows=new Set();   // kolom yang dihapus: {indeks: apakah tadinya termasuk basis}
+function rhGrid(r){
+  const {vk,V,rows,base}=r,mod=V.mod,sel=new Set(base),n=rows.length;
+  const fmt=x=>mod===12?String(x).padStart(2,'0'):String(x);
+  const cols=[...Array(mod).keys()],vis=cols.filter(b=>!(b in rhHid));
+  const head='<tr><th class="no">No</th><th>Data</th>'+vis.map(b=>`<th class="${sel.has(b)?'on':'off'}" data-del="${b}">${LET[b]}</th>`).join('')+'<th></th></tr>';
+  const foot=`<tr><th class="no${rhHidRows.size?' del':''}" data-resrows="1">no</th><th>Data</th>`+cols.map(b=>(b in rhHid)?`<th class="del" data-res="${b}">${LET[b]}</th>`:`<th>${LET[b]}</th>`).join('')+'</tr>';
+  const body=rows.map((row,i)=>{
+    if(rhHidRows.has(i))return '';
+    const cm={};
+    if(!row.last)row.marks.forEach(([x,c])=>{cm[x]=c;});
+    const tds=vis.map(b=>{const x=mapEl(b,row.v,mod);const c=(sel.has(b)&&cm[x])?' g'+cm[x]:'';return `<td class="c${c}">${fmt(x)}</td>`;}).join('');
+    let tag=V.lab;
+    if(!row.last&&base.length){const S=setOf(base,row.v,mod);if(!row.marks.some(([x])=>S.includes(x)))tag='<span class="r">zonk</span>';}
+    return `<tr><td class="no${row.last?'':' dl'}"${row.last?'':` data-delrow="${i}"`}>${n-i}</td><td class="dt">${row.res}:</td>${tds}<td class="tg">${tag}</td></tr>`;
+  }).join('');
+  const blank='<tr><td class="no">&nbsp;</td><td></td>'+vis.map(()=>'<td></td>').join('')+'<td></td></tr>';
+  const lastV=rows[rows.length-1].v;
+  const predSel=base.map(b=>mapEl(b,lastV,mod)),predOff=cols.filter(b=>!sel.has(b)).map(b=>mapEl(b,lastV,mod));
+  let cap;
+  if(RH_PRED.has(vk))cap=`${V.lab.toUpperCase()} : ${rhSort0First(predSel).join('.')||'-'}`;
+  else cap=`Lemah ${V.lab.toUpperCase()} ${(predOff.length?rhSort0Last(predOff):[]).map(fmt).join(', ')||'-'}`;
+  const gone=[...rhHidRows].sort((x,y)=>x-y).map(i=>`<span class="chip" data-resrow="${i}">${n-i}</span>`).join('');
+  return `<div class="gw"><table class="gt">${head}${body}${blank}${foot}</table></div>`+(gone?`<div style="margin:4px 0"><span style="color:var(--mut)">Nomor dihapus (ketuk untuk kembalikan):</span> ${gone}</div>`:'')+`<div>${cap}</div>`;
+}
+const RH_MK={hongkong:'HK',sydney:'SD',singapore:'SG',singapura:'SG',cambodia:'CB',taiwan:'TW',china:'CN',japan:'JP',macau:'MC',bullseye:'BU',magnum:'MG'};
+function rhMkt(name){
+  const w=name.trim().split(/\s+/),a=(w[0]||'').toLowerCase(),b=(w[1]||'').toLowerCase();
+  if(w.length===1)return ({singapore:'SGP',singapura:'SGP'})[a]||a.slice(0,3).toUpperCase();
+  const x=RH_MK[a]||(w[0]||'XX').slice(0,2).toUpperCase();
+  const y=b==='lotto'?'LT':b==='pools'?'PL':(b?b.slice(0,2).toUpperCase():'');
+  return x+y;
+}
+function rhFastBase(rows,vk,P,maxd){
+  const mod=VARS[vk].mod,T=rows.filter(r=>!r.last),masks=Array(mod).fill(0n);
+  T.forEach((r,i)=>{const tg=new Set(r.marks.map(m=>m[0]));for(let b=0;b<mod;b++)if(tg.has(mapEl(b,r.v,mod)))masks[b]|=1n<<BigInt(i);});
+  const all=(1n<<BigInt(T.length))-1n,pc=x=>{let c=0;while(x){x&=x-1n;c++;}return c;};
+  for(let n=1;n<=Math.min(maxd,mod);n++)for(const b of combos(mod,n)){
+    let m=0n;for(const x of b)m|=masks[x];
+    if(P===0?m===all:pc(all&~m)<=P)return b;
+  }
+  return null;
+}
+let rhFinding=false;
+async function rhFindTracks(){
+  if(rhFinding){rhFinding=false;return;}                       // klik lagi = batal
+  const box=$('rhFindOut'),btn=$('rhFind');
+  if(!DATA.length){box.innerHTML='<div style="color:var(--off)">Data belum termuat.</div>';return;}
+  const vk=$('rhVar').value,V=VARS[vk],mod=V.mod;
+  const L=Math.max(3,Math.min(110,parseInt($('rhL').value)||10)),P=+$('rhP').value,N=Math.max(1,Math.min(mod,parseInt($('rhMax').value)||V.cap));
+  const ch=rhChain(),n=ch.length,base0=n-1-L;
+  const E=Math.max(0,Math.min(30,base0-8));                       // baris lama (di luar jendela) untuk menguji ketahanan
+  if(base0-8<0){box.innerHTML='<div style="color:var(--off)">Data kurang untuk pencarian ini. Kurangi baris uji atau ganti hari.</div>';return;}
+  const LL=E+L,st=base0-E;                                         // q=0..LL: indeks hasil st+q
+  const MB=['',...RH_MBS],KK=MB.length,tokA={};
+  RH_KEYS.forEach(tk=>{
+    const p=parseTok(tk),raw=new Int8Array(LL+1);let ok=true;
+    for(let q=0;q<=LL;q++){const j=st+q-(p.n-1);if(j<0){ok=false;break;}raw[q]=srcDigit(ch[j],p.t);}
+    tokA[tk]=ok?MB.map(m=>m?raw.map(x=>MOD[m][x]):raw):null;
+  });
+  const keys=RH_KEYS.filter(k=>tokA[k]);
+  const W=Math.ceil(L/30),bm=new Int32Array(LL*10);
+  for(let q=0;q<LL;q++){
+    const tg=new Set(V.mark([...ch[st+q+1]].map(Number)).map(m=>m[0]));
+    for(let v=0;v<10;v++){let m=0;for(let b=0;b<mod;b++)if(tg.has(mapEl(b,v,mod)))m|=1<<b;bm[q*10+v]=m;}
+  }
+  const all=new Int32Array(W);for(let r=0;r<L;r++)all[(r/30)|0]|=1<<(r%30);
+  const rm=new Int32Array(mod*W),combo=[];for(let k=1;k<=N;k++)combo[k]=[...combos(mod,k)];
+  const v=new Int8Array(LL+1);
+  const cnt=new Int8Array(mod),ps=new Int16Array(N+1);
+  function check(){            // basis tepat N digit (tidak ada yang lebih kecil), atau null
+    rm.fill(0);
+    for(let r=0;r<L;r++){const m=bm[(E+r)*10+v[E+r]],w=(r/30)|0,bit=1<<(r%30);for(let b=0;b<mod;b++)if((m>>b)&1)rm[b*W+w]|=bit;}
+    for(let b=0;b<mod;b++){let c=0;for(let w=0;w<W;w++){let x=rm[b*W+w];while(x){x&=x-1;c++;}}cnt[b]=c;}
+    cnt.sort();let sum=0;for(let k=1;k<=N;k++){sum+=cnt[mod-k];ps[k]=sum;}   // batas atas cakupan k elemen terbaik
+    if(ps[N]<L-P)return null;                                                 // N elemen pun tak cukup
+    for(let k=1;k<=N;k++){
+      if(ps[k]<L-P)continue;                                                  // k elemen pasti tak cukup
+      const cs=combo[k];
+      for(let c=0;c<cs.length;c++){
+        const cb=cs[c];let ok=true,miss=0;
+        for(let w=0;w<W&&ok;w++){
+          let m=0;for(let q=0;q<k;q++)m|=rm[cb[q]*W+w];
+          let un=all[w]&~m;
+          if(un){if(P===0){ok=false;break;}while(un){un&=un-1;miss++;}if(miss>P)ok=false;}
+        }
+        if(ok)return k===N?cb:null;
+      }
+    }
+    return null;
+  }
+  // Mistik yang sudah dipilih di formulir (1, 2, atau akhir) dipakai tetap; yang "-" dicari semua tabel
+  const idxOf=id=>{const x=MB.indexOf($(id).value);return x>0?x:-1;};
+  const F1=idxOf('rhM1'),F2=idxOf('rhM2'),FF=idxOf('rhM4'),all0=[...Array(KK).keys()];
+  const M1s=F1>0?[F1]:all0,M2s=F2>0?[F2]:all0;
+  const sPat=[],pPat=[];                                   // pola kunci tunggal (m1,f) dan pasangan (m1,m2,f)
+  if(FF>0)M1s.forEach(m=>sPat.push([m,FF]));
+  else if(F1>0)all0.forEach(f=>sPat.push([F1,f]));
+  else all0.forEach(f=>sPat.push([0,f]));
+  if(FF>0){M1s.forEach(m1=>M2s.forEach(m2=>pPat.push([m1,m2,FF])));}
+  else{
+    M1s.forEach(m1=>M2s.forEach(m2=>pPat.push([m1,m2,0])));
+    for(let f=1;f<KK;f++)pPat.push([F1>0?F1:0,F2>0?F2:0,f]);
+  }
+  function*gen(){
+    for(let a=0;a<keys.length;a++)for(const [m1,f] of sPat)yield [a,-1,0,m1,0,f];
+    for(let a=0;a<keys.length;a++)for(let b=a+1;b<keys.length;b++)for(let op=0;op<2;op++)
+      for(const [m1,m2,f] of pPat)yield [a,b,op,m1,m2,f];
+  }
+  const total=keys.length*sPat.length+(keys.length*(keys.length-1)/2)*2*pPat.length;
+  const fmt=x=>mod===12?String(x).padStart(2,'0'):String(x);
+  const seen=new Map();let count=0,done=0;
+  const tStart=performance.now();
+  rhFinding=true;btn.textContent='Batal';
+  const it=gen();let nx=it.next();
+  while(!nx.done&&rhFinding){
+    const t0=performance.now();
+    while(!nx.done&&performance.now()-t0<40){
+      const [a,b,op,m1,m2,f]=nx.value;done++;
+      const A=tokA[keys[a]][m1];
+      if(b<0){const M=f?MOD[MB[f]]:null;for(let q=0;q<=LL;q++)v[q]=M?M[A[q]]:A[q];}
+      else{const B=tokA[keys[b]][m2],M=f?MOD[MB[f]]:null;
+        for(let q=0;q<=LL;q++){let z=op?Math.abs(A[q]-B[q]):A[q]+B[q];if(!op&&z>=10)z-=9;v[q]=M?M[z]:z;}}
+      const bs=check();
+      if(bs){
+        let Bm=0;for(const x of bs)Bm|=1<<x;
+        let old=0;for(let q=0;q<E;q++)if(!(bm[q*10+v[q]]&Bm))old++;   // zonk di baris lama
+        const pred=setOf(bs,v[LL],mod);let pm=0;for(const x of pred)pm|=1<<x;   // kunci = himpunan hasil
+        const ex=seen.get(pm);
+        if(!ex||old<ex.old){
+          const mk=x=>MB[x]||'';
+          const sp=b<0?{terms:[{tok:keys[a],mb:mk(m1)}],ops:[],final:mk(f)}
+                      :{terms:[{tok:keys[a],mb:mk(m1)},{tok:keys[b],mb:mk(m2)}],ops:[op?'-':'+'],final:mk(f)};
+          if(!ex)count++;
+          seen.set(pm,{sp,base:[...bs],old,pred,n:ex?ex.n+1:1});
+        }else ex.n++;
+      }
+      nx=it.next();
+    }
+    const el=(performance.now()-tStart)/1000,eta=done?Math.round(el*(total-done)/done):0;
+    box.innerHTML=`<div style="color:var(--mut)">Mencari trek (semua mistik)… ${Math.round(done*100/total)}% · ${count} hasil unik · sisa ±${eta>=90?Math.round(eta/60)+' menit':eta+' detik'} — ketuk tombol lagi untuk batal</div>`;
+    await new Promise(r=>setTimeout(r));
+  }
+  const cancelled=rhFinding===false&&!nx.done;rhFinding=false;btn.textContent='Cari trek otomatis';
+  const top=[...seen.values()].sort((x,y)=>x.old-y.old||y.n-x.n).slice(0,150);
+  box.innerHTML=`<b>Trek ${V.name}, basis tepat ${N} digit, patah ${P}, ${L} baris:</b> ${count} hasil berbeda (yang dobel dibuang)`+(cancelled?' (dibatalkan, belum semua dicek)':'')
+    +(E?`<br>Urut dari yang paling sedikit zonk di ${E} baris sebelum jendela uji (kolom terakhir):`:'')
+    +`<div style="margin:6px 0;max-height:260px;overflow:auto">`+(top.length?top.map((f,i)=>
+      `<div style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-ck="${i}" style="width:22px;height:22px;flex:0 0 auto;margin:3px 0"><a href="#" data-trek="${i}" style="text-decoration:none;color:var(--ac)">${rhKeyName(f.sp,true)} · ${baseCode(f.base)} · ${f.pred.map(fmt).join(mod===12?',':'')}${E?` · lama ${f.old}/${E}`:''} · ×${f.n}</a></div>`).join(''):'Tidak ada.')+'</div>'
+    +(top.length?'<div class="row"><button id="rhGab" class="pri">Gabung (0 dipilih)</button><button id="rhGabAll">Pilih 5 teratas</button><button id="rhGabBank">💾 Simpan dicentang ke Bank</button></div><textarea id="rhGabBox" rows="14" readonly style="display:none;width:100%;font-family:monospace;font-size:13px"></textarea><button id="rhGabCopy" style="display:none;width:100%;margin:6px 0" class="pri">Salin gabungan</button>':'')
+    +'<div style="color:var(--mut)">Hasil yang sama hanya ditampilkan sekali (×n = jumlah trek yang menghasilkannya). Ketuk satu baris untuk dipakai di rumus. Dicari: kunci tunggal dan pasangan dua kunci (+/−) dengan semua 24 mistik. Mistik 1, Mistik 2, atau Mistik akhir yang sudah Anda pilih di formulir dipakai tetap; yang masih \"-\" dicari semua. Pencarian penuh bisa makan waktu setengah menit atau lebih di HP.</div>';
+  box._found=top;box._ctx={vk,L,P,mkt:$('market').value};
+}
+function rhApplyTrek(f){
+  const t=f.sp.terms;
+  $('rhA1').value=t[0].tok;$('rhM1').value=t[0].mb||'';
+  $('rhA2').value=t[1]?t[1].tok:'';$('rhM2').value=t[1]?(t[1].mb||''):'';
+  $('rhA3').value='';$('rhM3').value='';$('rhM4').value=f.sp.final||'';
+  if(f.sp.ops[0])$('rhO1').value=f.sp.ops[0];
+  $('rhMode').value='auto';$('rhManWrap').style.display='none';rhHid={};rhHidRows.clear();
+  rhRun();$('rhOut').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function rhFeatSync(){   // kotak kode, Maks digit, dan Cari trek hanya ada di mode Otomatis
+  const auto=$('rhMode').value==='auto';
+  $('rhMaxWrap').style.display=auto?'':'none';
+  $('rhFindOut').style.display=auto?'':'none';
+}
+function rhRun(){rhFeatSync();rhShow(rhCompute());}
+function rhStep(d){
+  rhHid={};rhHidRows.clear();
+  const n=RH_KEYS.length,cur=RH_KEYS.indexOf($('rhA1').value);let r;
+  for(let s=1;s<=n;s++){
+    $('rhA1').value=RH_KEYS[((cur+d*s)%n+n)%n];
+    r=rhCompute(); if(r.ok){rhShow(r);return;}
+  }
+  rhShow(r);
+}
+function rhDecode(){
+  rhHid={};rhHidRows.clear();
+  const raw=$('rhKode').value.replace(/[\u200b\u00a0]/g,' ');
+  const m=/#?[A-Za-z0-9]+_([A-Za-z0-9]+)_([^_\s]+)_L(\d+)-P(\d)-D(\d)_([A-La-l]*)/i.exec(raw);
+  const msg=t=>{$('rhOut').innerHTML=`<div style="color:var(--off)">${t}</div>`;};
+  if(!m)return msg('Format kode tidak dikenal. Contoh: #SDLT_ai_A1_L10-P0-D0_BCGI');
+  const vk=Object.keys(RH_VCODE).find(k=>RH_VCODE[k]===m[1].toLowerCase()); if(!vk)return msg('Kode rumus tidak dikenal: '+m[1]);
+  let key=m[2],fin='';const dot=key.lastIndexOf('.'); if(dot>0){fin=key.slice(dot+1).toLowerCase();key=key.slice(0,dot);}
+  const parts=key.split(/([+-])/),terms=[],ops=[];
+  for(let i=0;i<parts.length;i+=2){
+    const t=/^([A-Za-z0-9]+)(?:\((\w+)\))?$/.exec(parts[i]); const kk=t&&RH_KEYS.find(k=>k.toLowerCase()===t[1].toLowerCase()); if(!kk)return msg('Kunci tidak dikenal: '+parts[i]);
+    terms.push({tok:kk,mb:(t[2]||'').toLowerCase()}); if(i>0)ops.push(parts[i-1]);
+  }
+  if(terms.length>3||(fin&&!RH_MBS.includes(fin)))return msg('Kunci tidak didukung.');
+  $('rhVar').value=vk;$('rhL').value=m[3];$('rhP').value=Math.min(3,+m[4]);$('rhDay').value=+m[5]<8?m[5]:'0';
+  $('rhMax').value=VARS[vk].cap;
+  ['A1','A2','A3'].forEach((_,i)=>{const T=terms[i];$('rhA'+(i+1)).value=T?T.tok:'';if(i<3)$('rhM'+(i+1)).value=T?T.mb:'';});
+  $('rhO1').value=ops[0]||'+';$('rhO2').value=ops[1]||'+';$('rhM4').value=fin;
+  if(m[6]){$('rhMode').value='man';$('rhBase').value=m[6].toUpperCase();$('rhManWrap').style.display='';}
+  else{$('rhMode').value='auto';$('rhManWrap').style.display='none';}
+  rhRun();
+}
+
+
+
+// ===== Gabung trek yang dicentang =====
+const RH_FLAG={hongkong:'🇭🇰',sydney:'🇦🇺',singapore:'🇸🇬',singapura:'🇸🇬',cambodia:'🇰🇭',taiwan:'🇹🇼',china:'🇨🇳',japan:'🇯🇵',macau:'🇲🇴'};
+function rhGabText(){
+  const box=$('rhFindOut'),F=box._found||[],ctx=box._ctx;
+  const idx=[...box.querySelectorAll('input[data-ck]:checked')].map(c=>+c.dataset.ck);
+  if(!idx.length||!ctx)return '';
+  const {vk,L,mkt}=ctx,V=VARS[vk],mod=V.mod,fmt=x=>mod===12?String(x).padStart(2,'0'):String(x),sep=mod===12?',':'';
+  const ch=rhChain(),lab=V.lab.toUpperCase();
+  const items=idx.map(i=>{const f=F[i],rows=rhRows(ch,f.sp,vk,L);return rows?{f,rows}:null;}).filter(Boolean);
+  if(!items.length)return '';
+  const n=items[0].rows.length,lines=[],hits=[];
+  for(let r=0;r<n;r++){
+    const last=items[0].rows[r].last;
+    const sets=items.map(it=>{const row=it.rows[r],S=setOf(it.f.base,row.v,mod);return {t:S.map(fmt).join(sep),hit:!last&&row.marks.some(([x])=>S.includes(x))};});
+    const hit=sets.some(x=>x.hit);
+    if(!last)hits.push(hit);
+    lines.push(`${items[0].rows[r].res} : ${sets.map(x=>x.t).join(' vs ')} ${last?'?':(hit?lab:lab+' zonk')}`);
+  }
+  let patah=0,streak=0,cur=0;
+  hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
+  const w=mkt.trim().split(/\s+/)[0].toLowerCase(),flag=RH_FLAG[w]?RH_FLAG[w]+' ':'';
+  const out=[flag+mkt.toUpperCase(),''];
+  items.forEach((it,k)=>out.push(` Code ${k+1} : ${rhKeyName(it.f.sp,false)}`));
+  out.push('');
+  lines.forEach(l=>out.push(l));
+  out.push('');
+  out.push(items.map(it=>`${lab} KE : ${setOf(it.f.base,it.rows[n-1].v,mod).map(fmt).join(sep)}`).join(' | '));
+  out.push('===============');
+  out.push(`${hits.length} putaran | patah ${patah}x`);
+  out.push(`⚠ patah beruntun (streak) : ${streak}x`);
+  out.push('');
+  out.push(RH_LINK);
+  return out.join('\n');
+}
+(function(){
+  const box=$('rhFindOut');
+  const upd=()=>{const b=$('rhGab');if(b)b.textContent=`Gabung (${box.querySelectorAll('input[data-ck]:checked').length} dipilih)`;};
+  box.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('input[data-ck]'))upd();});
+  box.addEventListener('click',async e=>{
+    const t=e.target;
+    if(t.id==='rhGabAll'){box.querySelectorAll('input[data-ck]').forEach((c,i)=>c.checked=i<5);upd();return;}
+    if(t.id==='rhGab'){
+      const txt=rhGabText(),ta=$('rhGabBox');
+      if(!txt){t.textContent='Centang dulu minimal 1';setTimeout(upd,1500);return;}
+      ta.value=txt;ta.style.display='';$('rhGabCopy').style.display='';return;
+    }
+    if(t.id==='rhGabCopy'){
+      const ta=$('rhGabBox'),txt=ta.value;let ok=false;
+      try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(_){}
+      if(!ok){try{ta.focus();ta.select();ta.setSelectionRange(0,txt.length);ok=document.execCommand('copy');}catch(_){}}
+      t.textContent=ok?'Tersalin ✓':'Tahan teks → Salin';setTimeout(()=>t.textContent='Salin gabungan',1800);
+    }
+  });
+})();
+
+// ===== Bank Shio (sendiri) + rekap untuk tab Bank/Prediksi =====
+const SHB_KEY='wb_shio_bank_v1',SHR_KEY='wb_shio_rekap_v1';
+const SH_NAME={sh:'Shio KE',sht:'Shio Tengah',shd:'Shio Depan',jl:'Jalur KE',jlt:'Jalur Tengah',jld:'Jalur Depan'};
+const shbGet=()=>{try{const a=JSON.parse(localStorage.getItem(SHB_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}};
+const shbSet=a=>{try{localStorage.setItem(SHB_KEY,JSON.stringify(a));}catch(e){}};
+const shF=(x,mod)=>mod===12?String(x).padStart(2,'0'):String(x);
+const shEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function chainOf(mkt,di){
+  let a=DATA.filter(d=>d.market===mkt);const t=a.map(d=>Date.parse(d.date));
+  if(a.length&&t.every(x=>!isNaN(x)))a=a.map((d,i)=>[d,t[i]]).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);
+  let s=a.slice().reverse();
+  if(di)s=s.filter(d=>{const tt=Date.parse(d.date);return !isNaN(tt)&&new Date(tt).getUTCDay()===RH_DOW[di];});
+  return s.map(d=>d.num.padStart(4,'0').slice(-4));
+}
+function shEval(it){
+  const V=VARS[it.vk];if(!V||!DATA.length)return null;
+  const rows=rhRows(chainOf(it.mkt,it.day||0),it.spec,it.vk,it.L);if(!rows)return null;
+  const miss=evalBase(rows,it.base,V.mod);let streak=0;
+  for(let i=rows.length-2;i>=0;i--){const S=setOf(it.base,rows[i].v,V.mod);if(rows[i].marks.some(([x])=>S.includes(x)))streak++;else break;}
+  const set=[...new Set(setOf(it.base,rows[rows.length-1].v,V.mod))].sort((a,b)=>a-b);
+  return {miss,streak,alive:miss<=it.P,set};
+}
+const shKey=it=>[it.mkt,it.vk,rhKeyName(it.spec,false),baseCode(it.base),it.day||0,it.L,it.P].join('|');
+function shbAdd(list){
+  const a=shbGet(),have=new Set(a.map(shKey));let n=0;
+  list.forEach(it=>{if(have.has(shKey(it)))return;have.add(shKey(it));a.push(it);n++;});
+  shbSet(a);shbRender();return n;
+}
+function shbMake(mkt,day,vk,spec,base,L,P){return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),mkt,day:+day||0,vk,spec,base:[...base],L,P,saved:new Date().toLocaleDateString('id-ID')};}
+function shbSummary(){
+  const out={ts:Date.now(),mk:{}},list=[];
+  shbGet().forEach(it=>{
+    const e=shEval(it);list.push({it,e});
+    if(!e||!e.alive)return;
+    const k=it.mkt.trim().toLowerCase(),M=out.mk[k]||(out.mk[k]={name:it.mkt,pos:{}}),V=VARS[it.vk];
+    const P=M.pos[it.vk]||(M.pos[it.vk]={mod:V.mod,n:0,votes:{},items:[]});
+    P.n++;e.set.forEach(x=>P.votes[x]=(P.votes[x]||0)+1);
+    P.items.push({c:rhKeyName(it.spec,true),s:e.set,t:e.streak});
+  });
+  Object.values(out.mk).forEach(M=>Object.values(M.pos).forEach(P=>{
+    const mx=Math.max(...Object.values(P.votes),0);P.top=mx?Object.keys(P.votes).filter(x=>P.votes[x]===mx).map(Number).sort((a,b)=>a-b):[];
+  }));
+  return {out,list};
+}
+function shbText(out){
+  const L=[];
+  Object.values(out.mk).forEach(M=>{
+    L.push('🐲 '+M.name.toUpperCase());
+    Object.keys(SH_NAME).forEach(vk=>{const P=M.pos[vk];if(!P)return;
+      const v=Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod)}(${P.votes[x]})`).join(' ');
+      L.push(`${SH_NAME[vk]} : main ${P.top.map(x=>shF(x,P.mod)).join(' ')} | ${v} | ${P.n} rumus`);});
+    L.push('');
+  });
+  return L.join('\n').trim();
+}
+const shSel=new Set();
+function shbRender(){
+  const {out,list}=shbSummary();
+  try{localStorage.setItem(SHR_KEY,JSON.stringify(out));}catch(e){}
+  const el=$('shList');if(!el)return;
+  const alive=list.filter(x=>x.e&&x.e.alive).length;
+  $('shN').textContent=`(${list.length} rumus · ${alive} aktif)`;
+  const rk=Object.values(out.mk).map(M=>`<div style="margin:6px 0"><b>${shEsc(M.name)}</b><br>`+Object.keys(SH_NAME).filter(vk=>M.pos[vk]).map(vk=>{const P=M.pos[vk];
+    return `${SH_NAME[vk]}: <b>main ${P.top.map(x=>shF(x,P.mod)).join(' ')||'-'}</b> <span style="color:#777">· ${P.n} rumus · `+Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod)}-${P.votes[x]}`).join(' ')+'</span>';}).join('<br>')+'</div>').join('');
+  $('shRekap').innerHTML=rk?'<div style="border:1px solid #cfe0c8;border-radius:8px;padding:6px 10px;margin:8px 0;background:rgba(80,160,60,.07)"><b>Rekap suara Bank Shio</b>'+rk+'</div>':'';
+  const gb=$('shGab');if(gb)gb.textContent=`Gabung (${[...shSel].filter(id=>list.some(x=>x.it.id===id)).length} dipilih)`;
+  el.innerHTML=list.length?list.map(({it,e})=>{
+    const st=!e?'<span style="color:#b36b00">data kurang</span>':e.alive?`<span style="color:#1a9d1a">✅ aktif · trek ${e.streak}×</span>`:'<span style="color:#d22">❌ patah</span>';
+    const mod=VARS[it.vk].mod;
+    return `<div style="border-top:1px solid #ddd;padding:6px 0"><div style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-shck="${it.id}"${shSel.has(it.id)?' checked':''} style="width:22px;height:22px;flex:0 0 auto"><b>${shEsc(rhKeyName(it.spec,true))}</b> · ${SH_NAME[it.vk]} · ${shEsc(it.mkt)}</div></div><div style="font-size:12.5px;color:#777">basis ${baseCode(it.base)} · L${it.L} P${it.P}${it.day?' · '+RH_DAYS[it.day]:''} · ${st}${e?' · pred <b style="color:inherit">'+e.set.map(x=>shF(x,mod)).join(mod===12?', ':'')+'</b>':''}</div><div><button data-shdel="${it.id}" style="padding:3px 10px">🗑 Hapus</button></div></div>`;}).join(''):'<div style="color:#777;padding:6px 0">Bank Shio masih kosong. Simpan rumus dari hasil Cari trek (centang → 💾) atau tombol Simpan di atas.</div>';
+}
+(function(){
+  const msg=t=>{const b=$('shSave');if(b){const o=b.textContent;b.textContent=t;setTimeout(()=>b.textContent='💾 Simpan rumus di atas',1600);}};
+  $('shBank').addEventListener('click',async e=>{
+    const t=e.target;
+    if(t.dataset&&t.dataset.shdel){shSel.delete(t.dataset.shdel);shbSet(shbGet().filter(x=>x.id!==t.dataset.shdel));shbRender();return;}
+    if(t.id==='shSave'){
+      const c=rhCompute();if(!c.ok){msg('Rumus belum valid');return;}
+      const n=shbAdd([shbMake($('market').value,$('rhDay').value,c.vk,c.spec,c.base,c.L,c.P)]);msg(n?'Tersimpan ✓':'Sudah ada di bank');return;
+    }
+    if(t.id==='shRefresh'){shbRender();return;}
+    if(t.id==='shDelPatah'){shbSet(shbGet().filter(it=>{const e=shEval(it);return !e||e.alive;}));shbRender();return;}
+    if(t.id==='shDelAll'){if(shbGet().length&&confirm('Kosongkan seluruh Bank Shio?')){shSel.clear();shbSet([]);shbRender();}return;}
+    if(t.id==='shCopyRek'){
+      const {out}=shbSummary(),txt=shbText(out),ta=$('shCopyBox');
+      if(!txt){t.textContent='Belum ada rumus aktif';setTimeout(()=>t.textContent='Salin rekap shio',1600);return;}
+      ta.value=txt;ta.style.display='';let ok=false;
+      try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(_){}
+      if(!ok){try{ta.focus();ta.select();ta.setSelectionRange(0,txt.length);ok=document.execCommand('copy');}catch(_){}}
+      t.textContent=ok?'Tersalin ✓':'Tahan teks → Salin';setTimeout(()=>t.textContent='Salin rekap shio',1800);
+    }
+  });
+  $('rhFindOut').addEventListener('click',e=>{
+    const t=e.target;if(t.id!=='rhGabBank')return;
+    const box=$('rhFindOut'),F=box._found||[],ctx=box._ctx;
+    const idx=[...box.querySelectorAll('input[data-ck]:checked')].map(c=>+c.dataset.ck);
+    if(!idx.length||!ctx){t.textContent='Centang dulu minimal 1';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
+    const day=$('rhDay').value,n=shbAdd(idx.map(i=>shbMake(ctx.mkt,day,ctx.vk,F[i].sp,F[i].base,ctx.L,ctx.P)));
+    t.textContent=`Tersimpan ${n} baru ✓`;setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1800);
+  });
+})();
+
+function shbGabText(ids){
+  const all=shbGet(),sel=ids.map(id=>all.find(x=>x.id===id)).filter(Boolean);
+  if(!sel.length)return {err:'Centang dulu minimal 1 rumus'};
+  const mk0=sel[0].mkt,day0=sel[0].day||0;
+  if(sel.some(it=>it.mkt!==mk0||(it.day||0)!==day0))return {err:'Gabung hanya untuk pasaran & hari yang sama'};
+  const items=sel.map(it=>{const rows=rhRows(chainOf(it.mkt,it.day||0),it.spec,it.vk,it.L);return rows?{it,rows}:null;}).filter(Boolean);
+  if(!items.length)return {err:'Data kurang untuk rumus yang dipilih'};
+  const n=Math.min(...items.map(x=>x.rows.length)),lines=[],hits=[];
+  const rowsOf=x=>x.rows.slice(x.rows.length-n);
+  const R=items.map(rowsOf);
+  for(let r=0;r<n;r++){
+    const last=R[0][r].last;
+    const sets=items.map((x,k)=>{const V=VARS[x.it.vk],row=R[k][r],S=setOf(x.it.base,row.v,V.mod);
+      return {t:S.map(v=>shF(v,V.mod)).join(V.mod===12?',':''),hit:!last&&row.marks.some(([m])=>S.includes(m))};});
+    const hit=sets.every(z=>z.hit);          // gabungan HIT hanya bila SEMUA rumus hit (sama seperti bank lain)
+    if(!last)hits.push(hit);
+    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')} ${last?'?':(hit?'AI':'✗')}`);
+  }
+  let patah=0,streak=0,cur=0;hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
+  const w=mk0.trim().split(/\s+/)[0].toLowerCase(),flag=RH_FLAG[w]?RH_FLAG[w]+' ':'';
+  const out=[flag+mk0.toUpperCase(),''];
+  items.forEach((x,k)=>out.push(` Code ${k+1} : ${rhKeyName(x.it.spec,false)}.${RH_VCODE[x.it.vk]}`));
+  out.push('');lines.forEach(l=>out.push(l));out.push('');
+  out.push(items.map((x,k)=>{const V=VARS[x.it.vk];return `${SH_NAME[x.it.vk].toUpperCase()} : ${setOf(x.it.base,R[k][n-1].v,V.mod).map(v=>shF(v,V.mod)).join(V.mod===12?',':'')}`;}).join(' | '));
+  out.push('===============');out.push(`${hits.length} putaran | patah ${patah}x`);out.push(`⚠ patah beruntun (streak) : ${streak}x`);out.push('');out.push(RH_LINK);
+  return {txt:out.join('\n')};
+}
+(function(){
+  const box=$('shBank');
+  box.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.shck){if(t.checked)shSel.add(t.dataset.shck);else shSel.delete(t.dataset.shck);
+    const b=$('shGab');b.textContent=`Gabung (${shbGet().filter(it=>shSel.has(it.id)).length} dipilih)`;}});
+  box.addEventListener('click',async e=>{
+    const t=e.target;
+    if(t.id==='shPickAll'){shSel.clear();shbGet().forEach(it=>{const x=shEval(it);if(x&&x.alive)shSel.add(it.id);});shbRender();return;}
+    if(t.id==='shGab'){
+      const r=shbGabText(shbGet().filter(it=>shSel.has(it.id)).map(it=>it.id));
+      if(r.err){t.textContent=r.err;setTimeout(()=>shbRender(),1800);return;}
+      $('shGabBox').value=r.txt;$('shGabBox').style.display='';$('shGabCopy').style.display='';return;
+    }
+    if(t.id==='shGabCopy'){
+      const ta=$('shGabBox'),txt=ta.value;let ok=false;
+      try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(_){}
+      if(!ok){try{ta.focus();ta.select();ta.setSelectionRange(0,txt.length);ok=document.execCommand('copy');}catch(_){}}
+      t.textContent=ok?'Tersalin ✓':'Tahan teks → Salin';setTimeout(()=>t.textContent='Salin gabungan',1800);
+    }
+  });
+})();
+
+rhInit();
+load();
+</script>
+</body>
+</html>
