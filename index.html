@@ -621,7 +621,7 @@ const WB_SITES = {
   'bototomart787-png.github.io':'scenangka-rekap'
 };
 const ACCOUNT     = WB_SITES[String(location.hostname).toLowerCase()] || 'mamakeavif-star';  // situs lain/tes lokal = akun bawaan
-const WB_RESULT_URLS = ['result.json','https://mamakeavif-star.github.io/WB-PREDICTION-/result.json','https://kjago7822.github.io/WB-PREDICTION-/result.json','https://wgus543-hub.github.io/WB-PREDICTION-/result.json','https://adinealif-byte.github.io/WB-PREDICTION-/result.json','https://paitoangka1234-cpu.github.io/WB-scen/result.json'];
+const WB_RESULT_URLS = ['result.json','https://mamakeavif-star.github.io/WB-PREDICTION-/result.json','https://kjago7822.github.io/WB-PREDICTION-/result.json','https://wgus543-hub.github.io/WB-PREDICTION-/result.json','https://adinealif-byte.github.io/WB-PREDICTION-/result.json','https://bototomart787-png.github.io/Scenangka/result.json','https://paitoangka1234-cpu.github.io/WB-scen/result.json'];
 async function wbFetchResult(){   // coba result.json milik situs ini dulu, lalu cadangan dari situs lain
   for(const u of WB_RESULT_URLS){ try{ const r = await fetch(u + (u.indexOf('?')<0?'?':'&') + '_=' + Math.floor(Date.now()/600000), { cache:'no-cache' }); if(r.ok) return r; }catch(e){} }
   return { ok:false };
@@ -1750,17 +1750,27 @@ function wbRenderPasswords() {
 const WB_LOCK_KEY = 'wg_locked_features';
 
 const WB_FEATURES = [
-  { key:'scanner',     label:'Scan',              selectors:['.tabs .tab:nth-child(1)','.bnav .bnav-b:nth-child(1)'] },
-  { key:'bank_rumus',  label:'Bank Rumus',        selectors:['.tabs .tab:nth-child(2)','.bnav .bnav-b:nth-child(2)'] },
-  { key:'scan_semua',  label:'Jalankan Scan',     selectors:['.btn-scan'] },
-  { key:'hapus_bank',  label:'Hapus Rumus Bank',  selectors:['.btn-red','#wb-patah-btn'], textRe:/Hapus \(|Reset|Hapus Patah/ },
-  { key:'update_bank', label:'Update Rumus Bank', selectors:['.btn-grn'], textRe:/Update/ },
-  { key:'kirim_wa',    label:'Kirim ke WA',       selectors:['.btn-wa'] },
-  { key:'prediksi',    label:'Prediksi Auto',     selectors:['.tabs .tab:nth-child(4)','.bnav .bnav-b:nth-child(4)'] },
-  { key:'bank_prediksi', label:'Bank Prediksi',   selectors:[] },  { key:'harian',        label:'Harian',             selectors:[] },
-  { key:'rekap',         label:'Rekap',              selectors:[] },
-  { key:'shio',          label:'Shio',               selectors:['.tabs .tab:nth-child(3)','.bnav .bnav-b:nth-child(3)'] },
+  { grp:'Scan',          key:'scanner',       label:'Scan',              selectors:['.tabs .tab:nth-child(1)','.bnav .bnav-b:nth-child(1)'] },
+  { grp:'Scan',          key:'bank_rumus',    label:'Bank Rumus',        selectors:['.tabs .tab:nth-child(2)','.bnav .bnav-b:nth-child(2)'] },
+  { grp:'Scan',          key:'shio',          label:'Shio (tab di Scan)', selectors:['.tabs .tab:nth-child(3)','.bnav .bnav-b:nth-child(3)'] },
+  { grp:'Scan',          key:'scan_semua',    label:'Jalankan Scan',     selectors:['.btn-scan'] },
+  { grp:'Scan',          key:'hapus_bank',    label:'Hapus Rumus Bank',  selectors:['.btn-red','#wb-patah-btn'], textRe:/Hapus \(|Reset|Hapus Patah/ },
+  { grp:'Scan',          key:'update_bank',   label:'Update Rumus Bank', selectors:['.btn-grn'], textRe:/Update/ },
+  { grp:'Scan',          key:'kirim_wa',      label:'Kirim ke WA',       selectors:['.btn-wa'] },
+  // Halaman Prediksi (prediksi.html): 5 fitur dikunci SATU-SATU. Kunci "SEMUA" menyembunyikan seluruh halaman (tab Prediksi di menu ikut hilang).
+  { grp:'Halaman Prediksi (5 fitur)', key:'pred_all',      label:'Prediksi › KUNCI SEMUA (seluruh halaman)', selectors:['.tabs .tab:nth-child(4)','.bnav .bnav-b:nth-child(4)'] },
+  { grp:'Halaman Prediksi (5 fitur)', key:'prediksi',      label:'Prediksi › Prediksi',  selectors:[] },
+  { grp:'Halaman Prediksi (5 fitur)', key:'bank_prediksi', label:'Prediksi › Bank',      selectors:[] },
+  { grp:'Halaman Prediksi (5 fitur)', key:'harian',        label:'Prediksi › Harian',    selectors:[] },
+  { grp:'Halaman Prediksi (5 fitur)', key:'rekap',         label:'Prediksi › Otomatis',  selectors:[] },
+  { grp:'Halaman Prediksi (5 fitur)', key:'pred_shio',     label:'Prediksi › Shio',      selectors:[] },
 ];
+const WB_SCEN_KEYS = ['prediksi','bank_prediksi','harian','rekap','pred_shio'];   // tab Prediksi di menu hilang bila kelimanya terkunci
+function wbGrpHead(ix){
+  const f = WB_FEATURES[ix];
+  if(ix>0 && WB_FEATURES[ix-1].grp===f.grp) return '';
+  return `<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#f59e0b;text-transform:uppercase;padding:14px 0 2px;border-bottom:1px solid #30363d;">${f.grp}</div>`;
+}
 
 // SUMBER KEBENARAN = SERVER (record __SETTINGS__.globalLock dan member.locked),
 // persis yang dibaca gerbang login member di Prediksi/Bank/Harian/Rekap.
@@ -1843,9 +1853,9 @@ function wbRenderLockFitur(noSync) {
   const locked = wbGetLocked();
   const el = document.getElementById('adm-lock-list');
   if (!el) return;
-  el.innerHTML = WB_FEATURES.map(f => {
+  el.innerHTML = WB_FEATURES.map((f, ix) => {
     const isLocked = locked.has(f.key);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #21262d;">
+    return wbGrpHead(ix) + `<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #21262d;">
       <div>
         <div style="font-size:13px;font-weight:700;color:${isLocked?'#f87171':'#e6edf3'};">${isLocked?'🔒':'🔓'} ${f.label}</div>
         <div style="font-size:10px;color:#6e7681;margin-top:1px;">${isLocked?'Dikunci — member tidak bisa akses':'Terbuka'}</div>
@@ -1888,11 +1898,11 @@ function wbRenderMemberLockList() {
   const globalLocked = wbGetLocked();
   const memberLocked = wbGetMemberLocked(_wbMLockKey);
   const el = document.getElementById('wb-mlock-list');
-  el.innerHTML = WB_FEATURES.map(f => {
+  el.innerHTML = WB_FEATURES.map((f, ix) => {
     const byGlobal = globalLocked.has(f.key);
     const byMember = memberLocked.has(f.key);
     const isLocked = byGlobal||byMember;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #21262d;">
+    return wbGrpHead(ix) + `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #21262d;">
       <div>
         <div style="font-size:12px;font-weight:700;color:${isLocked?'#f87171':'#e6edf3'};">${isLocked?'🔒':'🔓'} ${f.label}</div>
         <div style="font-size:10px;color:#6e7681;margin-top:1px;">${byGlobal?'🌐 Dikunci global':byMember?'👤 Dikunci untuk member ini':'Terbuka'}</div>
@@ -1955,6 +1965,12 @@ function wbApplyLocks() {
       });
     });
   });
+  // Tab "Prediksi" (pintu ke prediksi.html) hilang hanya bila SEMUA scen prediksi terkunci.
+  const allScen = WB_SCEN_KEYS.every(k => locked.has(k));
+  ['.tabs .tab:nth-child(4)','.bnav .bnav-b:nth-child(4)'].forEach(sel => document.querySelectorAll(sel).forEach(el => {
+    if(allScen){ el.dataset.wbLocked='1'; el.dataset.wbLockLabel='Prediksi'; el.dataset.wbHide='1'; }
+    else if(el.dataset.wbLockLabel==='Prediksi'){ delete el.dataset.wbLocked; delete el.dataset.wbLockLabel; delete el.dataset.wbHide; }
+  }));
   // Tab yang sedang aktif ikut disembunyikan → pindah ke tab pertama yang masih terbuka (Prediksi tidak ikut, karena pindah halaman).
   try{
     const act = document.querySelector('.tabs .tab.act');
@@ -2649,9 +2665,11 @@ function App() {
         }
         catch { }
         bgFetch();
-        // refresh result otomatis tiap 1 jam (sama seperti scan1/2/5)
-        const iv = setInterval(bgFetch, 60 * 60 * 1000);
-        return () => clearInterval(iv);
+        // refresh result otomatis tiap 10 menit (sesuai cache result.json) + saat aplikasi dibuka kembali
+        const iv = setInterval(bgFetch, 10 * 60 * 1000);
+        const onVis = () => { if (document.visibilityState === 'visible' && Date.now() - (window.__wbLastBg || 0) > 2 * 60 * 1000) bgFetch(); };
+        document.addEventListener('visibilitychange', onVis);
+        return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
     }, []);
     // AUTO UPDATE bank: begitu result terbaru masuk & bank termuat, trek dilanjutkan otomatis (tanpa klik Update)
     useEffect(() => {
@@ -2688,6 +2706,7 @@ function App() {
                     norm[k] = { ...v, history: hist.slice(0, 150) };
                 }
                 allDataRef.current = norm;
+                window.__wbLastBg = Date.now();
                 setFetchTime(new Date());
             }
         }
