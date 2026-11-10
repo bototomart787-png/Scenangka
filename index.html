@@ -863,27 +863,27 @@ const WB_LIMIT_GROUPS = [
   { t:'🔮 PREDIKSI OTOMATIS', f:[
     { key:'predMktLimit',   l:'Pasaran maks (1-100)',                              max:100,  ph:'bawaan 10' },
     { key:'predStopLimit',  l:'Stop scan — maks rumus hasil scan',                 max:300,  ph:'bawaan = batas bank' },
-    { key:'predPerMkt',     l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:50, ph:'contoh 2 = 2 trek per pasaran' },
+    { key:'predPerMkt',     l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:300, ph:'contoh 2 = 2 trek per pasaran' },
     { key:'predBankLimit',  l:'Save bank — maks rumus tersimpan',                  max:300,  ph:'bawaan 20' } ] },
   { t:'📅 SCAN HARIAN', f:[
     { key:'harianMktLimit', l:'Pasaran maks (1-64)',                               max:64,   ph:'kosong = semua' },
     { key:'harianMaxOut',   l:'Stop scan — maks rumus hasil scan',                 max:1000, ph:'bawaan 300' },
-    { key:'harianPerMkt',   l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:50, ph:'contoh 2 = 2 trek per pasaran' },
+    { key:'harianPerMkt',   l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:300, ph:'contoh 2 = 2 trek per pasaran' },
     { key:'harianBankLimit',l:'Save bank — maks rumus tersimpan',                  max:300,  ph:'bawaan 20' } ] },
   { t:'📆 RUMUS HARIAN (rumus-harian.html)', f:[
     { key:'rhMktLimit',     l:'Pasaran maks (1-64)',                               max:64,   ph:'kosong = semua' },
     { key:'rhMaxOut',       l:'Stop scan — maks rumus hasil scan',                 max:1000, ph:'bawaan 300' },
-    { key:'rhPerMkt',       l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:50, ph:'tanpa batas' },
+    { key:'rhPerMkt',       l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:300, ph:'tanpa batas' },
     { key:'rhBankLimit',    l:'Save bank — maks rumus tersimpan',                  max:300,  ph:'bawaan 20' } ] },
   { t:'🤖 SCAN OTOMATIS', f:[
     { key:'otoMktLimit',    l:'Pasaran maks (1-64)',                               max:64,   ph:'kosong = bawaan' },
     { key:'otoStopLimit',   l:'Stop scan — maks rumus hasil scan',                 max:1000, ph:'bawaan 30' },
-    { key:'otoPerMkt',      l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:50, ph:'tanpa batas' },
+    { key:'otoPerMkt',      l:'Stop trek per pasaran — dapat N trek lalu lanjut pasaran berikutnya', max:300, ph:'tanpa batas' },
     { key:'otoBankLimit',   l:'Save bank — maks rumus tersimpan',                  max:300,  ph:'bawaan 20' } ] },
   { t:'🐲 SCAN SHIO & JALUR', f:[
     { key:'shioBankLimit',  l:'Save bank shio — maks rumus tersimpan',             max:300,  ph:'bawaan 20' } ] }
 ];
-const WB_LIMITS = WB_LIMIT_GROUPS.reduce((a,g)=>a.concat(g.f),[]);
+const WB_LIMITS = WB_LIMIT_GROUPS.reduce((a,g)=>a.concat(g.f.map(f=>Object.assign({grp:g.t},f))),[]);
 function wbBuildLimitFields(){
   const box = document.getElementById('acc-limits'); if(!box || box.dataset.built) return;
   const inp = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);font-size:13px;margin-bottom:8px';
@@ -943,7 +943,7 @@ async function wbAccSave(){
     const raw = document.getElementById('acc-'+f.key).value.trim();
     if(raw === ''){ lim[f.key] = null; continue; }
     const n = parseInt(raw, 10);
-    if(!(n >= 1 && n <= f.max)){ alert(f.l.split(' — ')[0].split(' (')[0] + ': isi angka 1–' + f.max + ', atau kosongkan (= bawaan).'); return; }
+    if(!(n >= 1 && n <= f.max)){ alert('['+(f.grp||'').replace(/^\S+\s/,'')+'] '+f.l.split(' — ')[0].split(' (')[0] + ': isi angka 1–' + f.max + ', atau kosongkan (= bawaan).'); return; }
     lim[f.key] = n;
   }
   if(pw.length < 4){ alert('Password minimal 4 karakter.'); return; }
