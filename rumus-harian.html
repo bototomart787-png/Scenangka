@@ -1002,14 +1002,89 @@ function wbIsAdmin(){return true;   // simpan ke Bank Harian dibuka untuk semua 
   return false;
 }
 // ===== Bank Harian (sendiri) + rekap untuk tab Bank/Prediksi =====
-const SHB_KEY='wb_harian_bank_v1',SHR_KEY='wb_harian_rekap_v1';
+const SHB_BASE='wb_harian_bank_v1',SHR_BASE='wb_harian_rekap_v1';
+// ===== Bank Harian dipisah per akun (member tidak lagi melihat bank admin di HP yang sama) =====
+function wbhIsAdmin(){try{const c=JSON.parse(localStorage.getItem('wg_admin_cred')||'null');return !!(c&&c.token&&c.exp>Date.now());}catch(e){return false;}}
+function wbhMember(){if(wbhIsAdmin())return null;try{const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null');return (u&&!u.isAdmin&&u.id)?u:null;}catch(e){return null;}}
+function wbhWho(){const u=wbhMember();return u?String(u.phone||u.id).toLowerCase().replace(/[^a-z0-9]/g,'_'):'';}
+const shbKey=()=>{const w=wbhWho();return w?SHB_BASE+'__'+w:SHB_BASE;};      // admin/tamu tetap kunci lama
+const shrKey=()=>{const w=wbhWho();return w?SHR_BASE+'__'+w:SHR_BASE;};
 const SH_NAME={};Object.keys(VARS).forEach(k=>{SH_NAME[k]=VARS[k].name;});
-const shbGet=()=>{try{let a=JSON.parse(localStorage.getItem(SHB_KEY)||'[]');if(!Array.isArray(a))return [];
+const shbGet=()=>{try{let a=JSON.parse(localStorage.getItem(shbKey())||'[]');if(!Array.isArray(a))return [];
   if(a.some(x=>x&&x.vk==='ke')){   // migrasi: 'kepala ekor' sama dengan Ai belakang -> gabung ke ai2db, buang yang dobel
     const have=new Set(),out=[];a.forEach(x=>{if(!x)return;if(x.vk==='ke')x.vk='ai2db';const k=[x.mkt,x.vk,JSON.stringify(x.spec),(x.base||[]).join(','),x.day||0,x.L,x.P].join('|');if(have.has(k))return;have.add(k);out.push(x);});
-    a=out;try{localStorage.setItem(SHB_KEY,JSON.stringify(a));}catch(e){}}
+    a=out;try{localStorage.setItem(shbKey(),JSON.stringify(a));}catch(e){}}
   return a.filter(x=>x&&VARS[x.vk]);}catch(e){return [];}};
-const shbSet=a=>{try{localStorage.setItem(SHB_KEY,JSON.stringify(a));}catch(e){}};
+const shbSet=a=>{try{localStorage.setItem(shbKey(),JSON.stringify(a));}catch(e){}try{wbhMark();}catch(e){}};
+
+// ===== Sinkron Bank Harian member -> Worker (bin member), supaya admin bisa melihat bank + trek =====
+const WBH_WORKER='https://steep-resonance-6a71.kjago7822.workers.dev';
+const WBH_SITES={'kjago7822.github.io':'kjago7822','wgus543-hub.github.io':'wgus543-hub','mamakeavif-star.github.io':'mamakeavif-star','adinealif-byte.github.io':'adinealif-byte','bototomart787-png.github.io':'scenangka-rekap'};
+const WBH_ACCOUNT=WBH_SITES[String(location.hostname).toLowerCase()]||'mamakeavif-star';   // sama dengan index.html
+const wbhUrl=k=>WBH_WORKER.replace(/\/+$/,'')+'/'+WBH_ACCOUNT+'/'+encodeURIComponent(k);
+async function wbhGet(k){const r=await fetch(wbhUrl(k),{cache:'no-store'});if(!r.ok)throw new Error('Gagal baca server (HTTP '+r.status+')');const rec=await r.json();if(rec==null)throw new Error('Respon server kosong');return Array.isArray(rec)?rec:(rec.data||[]);}
+async function wbhPut(k,data){const r=await fetch(wbhUrl(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})});if(!r.ok)throw new Error('Gagal simpan ke server (HTTP '+r.status+')');}
+function wbhToast(m){try{let el=document.getElementById('wbh-toast');if(!el){el=document.createElement('div');el.id='wbh-toast';el.style.cssText='position:fixed;left:50%;bottom:56px;transform:translateX(-50%);z-index:100000;background:#7f1d1d;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;max-width:90%;text-align:center';document.body.appendChild(el);}el.textContent=m;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.display='none';},5000);}catch(e){}}
+const wbhLimKey=()=>'wbh_limit__'+wbhWho();
+function wbhLimit(){if(!wbhMember())return 0;return parseInt(localStorage.getItem(wbhLimKey()),10)||20;}   // bawaan 20, sama dengan tampilan admin
+const wbhSynKey=()=>shbKey()+'__synced';
+let wbhBin=null,wbhTimer=null,wbhQ=Promise.resolve();
+async function wbhEnsureBin(){
+  if(wbhBin)return wbhBin;
+  const u=wbhMember();if(!u)throw new Error('Bukan member');
+  const all=await wbhGet('members'),m=all.find(x=>x&&x.id===u.id);
+  if(!m)throw new Error('Akun tidak ditemukan di server');
+  try{localStorage.setItem(wbhLimKey(),String(parseInt(m.harianBankLimit,10)>0?parseInt(m.harianBankLimit,10):20));}catch(e){}
+  if(m.bankBinWG){wbhBin=m.bankBinWG;return wbhBin;}
+  const id='bank-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  await wbhPut(id,{updatedAt:new Date().toISOString(),owner:m.name});
+  const all2=await wbhGet('members'),t=all2.find(x=>x&&x.id===u.id);   // baca ulang tepat sebelum tulis
+  if(!t)throw new Error('Akun tidak ditemukan di server');
+  if(t.bankBinWG){try{fetch(wbhUrl(id),{method:'DELETE'});}catch(e){}wbhBin=t.bankBinWG;return wbhBin;}
+  t.bankBinWG=id;await wbhPut('members',all2);wbhBin=id;return id;
+}
+// bentuk yang dibaca panel admin: key, mode, status, streak, curPred, trekRows; raw = data asli untuk dipulihkan
+function wbhExport(it){
+  try{
+    const V=VARS[it.vk];if(!V)return null;
+    const fmt=S=>V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join('');
+    const e=shEval(it),rows=rhRows(chainOf(it.mkt,it.day||0),it.spec,it.vk,it.L)||[];
+    const tr=rows.map(r=>{const S=setOf(it.base,r.v,V.mod);return {result:r.res,predStr:fmt(S),hit:r.last?null:!!rhHit(r,S,V)};});
+    return {id:it.id,mkt:it.mkt,key:rhKeyName(it.spec,true)+'.'+RH_VCODE[it.vk],mode:SH_NAME[it.vk]+(it.day?' · '+RH_DAYS[it.day]:''),
+      status:!e?'pending':e.alive?'aktif':'patah',streak:e?e.streak:0,curPred:e?fmt(e.set):'??',savedAt:it.saved||'',trekRows:tr.slice(-8),raw:it};
+  }catch(err){return null;}
+}
+function wbhMark(){if(!wbhMember())return;clearTimeout(wbhTimer);wbhTimer=setTimeout(()=>{wbhQ=wbhQ.then(wbhPush);},1500);}
+async function wbhPush(){
+  const u=wbhMember();if(!u)return;
+  try{
+    const bin=await wbhEnsureBin(),cur=await wbhGet(bin),o=(cur&&!Array.isArray(cur))?cur:{};
+    const arr=shbGet().map(wbhExport).filter(Boolean);
+    const fit=()=>JSON.stringify({data:Object.assign({},o,{harian:arr})}).length<=190000;
+    if(!fit())arr.forEach(x=>{x.trekRows=x.trekRows.slice(-3);});
+    while(arr.length&&!fit())arr.pop();
+    o.harian=arr;o.updatedAt=new Date().toISOString();o.owner=u.name||o.owner;delete o.clearedByAdmin;
+    await wbhPut(bin,o);
+    try{localStorage.setItem(wbhSynKey(),JSON.stringify(arr.map(x=>x.id)));}catch(e){}
+  }catch(e){console.warn('[Harian] gagal kirim ke server',e);wbhToast('⚠️ Bank Harian tersimpan di HP, tapi gagal dikirim ke server: '+(e.message||e));}
+}
+async function wbhPull(){
+  const u=wbhMember();if(!u)return;
+  try{
+    const bin=await wbhEnsureBin(),o=await wbhGet(bin),srv=(o&&Array.isArray(o.harian))?o.harian:null,local=shbGet();
+    if(!srv){if(local.length)wbhMark();return;}   // belum ada di server -> unggah bank lokal
+    const sIds=new Set(srv.map(x=>x&&x.id)),synced=new Set(JSON.parse(localStorage.getItem(wbhSynKey())||'[]'));
+    const keep=local.filter(it=>!synced.has(it.id)||sIds.has(it.id));   // yang pernah tersinkron lalu hilang di server = dihapus admin
+    const have=new Set(keep.map(x=>x.id));
+    srv.forEach(x=>{if(x&&x.raw&&VARS[x.raw.vk]&&!have.has(x.id)&&!synced.has(x.id)){keep.push(x.raw);have.add(x.id);}});   // dari perangkat lain
+    const changed=keep.length!==local.length||keep.some((x,i)=>x!==local[i]&&(local[i]||{}).id!==x.id);
+    if(changed){try{localStorage.setItem(shbKey(),JSON.stringify(keep));}catch(e){}shbRender();}
+    try{localStorage.setItem(wbhSynKey(),JSON.stringify([...sIds]));}catch(e){}
+    if(keep.some(x=>!sIds.has(x.id)))wbhMark();
+  }catch(e){console.warn('[Harian] gagal sinkron dari server',e);}
+}
+window.addEventListener('load',()=>{wbhQ=wbhQ.then(wbhPull);});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&wbhMember()){clearTimeout(wbhTimer);wbhQ=wbhQ.then(wbhPush);}else if(document.visibilityState==='visible'&&wbhMember()){wbhQ=wbhQ.then(wbhPull);}});
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
 const shEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chainOf(mkt,di){
@@ -1031,7 +1106,9 @@ function shEval(it){
 const shKey=it=>[it.mkt,it.vk,rhKeyName(it.spec,false),baseCode(it.base),it.day||0,it.L,it.P].join('|');
 function shbAdd(list){
   const a=shbGet(),have=new Set(a.map(shKey));let n=0;
-  list.forEach(it=>{if(have.has(shKey(it)))return;have.add(shKey(it));a.push(it);n++;});
+  const lim=wbhLimit();let full=0;
+  list.forEach(it=>{if(have.has(shKey(it)))return;if(lim&&a.length>=lim){full++;return;}have.add(shKey(it));a.push(it);n++;});
+  if(full)wbhToast('⚠️ Bank Harian penuh (batas '+lim+' rumus). Hapus rumus lama dulu.');
   shbSet(a);shbRender();return n;
 }
 function shbMake(mkt,day,vk,spec,base,L,P){return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),mkt,day:+day||0,vk,spec,base:[...base],L,P,saved:new Date().toLocaleDateString('id-ID')};}
@@ -1066,7 +1143,7 @@ const shSel=new Set();
 const shOpen=new Set();
 function shbRender(){
   const {out,list}=shbSummary();
-  try{localStorage.setItem(SHR_KEY,JSON.stringify(out));}catch(e){}
+  try{localStorage.setItem(shrKey(),JSON.stringify(out));}catch(e){}
   const el=$('shList');if(!el)return;
   const alive=list.filter(x=>x.e&&x.e.alive).length;
   $('shN').textContent=`(${list.length} rumus · ${alive} aktif)`;
@@ -1624,7 +1701,7 @@ $('use').onclick=()=>{
 };
 build();
 /* ===== kode, bank otomatis, kirim ke blog ===== */
-const BK=[['Harian','wb_harian_rekap_v1'],['Shio','wb_shio_rekap_v1']];
+const BK=[['Harian',shrKey()],['Shio','wb_shio_rekap_v1']];
 function bkRead(){
   const mk=new Map();
   BK.forEach(([nm,key])=>{try{const j=JSON.parse(localStorage.getItem(key)||'null');
