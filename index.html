@@ -621,8 +621,8 @@ const WB_SITES = {
   'bototomart787-png.github.io':'scenangka-rekap'
 };
 const ACCOUNT     = WB_SITES[String(location.hostname).toLowerCase()] || 'mamakeavif-star';  // situs lain/tes lokal = akun bawaan
-const WB_RESULT_URLS = ['result.json','https://mamakeavif-star.github.io/WB-PREDICTION-/result.json','https://kjago7822.github.io/WB-PREDICTION-/result.json','https://wgus543-hub.github.io/WB-PREDICTION-/result.json','https://adinealif-byte.github.io/WB-PREDICTION-/result.json','https://bototomart787-png.github.io/Scenangka/result.json','https://paitoangka1234-cpu.github.io/WB-scen/result.json'];
-async function wbFetchResult(){   // coba result.json milik situs ini dulu, lalu cadangan dari situs lain
+const WB_RESULT_URLS = ['result.json'];   // result.json MILIK SITUS INI SENDIRI (satu folder dengan index.html), tanpa cadangan dari situs lain
+async function wbFetchResult(){   // ambil result.json dari situs ini sendiri
   for(const u of WB_RESULT_URLS){ try{ const r = await fetch(u + (u.indexOf('?')<0?'?':'&') + '_=' + Math.floor(Date.now()/600000), { cache:'no-cache' }); if(r.ok) return r; }catch(e){} }
   return { ok:false };
 }
@@ -1749,26 +1749,111 @@ function wbRenderPasswords() {
 // ═══════════════════════════════════════════════════════════
 const WB_LOCK_KEY = 'wg_locked_features';
 
+const WB_G1 = 'SCAN & BANK (halaman utama)';
+const WB_G2 = 'PREDIKSI (prediksi.html)';
+const WB_G3 = 'RUMUS HARIAN (rumus-harian.html) · FITUR BARU';
+const WB_GRP_NOTE = {};
+WB_GRP_NOTE[WB_G1] = '🔍 Tab Scan & Bank Rumus di halaman ini';
+WB_GRP_NOTE[WB_G2] = '🔮 Halaman Prediksi — 5 fitur dikunci satu-satu';
+WB_GRP_NOTE[WB_G3] = '📅 Halaman Rumus Harian — 5 fitur dikunci satu-satu';
 const WB_FEATURES = [
-  { grp:'Scan',          key:'scanner',       label:'Scan',              selectors:['.tabs .tab:nth-child(1)','.bnav .bnav-b:nth-child(1)'] },
-  { grp:'Scan',          key:'bank_rumus',    label:'Bank Rumus',        selectors:['.tabs .tab:nth-child(2)','.bnav .bnav-b:nth-child(2)'] },
-  { grp:'Scan',          key:'scan_semua',    label:'Jalankan Scan',     selectors:['.btn-scan'] },
-  { grp:'Scan',          key:'hapus_bank',    label:'Hapus Rumus Bank',  selectors:['.btn-red','#wb-patah-btn'], textRe:/Hapus \(|Reset|Hapus Patah/ },
-  { grp:'Scan',          key:'update_bank',   label:'Update Rumus Bank', selectors:['.btn-grn'], textRe:/Update/ },
-  { grp:'Scan',          key:'kirim_wa',      label:'Kirim ke WA',       selectors:['.btn-wa'] },
-  // Halaman Prediksi (prediksi.html): 5 fitur dikunci SATU-SATU. Kunci "SEMUA" menyembunyikan seluruh halaman (tab Prediksi di menu ikut hilang).
-  { grp:'Halaman Prediksi (5 fitur)', key:'pred_all',      label:'Prediksi › KUNCI SEMUA (seluruh halaman)', selectors:['.tabs .tab:nth-child(3)','.bnav .bnav-b:nth-child(3)'] },
-  { grp:'Halaman Prediksi (5 fitur)', key:'prediksi',      label:'Prediksi › Prediksi',  selectors:[] },
-  { grp:'Halaman Prediksi (5 fitur)', key:'bank_prediksi', label:'Prediksi › Bank',      selectors:[] },
-  { grp:'Halaman Prediksi (5 fitur)', key:'harian',        label:'Prediksi › Harian',    selectors:[] },
-  { grp:'Halaman Prediksi (5 fitur)', key:'rekap',         label:'Prediksi › Otomatis',  selectors:[] },
-  { grp:'Halaman Prediksi (5 fitur)', key:'pred_shio',     label:'Prediksi › Shio',      selectors:[] },
+  { grp:WB_G1, key:'scanner',       label:'Scan',              selectors:['.tabs .tab:nth-child(1)','.bnav .bnav-b:nth-child(1)'] },
+  { grp:WB_G1, key:'bank_rumus',    label:'Bank Rumus',        selectors:['.tabs .tab:nth-child(2)','.bnav .bnav-b:nth-child(2)'] },
+  { grp:WB_G1, key:'scan_semua',    label:'Jalankan Scan',     selectors:['.btn-scan'] },
+  { grp:WB_G1, key:'hapus_bank',    label:'Hapus Rumus Bank',  selectors:['.btn-red','#wb-patah-btn'], textRe:/Hapus \(|Reset|Hapus Patah/ },
+  { grp:WB_G1, key:'update_bank',   label:'Update Rumus Bank', selectors:['.btn-grn'], textRe:/Update/ },
+  { grp:WB_G1, key:'kirim_wa',      label:'Kirim ke WA',       selectors:['.btn-wa'] },
+  // Halaman Prediksi (prediksi.html). Kunci "SEMUA" menyembunyikan seluruh halaman (tab Prediksi di menu ikut hilang).
+  { grp:WB_G2, key:'pred_all',      label:'Prediksi › KUNCI SEMUA (seluruh halaman)', selectors:['.tabs .tab:nth-child(3)','.bnav .bnav-b:nth-child(3)'] },
+  { grp:WB_G2, key:'prediksi',      label:'Prediksi › Prediksi',  selectors:[] },
+  { grp:WB_G2, key:'bank_prediksi', label:'Prediksi › Bank',      selectors:[] },
+  { grp:WB_G2, key:'harian',        label:'Prediksi › Harian',    selectors:[] },
+  { grp:WB_G2, key:'rekap',         label:'Prediksi › Otomatis',  selectors:[] },
+  { grp:WB_G2, key:'pred_shio',     label:'Prediksi › Shio',      selectors:[] },
+  // Halaman Rumus Harian (rumus-harian.html) — fitur baru. Kunci dibaca & dijalankan oleh rumus-harian.html sendiri.
+  { grp:WB_G3, key:'rh_all',        label:'Rumus Harian › KUNCI SEMUA (seluruh halaman)', selectors:['.tabs .tab:nth-child(4)','.bnav .bnav-b:nth-child(4)'] },
+  { grp:WB_G3, key:'rh_rumus',      label:'Rumus Harian › Cari Rumus',             selectors:[] },
+  { grp:WB_G3, key:'rh_multi',      label:'Rumus Harian › Scan Multi Pasaran',     selectors:[] },
+  { grp:WB_G3, key:'rh_bank',       label:'Rumus Harian › Bank Harian',            selectors:[] },
+  { grp:WB_G3, key:'rh_rekap',      label:'Rumus Harian › Rekap Angka 2D·3D·4D',   selectors:[] },
+  { grp:WB_G3, key:'rh_final',      label:'Rumus Harian › Rekap Final Otomatis',   selectors:[] },
 ];
 const WB_SCEN_KEYS = ['prediksi','bank_prediksi','harian','rekap','pred_shio'];   // tab Prediksi di menu hilang bila kelimanya terkunci
-function wbGrpHead(ix){
-  const f = WB_FEATURES[ix];
-  if(ix>0 && WB_FEATURES[ix-1].grp===f.grp) return '';
-  return `<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#f59e0b;text-transform:uppercase;padding:14px 0 2px;border-bottom:1px solid #30363d;">${f.grp}</div>`;
+const WB_RH_KEYS   = ['rh_rumus','rh_multi','rh_bank','rh_rekap','rh_final'];     // tab Rumus di menu hilang bila kelimanya terkunci
+
+// Kelompokkan fitur (urutan sesuai WB_FEATURES) → [{name, items:[indeks]}]
+function wbGroups(){
+  const g = [];
+  WB_FEATURES.forEach((f, ix) => {
+    let x = g.find(y => y.name === f.grp);
+    if(!x){ x = { name:f.grp, items:[] }; g.push(x); }
+    x.items.push(ix);
+  });
+  return g;
+}
+// HTML panel kunci (dipakai panel global & modal per member): ringkasan + kartu per kelompok.
+// o = { member:bool, gSet:Set(kunci global), mSet:Set|null (kunci member), grpFn, chgFn }
+function wbLockGroupsHtml(o){
+  const eff = k => o.gSet.has(k) || !!(o.mSet && o.mSet.has(k));
+  const labelOf = k => (WB_FEATURES.find(f => f.key === k) || {}).label || k;
+  const lockedKeys = WB_FEATURES.filter(f => eff(f.key)).map(f => f.key);
+  const nL = lockedKeys.length, red = nL > 0;
+  let h = `<div style="margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid ${red?'rgba(239,68,68,.35)':'rgba(16,185,129,.3)'};background:${red?'rgba(239,68,68,.08)':'rgba(16,185,129,.07)'};">
+    <div style="font-size:12px;font-weight:800;color:${red?'#f87171':'#10b981'};">${red ? '🔒 '+nL+' dari '+WB_FEATURES.length+' fitur DIKUNCI' : '🔓 Semua fitur terbuka'}${o.member?' untuk member ini':''}</div>
+    ${red ? '<div style="font-size:10.5px;color:#fca5a5;margin-top:6px;line-height:1.9;">'+lockedKeys.map(k=>'<span style="display:inline-block;background:rgba(239,68,68,.16);border-radius:5px;padding:1px 7px;margin:0 4px 0 0;">'+escHtml(labelOf(k))+'</span>').join('')+'</div>' : ''}
+    <div style="font-size:10px;color:#8b949e;margin-top:6px;line-height:1.5;">Fitur yang dikunci <b style="color:#e6edf3">disembunyikan</b> dari member (tidak tampil sama sekali). Admin tetap melihat semuanya.</div>
+  </div>`;
+  wbGroups().forEach((g, gi) => {
+    const tot = g.items.length;
+    const n = g.items.filter(ix => eff(WB_FEATURES[ix].key)).length;
+    const badge = n === 0 ? '🔓 Terbuka' : (n === tot ? '🔒 Terkunci semua' : '🔒 '+n+'/'+tot+' terkunci');
+    const bc = n === 0 ? '#10b981' : '#f87171', bb = n === 0 ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.14)';
+    h += `<div style="margin:0 0 14px;border:1px solid ${n?'rgba(239,68,68,.3)':'#30363d'};border-radius:12px;overflow:hidden;background:#0d1117;">
+      <div style="padding:10px 12px;background:${n?'rgba(239,68,68,.07)':'rgba(255,255,255,.03)'};border-bottom:1px solid #21262d;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="font-size:11px;font-weight:900;letter-spacing:.7px;color:#f59e0b;">${escHtml(g.name)}</div>
+          <span style="flex-shrink:0;font-size:10px;font-weight:800;color:${bc};background:${bb};border-radius:20px;padding:3px 9px;">${badge}</span>
+        </div>
+        <div style="font-size:10px;color:#6e7681;margin-top:3px;">${escHtml(WB_GRP_NOTE[g.name]||'')}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button onclick="${o.grpFn}(${gi},true)" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);color:#f87171;font-size:11px;font-weight:800;cursor:pointer;">🔒 Kunci grup ini</button>
+          <button onclick="${o.grpFn}(${gi},false)" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.1);color:#10b981;font-size:11px;font-weight:800;cursor:pointer;">🔓 Buka grup ini</button>
+        </div>
+      </div>`;
+    g.items.forEach(ix => {
+      const f = WB_FEATURES[ix];
+      const byG = o.gSet.has(f.key), byM = !!(o.mSet && o.mSet.has(f.key)), isL = byG || byM;
+      const st = o.member
+        ? (byG ? '🌐 Dikunci global (semua member) — ubah di tab Kunci Fitur' : byM ? '👤 Dikunci untuk member ini · member TIDAK melihat fitur ini' : 'Terbuka · member bisa pakai')
+        : (isL ? 'DIKUNCI · member tidak melihat fitur ini' : 'Terbuka · member bisa pakai');
+      h += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #161b22;border-left:3px solid ${isL?'#ef4444':'#10b981'};background:${isL?'rgba(239,68,68,.06)':'transparent'};">
+        <div style="min-width:0;">
+          <div style="font-size:12.5px;font-weight:700;color:${isL?'#f87171':'#e6edf3'};">${isL?'🔒':'🔓'} ${escHtml(f.label)}</div>
+          <div style="font-size:10px;color:${isL?'#fca5a5':'#6e7681'};margin-top:2px;">${st}</div>
+        </div>
+        <label style="position:relative;width:46px;height:25px;flex-shrink:0;cursor:${byG&&o.member?'not-allowed':'pointer'};">
+          <input type="checkbox" data-key="${f.key}" ${isL?'checked':''} ${byG&&o.member?'disabled':''} onchange="${o.chgFn}(this)" style="opacity:0;width:0;height:0;position:absolute;">
+          <span style="position:absolute;inset:0;border-radius:25px;transition:.2s;background:${isL?(byG&&o.member?'#78350f':'#ef4444'):'#30363d'};opacity:${byG&&o.member?'.55':'1'};">
+            <span style="position:absolute;width:19px;height:19px;left:${isL?'24':'3'}px;top:3px;background:#fff;border-radius:50%;transition:.2s;display:block;"></span>
+          </span>
+        </label>
+      </div>`;
+    });
+    h += `</div>`;
+  });
+  return h;
+}
+function wbToggleGroup(gi, on){
+  const g = wbGroups()[gi]; if(!g) return;
+  const s = wbGetLocked();
+  g.items.forEach(ix => { const k = WB_FEATURES[ix].key; if(on) s.add(k); else s.delete(k); });
+  wbSaveLocked(s); wbRenderLockFitur(true);
+}
+function wbToggleMemberGroup(gi, on){
+  const g = wbGroups()[gi]; if(!g) return;
+  const s = wbGetMemberLocked(_wbMLockKey);
+  g.items.forEach(ix => { const k = WB_FEATURES[ix].key; if(on) s.add(k); else s.delete(k); });
+  wbSaveMemberLocked(_wbMLockKey, s); wbRenderMemberLockList();
 }
 
 // SUMBER KEBENARAN = SERVER (record __SETTINGS__.globalLock dan member.locked),
@@ -1846,27 +1931,12 @@ function wbGetEffectiveLocked(idOrPhone) {
   return new Set([...wbGetLocked(), ...wbGetMemberLocked(idOrPhone)]);
 }
 
-// ── RENDER LOCK FITUR ──────────────────────────────────────────
+// ── RENDER LOCK FITUR (panel global, dikelompokkan) ───────────
 function wbRenderLockFitur(noSync) {
   if (!noSync) wbSyncLocks().then(() => wbRenderLockFitur(true));
-  const locked = wbGetLocked();
   const el = document.getElementById('adm-lock-list');
   if (!el) return;
-  el.innerHTML = WB_FEATURES.map((f, ix) => {
-    const isLocked = locked.has(f.key);
-    return wbGrpHead(ix) + `<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #21262d;">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:${isLocked?'#f87171':'#e6edf3'};">${isLocked?'🔒':'🔓'} ${f.label}</div>
-        <div style="font-size:10px;color:#6e7681;margin-top:1px;">${isLocked?'Dikunci — member tidak bisa akses':'Terbuka'}</div>
-      </div>
-      <label style="position:relative;width:48px;height:26px;flex-shrink:0;cursor:pointer;">
-        <input type="checkbox" data-key="${f.key}" ${isLocked?'checked':''} onchange="wbToggleLock(this)" style="opacity:0;width:0;height:0;position:absolute;">
-        <span style="position:absolute;inset:0;border-radius:26px;transition:.25s;background:${isLocked?'#ef4444':'#30363d'};">
-          <span style="position:absolute;width:20px;height:20px;left:${isLocked?'25':'3'}px;top:3px;background:#fff;border-radius:50%;transition:.25s;display:block;"></span>
-        </span>
-      </label>
-    </div>`;
-  }).join('');
+  el.innerHTML = wbLockGroupsHtml({ member:false, gSet:wbGetLocked(), mSet:null, grpFn:'wbToggleGroup', chgFn:'wbToggleLock' });
 }
 
 function wbToggleLock(cb) {
@@ -1894,26 +1964,9 @@ function wbCloseMemberLock() {
   wbRenderTable();
 }
 function wbRenderMemberLockList() {
-  const globalLocked = wbGetLocked();
-  const memberLocked = wbGetMemberLocked(_wbMLockKey);
   const el = document.getElementById('wb-mlock-list');
-  el.innerHTML = WB_FEATURES.map((f, ix) => {
-    const byGlobal = globalLocked.has(f.key);
-    const byMember = memberLocked.has(f.key);
-    const isLocked = byGlobal||byMember;
-    return wbGrpHead(ix) + `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #21262d;">
-      <div>
-        <div style="font-size:12px;font-weight:700;color:${isLocked?'#f87171':'#e6edf3'};">${isLocked?'🔒':'🔓'} ${f.label}</div>
-        <div style="font-size:10px;color:#6e7681;margin-top:1px;">${byGlobal?'🌐 Dikunci global':byMember?'👤 Dikunci untuk member ini':'Terbuka'}</div>
-      </div>
-      <label style="position:relative;width:44px;height:24px;flex-shrink:0;cursor:${byGlobal?'not-allowed':'pointer'};">
-        <input type="checkbox" data-key="${f.key}" ${isLocked?'checked':''} ${byGlobal?'disabled':''} onchange="wbToggleMemberLock(this)" style="opacity:0;width:0;height:0;position:absolute;">
-        <span style="position:absolute;inset:0;border-radius:24px;background:${isLocked?byGlobal?'#78350f':'#ef4444':'#30363d'};opacity:${byGlobal?'0.5':'1'};">
-          <span style="position:absolute;width:18px;height:18px;left:${isLocked?'23':'3'}px;top:3px;background:#fff;border-radius:50%;transition:.2s;display:block;"></span>
-        </span>
-      </label>
-    </div>`;
-  }).join('');
+  if (!el) return;
+  el.innerHTML = wbLockGroupsHtml({ member:true, gSet:wbGetLocked(), mSet:wbGetMemberLocked(_wbMLockKey), grpFn:'wbToggleMemberGroup', chgFn:'wbToggleMemberLock' });
 }
 function wbToggleMemberLock(cb) {
   const locked = wbGetMemberLocked(_wbMLockKey);
@@ -1969,6 +2022,12 @@ function wbApplyLocks() {
   ['.tabs .tab:nth-child(3)','.bnav .bnav-b:nth-child(3)'].forEach(sel => document.querySelectorAll(sel).forEach(el => {
     if(allScen){ el.dataset.wbLocked='1'; el.dataset.wbLockLabel='Prediksi'; el.dataset.wbHide='1'; }
     else if(el.dataset.wbLockLabel==='Prediksi'){ delete el.dataset.wbLocked; delete el.dataset.wbLockLabel; delete el.dataset.wbHide; }
+  }));
+  // Tab "Rumus" (pintu ke rumus-harian.html) hilang hanya bila SEMUA fitur Rumus Harian terkunci.
+  const allRh = WB_RH_KEYS.every(k => locked.has(k));
+  ['.tabs .tab:nth-child(4)','.bnav .bnav-b:nth-child(4)'].forEach(sel => document.querySelectorAll(sel).forEach(el => {
+    if(allRh){ el.dataset.wbLocked='1'; el.dataset.wbLockLabel='Rumus Harian'; el.dataset.wbHide='1'; }
+    else if(el.dataset.wbLockLabel==='Rumus Harian'){ delete el.dataset.wbLocked; delete el.dataset.wbLockLabel; delete el.dataset.wbHide; }
   }));
   // Tab yang sedang aktif ikut disembunyikan → pindah ke tab pertama yang masih terbuka (Prediksi tidak ikut, karena pindah halaman).
   try{
@@ -3798,13 +3857,13 @@ function App() {
                 (ALL_MARKETS[k] || k).replace(' Pools', '').replace(' Lotto', ''),
                 React.createElement("span", { style: { fontWeight: 700, marginLeft: 2, color: mkt === k ? '#f59e0b' : '#4b6089' } }, String(info.result || '----').padStart(4, '0'))));
         })),
-        React.createElement("div", { className: "tabs" }, TABS.concat([{ k: 'prediksi', ico: '🔮', l: 'Prediksi' }]).map(t => (React.createElement("button", { key: t.k, className: `tab ${tab === t.k ? 'act' : ''}`, onClick: () => (t.k === 'prediksi' ? (location.href = 'prediksi.html') : setTab(t.k)) },
+        React.createElement("div", { className: "tabs" }, TABS.concat([{ k: 'prediksi', ico: '🔮', l: 'Prediksi' }, { k: 'rumus', ico: '📅', l: 'Rumus' }]).map(t => (React.createElement("button", { key: t.k, className: `tab ${tab === t.k ? 'act' : ''}`, onClick: () => (t.k === 'prediksi' ? (location.href = 'prediksi.html') : t.k === 'rumus' ? (location.href = 'rumus-harian.html') : setTab(t.k)) },
             t.ico,
             " ",
             t.l)))),
         tab === 'scan' && renderScan(),
         tab === 'bank' && renderBank(),
-        React.createElement("div", { className: "bnav" }, TABS.concat([{ k: 'prediksi', ico: '🔮', l: 'Prediksi' }]).map(t => (React.createElement("button", { key: t.k, className: `bnav-b ${tab === t.k ? 'act' : ''}`, onClick: () => (t.k === 'prediksi' ? (location.href = 'prediksi.html') : setTab(t.k)) },
+        React.createElement("div", { className: "bnav" }, TABS.concat([{ k: 'prediksi', ico: '🔮', l: 'Prediksi' }, { k: 'rumus', ico: '📅', l: 'Rumus' }]).map(t => (React.createElement("button", { key: t.k, className: `bnav-b ${tab === t.k ? 'act' : ''}`, onClick: () => (t.k === 'prediksi' ? (location.href = 'prediksi.html') : t.k === 'rumus' ? (location.href = 'rumus-harian.html') : setTab(t.k)) },
             React.createElement("span", { className: "bnav-ico" }, t.ico),
             t.k === 'bank' ? 'Bank' : t.l)))),
         renderTrekModal(),
