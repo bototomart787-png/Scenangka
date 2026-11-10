@@ -1025,9 +1025,9 @@ const wbhUrl=k=>WBH_WORKER.replace(/\/+$/,'')+'/'+WBH_ACCOUNT+'/'+encodeURICompo
 async function wbhGet(k){const r=await fetch(wbhUrl(k),{cache:'no-store'});if(!r.ok)throw new Error('Gagal baca server (HTTP '+r.status+')');const rec=await r.json();if(rec==null)throw new Error('Respon server kosong');return Array.isArray(rec)?rec:(rec.data||[]);}
 async function wbhPut(k,data){const r=await fetch(wbhUrl(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})});if(!r.ok)throw new Error('Gagal simpan ke server (HTTP '+r.status+')');}
 function wbhToast(m){try{let el=document.getElementById('wbh-toast');if(!el){el=document.createElement('div');el.id='wbh-toast';el.style.cssText='position:fixed;left:50%;bottom:56px;transform:translateX(-50%);z-index:100000;background:#7f1d1d;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;max-width:90%;text-align:center';document.body.appendChild(el);}el.textContent=m;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.display='none';},5000);}catch(e){}}
-// pengaturan dari admin (Edit member > Scan Harian), dibaca dari record member di Worker; admin sendiri tanpa batas
+// pengaturan dari admin (Edit member > RUMUS HARIAN — terpisah dari Scan Harian), dibaca dari record member di Worker; admin sendiri tanpa batas
 const wbhSetKey=()=>'wbh_set__'+wbhWho(),WBH_DEF={bank:20,mkt:0,maxOut:300,perMkt:0};
-function wbhStoreSet(m){const n=(k,d)=>{const v=parseInt(m[k],10);return v>0?v:d;};try{localStorage.setItem(wbhSetKey(),JSON.stringify({bank:n('harianBankLimit',20),mkt:n('harianMktLimit',0),maxOut:n('harianMaxOut',300),perMkt:n('harianPerMkt',0)}));}catch(e){}}
+function wbhStoreSet(m){const n=(k,d)=>{const v=parseInt(m[k],10);return v>0?v:d;};try{localStorage.setItem(wbhSetKey(),JSON.stringify({bank:n('rhBankLimit',20),mkt:n('rhMktLimit',0),maxOut:n('rhMaxOut',300),perMkt:n('rhPerMkt',0)}));}catch(e){}}
 function wbhSet(){if(!wbhMember())return null;try{return Object.assign({},WBH_DEF,JSON.parse(localStorage.getItem(wbhSetKey())||'null')||{});}catch(e){return Object.assign({},WBH_DEF);}}
 async function wbhRefreshSet(){const u=wbhMember();if(!u)return;try{const all=await wbhGet('members'),m=all.find(x=>x&&x.id===u.id);if(m)wbhStoreSet(m);}catch(e){}}   // gagal jaringan: pakai simpanan terakhir
 function wbhLimit(){const t=wbhSet();return t?t.bank:0;}   // bawaan 20, sama dengan tampilan admin
@@ -1066,19 +1066,21 @@ async function wbhPush(){
   try{
     const bin=await wbhEnsureBin(),cur=await wbhGet(bin),o=(cur&&!Array.isArray(cur))?cur:{};
     const arr=shbGet().map(wbhExport).filter(Boolean);
-    const fit=()=>JSON.stringify({data:Object.assign({},o,{harian:arr})}).length<=190000;
+    const fit=()=>JSON.stringify({data:Object.assign({},o,{rumusHarian:arr})}).length<=190000;
     if(!fit())arr.forEach(x=>{x.trekRows=x.trekRows.slice(-12);});
     if(!fit())arr.forEach(x=>{x.trekRows=x.trekRows.slice(-3);});
     while(arr.length&&!fit())arr.pop();
-    o.harian=arr;o.updatedAt=new Date().toISOString();o.owner=u.name||o.owner;delete o.clearedByAdmin;
+    o.rumusHarian=arr;   // bank sendiri, TIDAK menimpa o.harian milik Scan Harian
+    if(Array.isArray(o.harian))o.harian=o.harian.filter(x=>!(x&&x.raw&&x.raw.vk&&x.raw.spec));   // bersihkan sisa data lama yang tercampur
+    o.updatedAt=new Date().toISOString();o.owner=u.name||o.owner;delete o.clearedByAdmin;
     await wbhPut(bin,o);
     try{localStorage.setItem(wbhSynKey(),JSON.stringify(arr.map(x=>x.id)));}catch(e){}
-  }catch(e){console.warn('[Harian] gagal kirim ke server',e);wbhToast('⚠️ Bank Harian tersimpan di HP, tapi gagal dikirim ke server: '+(e.message||e));}
+  }catch(e){console.warn('[Rumus Harian] gagal kirim ke server',e);wbhToast('⚠️ Bank Harian tersimpan di HP, tapi gagal dikirim ke server: '+(e.message||e));}
 }
 async function wbhPull(){
   const u=wbhMember();if(!u)return;
   try{
-    const bin=await wbhEnsureBin(),o=await wbhGet(bin),srv=(o&&Array.isArray(o.harian))?o.harian:null,local=shbGet();
+    const bin=await wbhEnsureBin(),o=await wbhGet(bin),legacy=(o&&Array.isArray(o.harian))?o.harian.filter(x=>x&&x.raw&&x.raw.vk&&x.raw.spec):[],srv=(o&&Array.isArray(o.rumusHarian))?o.rumusHarian:(legacy.length?legacy:null),local=shbGet();   // data lama (tercampur di harian) tetap terbaca sekali
     if(!srv){if(local.length)wbhMark();return;}   // belum ada di server -> unggah bank lokal
     const sIds=new Set(srv.map(x=>x&&x.id)),synced=new Set(JSON.parse(localStorage.getItem(wbhSynKey())||'[]'));
     const keep=local.filter(it=>!synced.has(it.id)||sIds.has(it.id));   // yang pernah tersinkron lalu hilang di server = dihapus admin
