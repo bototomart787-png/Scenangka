@@ -675,7 +675,7 @@ function rhResultText(){
     const S=setOf(base,row.v,mod);
     if(row.last){out.push(`${row.res} : ${RO(V,S,fmt,sep)}   ??`);return;}
     const h=rhHit(row,S,V);hits.push(h);
-    out.push(`${row.res} : ${RO(V,S,fmt,sep)}${h?(V.rng?'':'   '+lb):'   ✗'+rhMissTxt(row,S,V)}`);   // rumus rentang: label cukup di belakang (baris ringkasan)
+    out.push(`${row.res} : ${RO(V,S,fmt,sep)}${h?'':'   ✗'+rhMissTxt(row,S,V)}`);   // baris kena: tanpa label di belakang (kopipasta bersih)
   });
   let streak=0;for(let i=hits.length-1;i>=0&&hits[i];i--)streak++;
   const patah=hits.filter(h=>!h).length;
@@ -963,7 +963,7 @@ function rhGabText(box){
     if(!last&&!hit&&V.off){const bad=sets.map((x,k)=>x.mv.length?k+1:0).filter(Boolean),vals=[...new Set(sets.flatMap(x=>x.mv))];
       if(vals.length)miss=' masuk '+(/selisih/.test(V.name)?'selisih ':'')+vals.join(',')+(items.length>1?' (Code '+bad.join(',')+')':'');}
     if(!last)hits.push(hit);
-    lines.push(`${items[0].rows[r].res} : ${sets.map(x=>x.t).join(' vs ')} ${last?'?':(hit?lb0:'✗'+miss)}`);
+    lines.push(`${items[0].rows[r].res} : ${sets.map(x=>x.t).join(' vs ')} ${last?'?':(hit?'':'✗'+miss)}`.trimEnd());
   }
   let patah=0,streak=0,cur=0;
   hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
@@ -1238,7 +1238,7 @@ function shbGabText(ids,extra){
       return {t:V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join(V.mod!==10?',':''),hit:!last&&ok,mt:(!last&&!ok)?rhMissTxt(row,S,V):''};});
     const hit=sets.every(z=>z.hit);          // gabungan HIT hanya bila SEMUA rumus hit (sama seperti bank lain)
     if(!last)hits.push(hit);
-    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?(items.every(x=>VARS[x.it.vk].rng)?'':' '+lbAll):' ✗'+(()=>{const m=sets.map((z,k)=>z.mt?'Code '+(k+1)+z.mt:'').filter(Boolean);return m.length?' '+m.join('; '):'';})())}`);
+    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?'':' ✗'+(()=>{const m=sets.map((z,k)=>z.mt?'Code '+(k+1)+z.mt:'').filter(Boolean);return m.length?' '+m.join('; '):'';})())}`);
   }
   let patah=0,streak=0,cur=0;hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
   const w=mk0.trim().split(/\s+/)[0].toLowerCase(),flag=RH_FLAG[w]?RH_FLAG[w]+' ':'';
