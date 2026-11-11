@@ -163,7 +163,7 @@ h2{color:#fff}
   <h2>📅 Bank Harian <span id="shN" style="font-weight:400;font-size:13px"></span></h2>
   <div class="cm" style="font-size:12.5px;color:#777;margin-bottom:6px">Rumus yang disimpan di sini dihitung ulang dari result terbaru. Rumus patah (zonk &gt; batas patah) tidak ikut rekap. Simpan ke bank lewat tombol 💾 Simpan; hasil salin membawa link.</div>
   <div class="row"><button id="shSave" class="pri">💾 Simpan rumus di atas</button><button id="shRefresh">↻ Hitung ulang</button><button id="shDelPatah">Hapus patah</button><button id="shDelAll">Kosongkan</button></div>
-  <div class="row"><button id="shGab" class="pri">Gabung (0 dipilih)</button><button id="shPickAll">Pilih semua aktif</button></div>
+  <div class="row"><button id="shGab" class="pri">Gabung (0 dipilih)</button><button id="shPickAll">Pilih semua aktif</button><button id="shCloseAll">⏏ Tutup semua</button></div>
   <textarea id="shGabBox" readonly rows="14" style="display:none;width:100%;margin-top:6px;font-family:monospace;font-size:13px"></textarea>
   <button id="shGabCopy" class="pri" style="display:none;width:100%;margin:6px 0">Salin gabungan</button>
   
@@ -470,7 +470,7 @@ const VARS={
  offsht:{name:'off shio tengah',lab:'osck',mod:12,cap:4,off:1,mark:d=>[[shio(D2(d,1,2)),'g']]},
  offsh:{name:'off shio belakang',lab:'oske',mod:12,cap:4,off:1,mark:d=>[[shio(D2(d,2,3)),'g']]},
 };
-const rhHit=(row,S,V)=>{const h=row.marks.some(([x])=>S.includes(x));return V&&V.off?!h:h;};   // trek off: sukses bila TIDAK kena
+const rhHit=(row,S,V)=>{const h=!!(row.marks&&row.marks.some(([x])=>S.includes(x)));return V&&V.off?!h:h;};   // trek off: sukses bila TIDAK kena
 const FW=V=>V.rng?'patah':(V.off?'kena':'zonk');
 const rhMissVals=(row,S)=>[...new Set((row.marks||[]).map(m=>m[0]).filter(x=>S.includes(x)))];
 const rhMissTxt=(row,S,V)=>{if(!V)return '';
@@ -1171,15 +1171,15 @@ function shbRender(){
   const el=$('shList');if(!el)return;
   const alive=list.filter(x=>x.e&&x.e.alive).length;
   $('shN').textContent=`(${list.length} rumus · ${alive} aktif)`;
-  const rk=Object.values(out.mk).map(M=>`<div style="margin:6px 0"><b>${shEsc(M.name)}</b><br>`+Object.keys(SH_NAME).filter(vk=>M.pos[vk]).map(vk=>{const P=M.pos[vk];
-    return `${SH_NAME[vk]}: <b>main ${P.top.map(x=>shF(x,P.mod,VARS[vk])).join(' ')||'-'}</b> <span style="color:#777">· ${P.n} rumus · `+Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod,VARS[vk])}-${P.votes[x]}`).join(' ')+'</span>';}).join('<br>')+'</div>').join('');
-  $('shRekap').innerHTML=rk?'<div style="border:1px solid #cfe0c8;border-radius:8px;padding:6px 10px;margin:8px 0;background:rgba(80,160,60,.07)"><b>Rekap suara Bank Harian</b>'+rk+'</div>':'';
+  const rk=Object.values(out.mk).map(M=>{const rkk='rk:'+shEnc(M.name);return `<details data-tk="${rkk}" ${trkOpen.has(rkk)?'open':''} style="margin:6px 0;border:1px solid #f5b800;border-radius:10px;padding:2px 8px"><summary style="cursor:pointer;font-weight:700;padding:6px 0">📍 ${shEsc(M.name)}</summary><div style="padding-bottom:6px">`+Object.keys(SH_NAME).filter(vk=>M.pos[vk]).map(vk=>{const P=M.pos[vk];
+    return `${SH_NAME[vk]}: <b>main ${P.top.map(x=>shF(x,P.mod,VARS[vk])).join(' ')||'-'}</b> <span style="color:#777">· ${P.n} rumus · `+Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod,VARS[vk])}-${P.votes[x]}`).join(' ')+'</span>';}).join('<br>')+'</div></details>';}).join('');
+  $('shRekap').innerHTML=rk?`<details data-tk="rk:all" ${trkOpen.has('rk:all')?'open':''} style="border:1px solid #cfe0c8;border-radius:8px;padding:6px 10px;margin:8px 0;background:rgba(80,160,60,.07)"><summary style="cursor:pointer;font-weight:700">Rekap suara Bank Harian</summary>${rk}</details>`:'';
   const gb=$('shGab');if(gb)gb.textContent=`Gabung (${[...shSel].filter(id=>list.some(x=>x.it.id===id)).length} dipilih)`;
   const shRow=({it,e})=>{
     const st=!e?'<span style="color:#b36b00">data kurang</span>':e.alive?`<span style="color:#1a9d1a">✅ aktif · trek ${e.streak}×</span>`:'<span style="color:#d22">❌ patah</span>';
     const mod=VARS[it.vk].mod;
     const isOpen=shOpen.has(it.id);
-    return `<div style="border-top:1px solid #ddd;padding:6px 0"><div style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-shck="${it.id}"${shSel.has(it.id)?' checked':''} style="width:22px;height:22px;flex:0 0 auto"><a href="#" data-shopen="${it.id}" style="text-decoration:none;color:inherit;flex:1 1 auto"><b>${shEsc(rhKeyName(it.spec,true))}</b> · ${SH_NAME[it.vk]} · ${shEsc(it.mkt)} <span style="color:#777">${isOpen?'▲':'▼'}</span></a></div><div style="font-size:12.5px;color:#777">basis ${baseCode(it.base)} · L${it.L} P${it.P}${it.day?' · '+RH_DAYS[it.day]:''} · ${st}${e?' · pred <b style="color:inherit">'+(VARS[it.vk].rng?RO(VARS[it.vk],e.set,x=>x,', '):e.set.map(x=>shF(x,mod,VARS[it.vk])).join(mod!==10?', ':''))+'</b>':''}</div><div><button data-shdel="${it.id}" style="padding:3px 10px">🗑 Hapus</button> <button data-shopenb="${it.id}" style="padding:3px 10px">${isOpen?'✕ Tutup':'🔍 Lihat'}</button></div>${isOpen?shDetail(it,e):''}</div>`;};
+    return `<div style="border-top:1px solid #ddd;padding:6px 0"><div style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-shck="${it.id}"${shSel.has(it.id)?' checked':''} style="width:22px;height:22px;flex:0 0 auto"><a href="#" data-shopen="${it.id}" style="text-decoration:none;color:inherit;flex:1 1 auto"><b>${shEsc(rhKeyName(it.spec,true))}</b> · ${SH_NAME[it.vk]} · ${shEsc(it.mkt)} <span style="color:#777">${isOpen?'▲':'▼'}</span></a></div><div style="font-size:12.5px;color:#777">basis ${baseCode(it.base)} · L${it.L} P${it.P}${it.day?' · '+RH_DAYS[it.day]:''} · ${st}${e?' · pred <b style="color:inherit">'+(VARS[it.vk].rng?RO(VARS[it.vk],e.set,x=>x,', '):e.set.map(x=>shF(x,mod,VARS[it.vk])).join(mod!==10?', ':''))+'</b>':''}</div><div><button data-shdel="${it.id}" style="padding:3px 10px">🗑 Hapus</button> <button data-shopenb="${it.id}" style="padding:3px 10px">${isOpen?'✕ Tutup':'🔍 Lihat'}</button></div>${isOpen?(()=>{try{return shDetail(it,e);}catch(err){return '<div style="color:#d22;padding:6px 0">Detail gagal dibuka: '+shEsc(err&&err.message||err)+'</div>';}})():''}</div>`;};
   el.innerHTML=list.length?shGroups(list).map(g=>shGroupHtml(g,shRow)).join(''):'<div style="color:#777;padding:6px 0">Bank Harian masih kosong. Simpan rumus dari hasil Cari trek (centang → 💾) atau tombol Simpan di atas.</div>';
 }
 (function(){
@@ -1261,6 +1261,7 @@ function shbGabText(ids,extra){
     const b=$('shGab');b.textContent=`Gabung (${shbGet().filter(it=>shSel.has(it.id)).length} dipilih)`;}});
   box.addEventListener('click',async e=>{
     const t=e.target;
+    if(t.id==='shCloseAll'){shCloseAll();return;}
     if(t.id==='shPickAll'){shSel.clear();shbGet().forEach(it=>{const x=shEval(it);if(x&&x.alive)shSel.add(it.id);});shbRender();return;}
     if(t.id==='shGab'){
       const r=shbGabText(shbGet().filter(it=>shSel.has(it.id)).map(it=>it.id));
@@ -1311,6 +1312,15 @@ function shBackBtn(on){
   b.style.display=on?'block':'none';if(!on)shBackId=null;
 }
 
+function shCloseAll(){   // tutup SEMUA: detail Lihat, kelompok jenis, pasaran, rekap, kotak gabungan
+  shOpen.clear();trkOpen.clear();
+  try{shbGet().forEach(it=>{shGrpSeen.add(it.mkt);shGrpClosed.add(it.mkt);});}catch(_){}
+  ['shGabBox','shGabCopy','shCopyBox'].forEach(id=>{const e=$(id);if(e)e.style.display='none';});
+  try{shBackBtn(false);}catch(_){}
+  try{if(history.state&&history.state.shd){shIgnorePop=true;history.back();setTimeout(()=>{shIgnorePop=false;},400);}}catch(_){}
+  shbRender();
+  try{$('shBank').scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
+}
 const shGrpClosed=new Set(),shGrpSeen=new Set();   // pasaran di Bank: awalnya tertutup semua, buka dengan diketuk
 var trkOpen=new Set();
 const shEnc=s=>encodeURIComponent(s),shDec=s=>decodeURIComponent(s);
