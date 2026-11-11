@@ -225,7 +225,7 @@ h2{color:#fff}
   <div class="rkr"><b>Jumlah</b><input id="jml" inputmode="numeric" placeholder="jumlah off, mis. 123"></div>
   <div class="rkr" id="rowShio"><b>Shio</b><input id="shio" placeholder="shio off, mis. 11,12 (2 digit belakang)"></div>
   <div class="rkr" id="rowJalur"><b>Jalur</b><input id="jalur" inputmode="numeric" placeholder="jalur off 1-3, mis. 13 (2 digit belakang)"></div>
-  <div class="rkr" id="rowSls"><b>Selisih</b><input id="sls" inputmode="numeric" placeholder="selisih off 0-5, mis. 123"></div>
+  <div class="rkr" id="rowSls"><b>Selisih</b><input id="sls" inputmode="numeric" placeholder="selisih off 0-9, mis. 1259"></div>
   <div style="display:none"><input id="r1"><input id="r2"></div>   <!-- baris Jarak dibuang: sudah tercakup digit off & LN off -->
   <div class="rkr">
     <select id="hs"><option value="">Silang/Homo: normal</option><option value="h">Hanya homo</option><option value="s">Hanya silang</option></select>
@@ -265,7 +265,7 @@ h2{color:#fff}
 <b>LN</b> = satu angka (2D/3D/4D). <b>LN dasar</b> = daftar angka yang dipakai (kosong = semua). <b>LN off</b> = angka yang dibuang.<br>
 <b>AI</b> = angka ikut (kena jika salah satu digit ada di baris) · <b>BBFS</b> = wajib tarung (semua digit angka ada di baris; 2D 2 digit, 3D 3 digit, 4D 4 digit) · <b>CT</b> = baris berisi angka jadi.<br>
 <b>angka main</b> = digit paling banyak muncul di semua baris. <b>LN TOP</b> = angka yang kena semua baris (patah 0). <b>Patah k</b> = angka yang meleset di k baris. <b>ANGKA JADI</b> = kelompok patah paling kecil yang ada.<br>
-<b>Jumlah</b> = jumlah digit dikecilkan jadi 1 digit · <b>Selisih</b> = selisih dua digit belakang, 0–5 melingkar · <b>Jarak</b> = rentang angka yang dibuang (dari–sampai) · <b>Homo</b> = digit sama ganjil/genap, <b>Silang</b> = beda · <b>Tengah</b> = digit 2–7, <b>Tepi</b> = 0,1,8,9 · <b>Kembang</b> = digit naik, <b>Kempis</b> = turun · <b>Jbesar/Jkecil</b> = jumlah 5–9 / 0–4.<br>
+<b>Jumlah</b> = jumlah digit dikecilkan jadi 1 digit · <b>Selisih</b> = selisih dua digit belakang, biasa |a−b| 0–9 · <b>Jarak</b> = rentang angka yang dibuang (dari–sampai) · <b>Homo</b> = digit sama ganjil/genap, <b>Silang</b> = beda · <b>Tengah</b> = digit 2–7, <b>Tepi</b> = 0,1,8,9 · <b>Kembang</b> = digit naik, <b>Kempis</b> = turun · <b>Jbesar/Jkecil</b> = jumlah 5–9 / 0–4.<br>
 <b>JL</b> = jarak lemah: angka jadi di antara dari–sampai (mis. 20–40) dibuang total, per kelompok <b>KE</b> belakang / <b>CK</b> tengah / <b>AC</b> depan. <b>Rekap final</b> = semua trek Bank Harian + Scen Shio satu pasaran disatukan; skor "5/8×" = kena 5 dari 8 trek.</div></details>
 
 <div class="rkr" style="justify-content:flex-end"><input id="gate" type="text" inputmode="numeric" maxlength="6" autocomplete="off" aria-label="kode" style="flex:0 0 120px;opacity:.5"></div>
@@ -417,9 +417,9 @@ const VARS={
  jlke:{name:'jarak lemah belakang',lab:'jlke',mod:10,cap:8,rng:1,mark:d=>[[d[2],'r']]},
  jlck:{name:'jarak lemah tengah',lab:'jlck',mod:10,cap:8,rng:1,mark:d=>[[d[1],'r']]},
  jlac:{name:'jarak lemah depan',lab:'jlac',mod:10,cap:8,rng:1,mark:d=>[[d[0],'r']]},
- sel2db:{name:'selisih 2d belakang',lab:'slke',mod:10,cap:6,mark:d=>[[Math.min(Math.abs(d[2]-d[3]),10-Math.abs(d[2]-d[3])),'r']]},
- sel2dt:{name:'selisih tengah',lab:'slck',mod:10,cap:6,mark:d=>[[Math.min(Math.abs(d[1]-d[2]),10-Math.abs(d[1]-d[2])),'r']]},
- sel2dd:{name:'selisih depan',lab:'slac',mod:10,cap:6,mark:d=>[[Math.min(Math.abs(d[0]-d[1]),10-Math.abs(d[0]-d[1])),'r']]},
+ sel2db:{name:'selisih 2d belakang',lab:'slke',mod:10,cap:6,mark:d=>[[Math.abs(d[2]-d[3]),'r']]},
+ sel2dt:{name:'selisih tengah',lab:'slck',mod:10,cap:6,mark:d=>[[Math.abs(d[1]-d[2]),'r']]},
+ sel2dd:{name:'selisih depan',lab:'slac',mod:10,cap:6,mark:d=>[[Math.abs(d[0]-d[1]),'r']]},
  // ===== trek OFF: basis = digit yang TIDAK keluar (sukses bila hasil tidak jatuh di himpunan basis) =====
  // ===== besar/kecil per posisi (nilai 1 = kecil 0-4, 2 = besar 5-9; basis 1 elemen) =====
  bkas:{name:'besar kecil as (a)',lab:'bas',mod:2,cap:1,fixN:1,mark:d=>[[d[0]>=5?2:1,'g']]},
@@ -435,9 +435,9 @@ const VARS={
  offcop:{name:'off cop (c)',lab:'ocp',mod:10,cap:3,off:1,mark:d=>[[d[1],'g']]},
  offkep:{name:'off kepala (k)',lab:'okp',mod:10,cap:3,off:1,mark:d=>[[d[2],'r']]},
  offeko:{name:'off ekor (e)',lab:'oek',mod:10,cap:3,off:1,mark:d=>[[d[3],'g']]},
- offsl2db:{name:'off selisih belakang',lab:'oslke',mod:10,cap:3,off:1,mark:d=>[[Math.min(Math.abs(d[2]-d[3]),10-Math.abs(d[2]-d[3])),'r']]},
- offsl2dt:{name:'off selisih tengah',lab:'oslck',mod:10,cap:3,off:1,mark:d=>[[Math.min(Math.abs(d[1]-d[2]),10-Math.abs(d[1]-d[2])),'r']]},
- offsl2dd:{name:'off selisih depan',lab:'oslac',mod:10,cap:3,off:1,mark:d=>[[Math.min(Math.abs(d[0]-d[1]),10-Math.abs(d[0]-d[1])),'r']]},
+ offsl2db:{name:'off selisih belakang',lab:'oslke',mod:10,cap:3,off:1,mark:d=>[[Math.abs(d[2]-d[3]),'r']]},
+ offsl2dt:{name:'off selisih tengah',lab:'oslck',mod:10,cap:3,off:1,mark:d=>[[Math.abs(d[1]-d[2]),'r']]},
+ offsl2dd:{name:'off selisih depan',lab:'oslac',mod:10,cap:3,off:1,mark:d=>[[Math.abs(d[0]-d[1]),'r']]},
  // ===== OFF Ai / Jumlah / Jalur / Shio per kelompok (AC depan, CK tengah, KE belakang): sukses bila hasil TIDAK kena basis =====
  offai2dd:{name:'off ai 2d depan',lab:'oac',mod:10,cap:3,off:1,mark:d=>[[d[0],'b'],[d[1],'y']]},
  offai2dt:{name:'off ai 2d tengah',lab:'ock',mod:10,cap:3,off:1,mark:d=>[[d[1],'y'],[d[2],'r']]},
@@ -466,6 +466,11 @@ const VARS={
 };
 const rhHit=(row,S,V)=>{const h=row.marks.some(([x])=>S.includes(x));return V&&V.off?!h:h;};   // trek off: sukses bila TIDAK kena
 const FW=V=>V.rng?'patah':(V.off?'kena':'zonk');
+const rhMissVals=(row,S)=>[...new Set((row.marks||[]).map(m=>m[0]).filter(x=>S.includes(x)))];
+const rhMissTxt=(row,S,V)=>{if(!V)return '';
+  if(V.off){const v=rhMissVals(row,S);return v.length?' masuk '+(/selisih/.test(V.name)?'selisih ':'')+v.join(','):'';}
+  if(/selisih/.test(V.name)){const v=[...new Set((row.marks||[]).map(m=>m[0]))];return v.length?' keluar selisih '+v.join(','):'';}
+  return '';};
 const mapEl=(b,v,mod)=>{const x=(b+v)%mod;return mod===10?x:(x||mod);};
 // ch: hasil (oldest->newest, 4 digit). Baris uji i = n-1-L .. n-2 ; baris prediksi i = n-1
 function rhRows(ch,spec,vk,L){
@@ -639,7 +644,7 @@ function rhShow(r){
     if(!row.last)row.marks.forEach(([x,c])=>{cm[x]=c;});
     const isMiss=!row.last&&!rhHit(row,S,V);
     const els=V.rng?(isMiss?`<span class="r">${RO(V,S,fmt,', ')}</span>`:RO(V,S,fmt,', ')):S.map(x=>{const t=fmt(x);return cm[x]?`<span class="h${cm[x]}">${t}</span>`:t;}).join((mod!==10||V.rng)?', ':'');
-    const tag=row.last?'??':(rhHit(row,S,V)?V.lab:`${V.lab} <span class="r">${FW(V)}</span>`);
+    const tag=row.last?'??':(rhHit(row,S,V)?V.lab:`${V.lab} <span class="r">${FW(V)}${rhMissTxt(row,S,V)}</span>`);
     return `${row.res} : ${els} ${tag}`;
   });
   const refLines=showRef?refs.map(x=>`${x} :`):[];
@@ -670,7 +675,7 @@ function rhResultText(){
     const S=setOf(base,row.v,mod);
     if(row.last){out.push(`${row.res} : ${RO(V,S,fmt,sep)}   ??`);return;}
     const h=rhHit(row,S,V);hits.push(h);
-    out.push(`${row.res} : ${RO(V,S,fmt,sep)}${h?(V.rng?'':'   '+lb):'   ✗'}`);   // rumus rentang: label cukup di belakang (baris ringkasan)
+    out.push(`${row.res} : ${RO(V,S,fmt,sep)}${h?(V.rng?'':'   '+lb):'   ✗'+rhMissTxt(row,S,V)}`);   // rumus rentang: label cukup di belakang (baris ringkasan)
   });
   let streak=0;for(let i=hits.length-1;i>=0&&hits[i];i--)streak++;
   const patah=hits.filter(h=>!h).length;
@@ -951,10 +956,14 @@ function rhGabText(box){
   const n=items[0].rows.length,lines=[],hits=[];
   for(let r=0;r<n;r++){
     const last=items[0].rows[r].last;
-    const sets=items.map(it=>{const row=it.rows[r],S=setOf(it.f.base,row.v,mod);return {t:RO(V,S,fmt,sep),hit:!last&&rhHit(row,S,V)};});
-    const hit=sets.some(x=>x.hit);
+    const sets=items.map(it=>{const row=it.rows[r],S=setOf(it.f.base,row.v,mod);const ok=rhHit(row,S,V);return {t:RO(V,S,fmt,sep),hit:!last&&ok,mv:(!last&&!ok)?rhMissVals(row,S):[]};});
+    const hit=V.off?sets.every(x=>x.hit):sets.some(x=>x.hit);   // trek off: satu kode saja kena = putaran itu patah
+    let miss='';
+    if(!last&&!hit&&!V.off&&/selisih/.test(V.name)){const v=[...new Set((items[0].rows[r].marks||[]).map(m=>m[0]))];if(v.length)miss=' keluar selisih '+v.join(',');}
+    if(!last&&!hit&&V.off){const bad=sets.map((x,k)=>x.mv.length?k+1:0).filter(Boolean),vals=[...new Set(sets.flatMap(x=>x.mv))];
+      if(vals.length)miss=' masuk '+(/selisih/.test(V.name)?'selisih ':'')+vals.join(',')+(items.length>1?' (Code '+bad.join(',')+')':'');}
     if(!last)hits.push(hit);
-    lines.push(`${items[0].rows[r].res} : ${sets.map(x=>x.t).join(' vs ')} ${last?'?':(hit?lb0:'✗')}`);
+    lines.push(`${items[0].rows[r].res} : ${sets.map(x=>x.t).join(' vs ')} ${last?'?':(hit?lb0:'✗'+miss)}`);
   }
   let patah=0,streak=0,cur=0;
   hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
@@ -1225,10 +1234,11 @@ function shbGabText(ids,extra){
   for(let r=0;r<n;r++){
     const last=R[0][r].last;
     const sets=items.map((x,k)=>{const V=VARS[x.it.vk],row=R[k][r],S=setOf(x.it.base,row.v,V.mod);
-      return {t:V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join(V.mod!==10?',':''),hit:!last&&rhHit(row,S,V)};});
+      const ok=rhHit(row,S,V);
+      return {t:V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join(V.mod!==10?',':''),hit:!last&&ok,mt:(!last&&!ok)?rhMissTxt(row,S,V):''};});
     const hit=sets.every(z=>z.hit);          // gabungan HIT hanya bila SEMUA rumus hit (sama seperti bank lain)
     if(!last)hits.push(hit);
-    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?(items.every(x=>VARS[x.it.vk].rng)?'':' '+lbAll):' ✗')}`);
+    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?(items.every(x=>VARS[x.it.vk].rng)?'':' '+lbAll):' ✗'+(()=>{const m=sets.map((z,k)=>z.mt?'Code '+(k+1)+z.mt:'').filter(Boolean);return m.length?' '+m.join('; '):'';})())}`);
   }
   let patah=0,streak=0,cur=0;hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
   const w=mk0.trim().split(/\s+/)[0].toLowerCase(),flag=RH_FLAG[w]?RH_FLAG[w]+' ':'';
@@ -1375,7 +1385,7 @@ async function shCopyText(txt,btn,label,ta){
   const rows=Object.keys(VARS).map(k=>`<tr><td style="padding:2px 8px 2px 0"><b>${String(VARS[k].lab).toUpperCase()}</b></td><td style="padding:2px 8px 2px 0">${VARS[k].name}</td><td>${RH_PRED.has(k)?'prediksi (main)':'lemah (dibuang)'}</td></tr>`).join('');
   d.innerHTML=`<summary style="cursor:pointer;color:var(--ac)">📖 Catatan label</summary><div style="font-size:12.5px;margin-top:6px;line-height:1.5">
 <b>Posisi</b>: KE = belakang (2 digit belakang) · CK = tengah (2 digit tengah) · AC = depan (2 digit depan).<br>
-<b>Jenis</b>: AI = angka ikut · S = shio · JR = jalur shio (1: 1,4,7,10 · 2: 2,5,8,11 · 3: 3,6,9,12) · J = jumlah · SL = selisih (0–5, melingkar) · JL = jarak lemah (trek pangkas): tanpa basis digit, tiap trek menghasilkan satu rentang buang 20 angka, mis. 30-49 · CB = colok bebas · AS/CP/KP/EK = as/kop/kepala/ekor.<br>
+<b>Jenis</b>: AI = angka ikut · S = shio · JR = jalur shio (1: 1,4,7,10 · 2: 2,5,8,11 · 3: 3,6,9,12) · J = jumlah · SL = selisih biasa |a−b| (0–9) · JL = jarak lemah (trek pangkas): tanpa basis digit, tiap trek menghasilkan satu rentang buang 20 angka, mis. 30-49 · CB = colok bebas · AS/CP/KP/EK = as/kop/kepala/ekor.<br>
 <b>Di hasil</b>: label = kena · label + zonk = meleset · ?? = baris target (belum keluar) · patah = jumlah meleset yang diizinkan (untuk JL: hasil jatuh di rentang off = patah) · "Lemah …" = angka/rentang yang dibuang.</div>
 <table style="font-size:12.5px;margin-top:6px;border-collapse:collapse">${rows}</table>`;
   const o=$('rhOut');if(o&&o.parentNode)o.parentNode.insertBefore(d,o);
@@ -1577,7 +1587,7 @@ function pass(d,v,s,c){
   const k=d[N-2],e=d[N-1];
   if(c.shio.has(shio(k*10+e)))return false;
   if(c.jalur.has(((shio(k*10+e)-1)%3)+1))return false;
-  if(c.sls.has(Math.min(Math.abs(k-e),10-Math.abs(k-e))))return false;
+  if(c.sls.has(Math.abs(k-e)))return false;
   const jd=dr(d);
   if(c.jbs==='B'&&jd<5)return false;
   if(c.jbs==='K'&&jd>4)return false;
@@ -1857,7 +1867,7 @@ function bkApply(){
    if(ju&&ju.size===2)filled.push('jumlah besar/kecil bentrok (dikosongkan)');
    put('jml',dg(jS),'jumlah off');
    const jb=$('jbs');if(jb)jb.value=(ju&&ju.size===1)?([...ju][0]===2?'B':'K'):'';}
-  put('sls',dg(offSet[SV]?new Set([...offSet[SV]].filter(v=>v<=5)):null),'selisih off');   // selisih hanya 0-5
+  put('sls',dg(offSet[SV]?new Set([...offSet[SV]]):null),'selisih off');   // selisih biasa 0-9
   const shS=new Set(uni[HV]?[1,2,3,4,5,6,7,8,9,10,11,12].filter(v=>!uni[HV].has(v)):[]);(exSh[HV]||[]).forEach(v=>{if(!(uni[HV]&&uni[HV].has(v)))shS.add(v);});
   const shOff=shS.size>=12?[]:[...shS].sort((a,b)=>a-b);   // gabungan: tidak ada di trek shio mana pun + off shio langsung
   put('shio',shOff.join(','),'shio off');
@@ -1958,7 +1968,7 @@ function bkCore(x,grp,mode){
     jl:{n:[2,3],f:(d,S)=>S.has(jal(sv(d,2,3)))},jlt:{n:[1,2],f:(d,S)=>S.has(jal(sv(d,1,2)))},jld:{n:[0,1],f:(d,S)=>S.has(jal(sv(d,0,1)))}};
   const O={as:{n:[0],f:(d,S)=>S.has(d[0])},cop:{n:[1],f:(d,S)=>S.has(d[1])},kep:{n:[2],f:(d,S)=>S.has(d[2])},eko:{n:[3],f:(d,S)=>S.has(d[3])},
     j2d:{n:[2,3],f:(d,S)=>S.has(dr([d[2],d[3]]))},jt:{n:[1,2],f:(d,S)=>S.has(dr([d[1],d[2]]))},jd:{n:[0,1],f:(d,S)=>S.has(dr([d[0],d[1]]))},j3d:{n:[1,2,3],f:(d,S)=>S.has(dr([d[1],d[2],d[3]]))},j4d:{n:[0,1,2,3],f:(d,S)=>S.has(dr([d[0],d[1],d[2],d[3]]))},
-    sel2db:{n:[2,3],f:(d,S)=>S.has(cs(Math.abs(d[2]-d[3])))},sel2dt:{n:[1,2],f:(d,S)=>S.has(cs(Math.abs(d[1]-d[2])))},sel2dd:{n:[0,1],f:(d,S)=>S.has(cs(Math.abs(d[0]-d[1])))},
+    sel2db:{n:[2,3],f:(d,S)=>S.has(Math.abs(d[2]-d[3]))},sel2dt:{n:[1,2],f:(d,S)=>S.has(Math.abs(d[1]-d[2]))},sel2dd:{n:[0,1],f:(d,S)=>S.has(Math.abs(d[0]-d[1]))},
     jlke:{n:[2,3],f:(d,S)=>S.has(d[2])},jlck:{n:[1,2],f:(d,S)=>S.has(d[1])},jlac:{n:[0,1],f:(d,S)=>S.has(d[0])}};
   const pred=[],off=[],av={},offSet={};let skip=0;
   Object.entries(x.M.pos).forEach(([vk,PP])=>{
