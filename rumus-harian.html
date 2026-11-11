@@ -141,7 +141,7 @@ h2{color:#fff}
   <details><summary id="mlVSum" style="cursor:pointer;font-weight:600;margin-top:6px">Pilih rumus yang discan</summary>
     <div class="row" style="margin:6px 0"><button id="mlVAll" style="flex:0 0 auto">Semua kelompok</button><button id="mlVNone" style="flex:0 0 auto">Kosongkan</button></div>
     <div id="mlVars" style="display:flex;flex-wrap:wrap;gap:4px 14px"></div>
-    <div style="font-size:12px;color:var(--mut);margin-top:4px">Kelompok Ai, Jarak Lemah, Selisih, Jumlah, Jalur, Shio, Pos, Besar Kecil Pos, Ganjil Genap Pos, Off Ai, Off Jumlah, Off Jalur, Off Shio, Off 3D · 4D, Off Pos, dan Off Selisih (AC · CK · KE · AS · CP · KP · EK) boleh discan bareng untuk tiap pasaran yang dipilih (makin banyak, makin lama). Rumus di baris Sendiri (cb, ai 3d) hanya bisa satu dan tidak bisa bareng kelompok. Kosong = pakai rumus yang dipilih di atas.</div>
+    <div style="font-size:12px;color:var(--mut);margin-top:4px">Kelompok Ai, Jarak Lemah, Selisih, Jumlah, Jalur, Shio, Pos, Besar Kecil Pos, Ganjil Genap Pos, Besar Kecil Ai, Ganjil Genap Ai, Off Ai, Off Jumlah, Off Jalur, Off Shio, Off 3D · 4D, Off Pos, dan Off Selisih (AC · CK · KE · AS · CP · KP · EK) boleh discan bareng untuk tiap pasaran yang dipilih (makin banyak, makin lama). Rumus di baris Sendiri (cb, ai 3d) hanya bisa satu dan tidak bisa bareng kelompok. Kosong = pakai rumus yang dipilih di atas.</div>
   </details>
   <div class="row" style="align-items:flex-end;gap:8px;flex-wrap:wrap;margin-top:6px">
     <div style="flex:0 0 auto"><label>Baris uji (panjang trek)</label><input id="mlL" type="number" min="3" max="110" inputmode="numeric" value="10" style="width:110px"></div>
@@ -431,6 +431,12 @@ const VARS={
  gjcop:{name:'ganjil genap cop (c)',lab:'gcp',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[1]%2?2:1,'g']]},
  gjkep:{name:'ganjil genap kepala (k)',lab:'gkp',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[2]%2?2:1,'r']]},
  gjeko:{name:'ganjil genap ekor (e)',lab:'gek',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[3]%2?2:1,'g']]},
+ bk2dd:{name:'besar kecil ai depan (ac)',lab:'bkac',mod:2,cap:1,fixN:1,mark:d=>[[d[0]>=5?2:1,'b'],[d[1]>=5?2:1,'y']]},
+ bk2dt:{name:'besar kecil ai tengah (ck)',lab:'bkck',mod:2,cap:1,fixN:1,mark:d=>[[d[1]>=5?2:1,'y'],[d[2]>=5?2:1,'r']]},
+ bk2db:{name:'besar kecil ai belakang (ke)',lab:'bkke',mod:2,cap:1,fixN:1,mark:d=>[[d[2]>=5?2:1,'r'],[d[3]>=5?2:1,'g']]},
+ gj2dd:{name:'ganjil genap ai depan (ac)',lab:'gjac',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[0]%2?2:1,'b'],[d[1]%2?2:1,'y']]},
+ gj2dt:{name:'ganjil genap ai tengah (ck)',lab:'gjck',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[1]%2?2:1,'y'],[d[2]%2?2:1,'r']]},
+ gj2db:{name:'ganjil genap ai belakang (ke)',lab:'gjke',mod:2,cap:1,fixN:1,gg:1,mark:d=>[[d[2]%2?2:1,'r'],[d[3]%2?2:1,'g']]},
  offas:{name:'off as (a)',lab:'oas',mod:10,cap:3,off:1,mark:d=>[[d[0],'g']]},
  offcop:{name:'off cop (c)',lab:'ocp',mod:10,cap:3,off:1,mark:d=>[[d[1],'g']]},
  offkep:{name:'off kepala (k)',lab:'okp',mod:10,cap:3,off:1,mark:d=>[[d[2],'r']]},
@@ -511,7 +517,7 @@ const baseCode=b=>b.map(x=>LET[x]).join('');
 // ===== Rumus Harian: antarmuka =====
 const RH_DAYS=['Harian','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
 const RH_DOW=[null,1,2,3,4,5,6,0];               // indeks hari -> getUTCDay
-const RH_VCODE={cb:'cb',ai3d:'ai3d',ai2db:'ai',ai2dt:'ait',ai2dd:'aid',sh:'s',sht:'st',shd:'sd',jl:'jl',jlt:'jlt',jld:'jld',as:'a',cop:'c',kep:'k',eko:'e',j2d:'j',jt:'jt',jd:'jd',sel2db:'sl',sel2dt:'slt',sel2dd:'sld',jlke:'jlke',jlck:'jlck',jlac:'jlac',offas:'oas',offcop:'ocp',offkep:'okp',offeko:'oek',offsl2db:'osl',offsl2dt:'oslt',offsl2dd:'osld',bkas:'bka',bkcop:'bkc',bkkep:'bkk',bkeko:'bke',gjas:'gas',gjcop:'gcp',gjkep:'gkp',gjeko:'gek',offai2db:'oai',offai2dt:'oait',offai2dd:'oaid',offj2db:'oj',offj2dt:'ojt',offj2dd:'ojd',offjl:'ojl',offjlt:'ojlt',offjld:'ojld',offsh:'os',offsht:'ost',offshd:'osd',off3d:'o3d',off4d:'o4d',j3d:'j3',j4d:'j4',offj3d:'oj3',offj4d:'oj4',jbkac:'jbac',jbkck:'jbck',jbke:'jbke',jbk3d:'jb3',jbk4d:'jb4'};
+const RH_VCODE={cb:'cb',ai3d:'ai3d',ai2db:'ai',ai2dt:'ait',ai2dd:'aid',sh:'s',sht:'st',shd:'sd',jl:'jl',jlt:'jlt',jld:'jld',as:'a',cop:'c',kep:'k',eko:'e',j2d:'j',jt:'jt',jd:'jd',sel2db:'sl',sel2dt:'slt',sel2dd:'sld',jlke:'jlke',jlck:'jlck',jlac:'jlac',offas:'oas',offcop:'ocp',offkep:'okp',offeko:'oek',offsl2db:'osl',offsl2dt:'oslt',offsl2dd:'osld',bkas:'bka',bkcop:'bkc',bkkep:'bkk',bkeko:'bke',gjas:'gas',gjcop:'gcp',gjkep:'gkp',gjeko:'gek',offai2db:'oai',offai2dt:'oait',offai2dd:'oaid',offj2db:'oj',offj2dt:'ojt',offj2dd:'ojd',offjl:'ojl',offjlt:'ojlt',offjld:'ojld',offsh:'os',offsht:'ost',offshd:'osd',off3d:'o3d',off4d:'o4d',j3d:'j3',j4d:'j4',offj3d:'oj3',offj4d:'oj4',jbkac:'jbac',jbkck:'jbck',jbke:'jbke',jbk3d:'jb3',jbk4d:'jb4',bk2dd:'bbac',bk2dt:'bbck',bk2db:'bbke',gj2dd:'ggac',gj2dt:'ggck',gj2db:'ggke'};
 const RH_OPT=(arr,first)=>(first!==undefined?`<option value="">${first}</option>`:'')+arr.map(x=>`<option>${x}</option>`).join('');
 function rhInit(){
   $('rhVar').innerHTML=Object.entries(VARS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
@@ -659,7 +665,7 @@ function rhShow(r){
 let rhLast=null;
 const RH_LINK='https://angkahoky187-crypto.github.io/MASTER';
 // ---- format teks yang dibaca blog: baris "⭐ WONGBAGUS PREDICTION", "Code :", "Rumus :", dan "N putaran" ----
-const WBR_MAP={sh:'Shio KE',sht:'Shio CK',shd:'Shio AC',jl:'Jalur KE',jlt:'Jalur CK',jld:'Jalur AC',ai2db:'AI Belakang',ai2dt:'AI Tengah',ai2dd:'AI Depan',as:'Pos AS',cop:'Pos CP',kep:'Pos KP',eko:'Pos EK',offas:'Off AS',offcop:'Off CP',offkep:'Off KP',offeko:'Off EK',offsl2db:'Off Selisih KE',offsl2dt:'Off Selisih CK',offsl2dd:'Off Selisih AC',bkas:'Besar Kecil AS',bkcop:'Besar Kecil CP',bkkep:'Besar Kecil KP',bkeko:'Besar Kecil EK',sel2db:'Selisih KE',sel2dt:'Selisih CK',sel2dd:'Selisih AC',jlke:'Jarak Lemah KE',jlck:'Jarak Lemah CK',jlac:'Jarak Lemah AC',j2d:'Jumlah KE',jt:'Jumlah CK',jd:'Jumlah AC',cb:'Colok Bebas',ai3d:'AI 3D',gjas:'Ganjil Genap AS',gjcop:'Ganjil Genap CP',gjkep:'Ganjil Genap KP',gjeko:'Ganjil Genap EK',offai2db:'Off Ai KE',offai2dt:'Off Ai CK',offai2dd:'Off Ai AC',offj2db:'Off Jumlah KE',offj2dt:'Off Jumlah CK',offj2dd:'Off Jumlah AC',offjl:'Off Jalur KE',offjlt:'Off Jalur CK',offjld:'Off Jalur AC',offsh:'Off Shio KE',offsht:'Off Shio CK',offshd:'Off Shio AC',off3d:'Off 3D',off4d:'Off 4D',j3d:'Jumlah 3D',j4d:'Jumlah 4D',offj3d:'Off Jumlah 3D',offj4d:'Off Jumlah 4D',jbkac:'Jumlah B/K AC',jbkck:'Jumlah B/K CK',jbke:'Jumlah B/K KE',jbk3d:'Jumlah B/K 3D',jbk4d:'Jumlah B/K 4D'};
+const WBR_MAP={sh:'Shio KE',sht:'Shio CK',shd:'Shio AC',jl:'Jalur KE',jlt:'Jalur CK',jld:'Jalur AC',ai2db:'AI Belakang',ai2dt:'AI Tengah',ai2dd:'AI Depan',as:'Pos AS',cop:'Pos CP',kep:'Pos KP',eko:'Pos EK',offas:'Off AS',offcop:'Off CP',offkep:'Off KP',offeko:'Off EK',offsl2db:'Off Selisih KE',offsl2dt:'Off Selisih CK',offsl2dd:'Off Selisih AC',bkas:'Besar Kecil AS',bkcop:'Besar Kecil CP',bkkep:'Besar Kecil KP',bkeko:'Besar Kecil EK',sel2db:'Selisih KE',sel2dt:'Selisih CK',sel2dd:'Selisih AC',jlke:'Jarak Lemah KE',jlck:'Jarak Lemah CK',jlac:'Jarak Lemah AC',j2d:'Jumlah KE',jt:'Jumlah CK',jd:'Jumlah AC',cb:'Colok Bebas',ai3d:'AI 3D',gjas:'Ganjil Genap AS',gjcop:'Ganjil Genap CP',gjkep:'Ganjil Genap KP',gjeko:'Ganjil Genap EK',offai2db:'Off Ai KE',offai2dt:'Off Ai CK',offai2dd:'Off Ai AC',offj2db:'Off Jumlah KE',offj2dt:'Off Jumlah CK',offj2dd:'Off Jumlah AC',offjl:'Off Jalur KE',offjlt:'Off Jalur CK',offjld:'Off Jalur AC',offsh:'Off Shio KE',offsht:'Off Shio CK',offshd:'Off Shio AC',off3d:'Off 3D',off4d:'Off 4D',j3d:'Jumlah 3D',j4d:'Jumlah 4D',offj3d:'Off Jumlah 3D',offj4d:'Off Jumlah 4D',jbkac:'Jumlah B/K AC',jbkck:'Jumlah B/K CK',jbke:'Jumlah B/K KE',jbk3d:'Jumlah B/K 3D',jbk4d:'Jumlah B/K 4D',bk2dd:'Besar Kecil AC',bk2dt:'Besar Kecil CK',bk2db:'Besar Kecil KE',gj2dd:'Ganjil Genap AC',gj2dt:'Ganjil Genap CK',gj2db:'Ganjil Genap KE'};
 const wbrFlag=m=>{const w=String(m||'').trim().split(/\s+/)[0].toLowerCase();return RH_FLAG[w]?RH_FLAG[w]+' ':'';};
 function rhResultText(){
   const r=rhLast; if(!r)return '';
@@ -1313,7 +1319,7 @@ function shGroups(list){
   list.forEach(x=>{const k=x.it.mkt;if(!m.has(k))m.set(k,{mkt:k,items:[]});m.get(k).items.push(x);});
   return [...m.values()].sort((a,b)=>String(a.mkt).localeCompare(String(b.mkt)));
 }
-const TRK_COL={'Ai':'#2d7be5','Jarak Lemah':'#8e44ad','Selisih':'#16a085','Jumlah':'#1a9d6b','Jumlah Besar Kecil':'#2c9cb5','Jalur':'#5c6bc0','Shio':'#3f8f3f','Pos':'#7b8a1a','Besar Kecil Pos':'#0097a7','Ganjil Genap Pos':'#6a5acd','Off Ai':'#e53935','Off Jumlah':'#d81b60','Off Jalur':'#f4511e','Off Shio':'#c62828','Off 3D · 4D':'#ad1457','Off Pos':'#ef6c00','Off Selisih':'#bf360c','Lainnya':'#888'};
+const TRK_COL={'Ai':'#2d7be5','Jarak Lemah':'#8e44ad','Selisih':'#16a085','Jumlah':'#1a9d6b','Jumlah Besar Kecil':'#2c9cb5','Jalur':'#5c6bc0','Shio':'#3f8f3f','Pos':'#7b8a1a','Besar Kecil Pos':'#0097a7','Ganjil Genap Pos':'#6a5acd','Besar Kecil Ai':'#26a69a','Ganjil Genap Ai':'#7e57c2','Off Ai':'#e53935','Off Jumlah':'#d81b60','Off Jalur':'#f4511e','Off Shio':'#c62828','Off 3D · 4D':'#ad1457','Off Pos':'#ef6c00','Off Selisih':'#bf360c','Lainnya':'#888'};
 const trkGrp=vk=>{if(vk==='cb'||vk==='ai3d')return 'Ai';for(const [n,l] of MV_GROUPS)if(l.includes(vk))return n;return 'Lainnya';};
 function trkGrouped(items,rowFn){   // trek di Bank dikelompokkan per jenis + diberi warna (On: dingin/hijau, Off: merah/oranye)
   const m=new Map();items.forEach(x=>{const k=trkGrp(x.it.vk);if(!m.has(k))m.set(k,[]);m.get(k).push(x);});
@@ -1410,9 +1416,9 @@ const mlMarkets=()=>[...new Set(DATA.map(d=>d.market))];
 const MV_KEY='wb_harian_mvars_v1';let MVSEL=new Set();
 try{const a=JSON.parse(localStorage.getItem(MV_KEY)||'[]');if(Array.isArray(a))MVSEL=new Set(a.filter(k=>VARS[k]));}catch(e){}
 const mvSave=()=>{try{localStorage.setItem(MV_KEY,JSON.stringify([...MVSEL]));}catch(e){}};
-const MV_GROUPS=[['Ai',['ai2dd','ai2dt','ai2db']],['Jarak Lemah',['jlac','jlck','jlke']],['Selisih',['sel2dd','sel2dt','sel2db']],['Jumlah',['jd','jt','j2d','j3d','j4d']],['Jumlah Besar Kecil',['jbkac','jbkck','jbke','jbk3d','jbk4d']],['Jalur',['jld','jlt','jl']],['Shio',['shd','sht','sh']],['Pos',['as','cop','kep','eko']],['Besar Kecil Pos',['bkas','bkcop','bkkep','bkeko']],['Ganjil Genap Pos',['gjas','gjcop','gjkep','gjeko']],['Off Ai',['offai2dd','offai2dt','offai2db']],['Off Jumlah',['offj2dd','offj2dt','offj2db','offj3d','offj4d']],['Off Jalur',['offjld','offjlt','offjl']],['Off Shio',['offshd','offsht','offsh']],['Off 3D · 4D',['off3d','off4d']],['Off Pos',['offas','offcop','offkep','offeko']],['Off Selisih',['offsl2dd','offsl2dt','offsl2db']]];
+const MV_GROUPS=[['Ai',['ai2dd','ai2dt','ai2db']],['Jarak Lemah',['jlac','jlck','jlke']],['Selisih',['sel2dd','sel2dt','sel2db']],['Jumlah',['jd','jt','j2d','j3d','j4d']],['Jumlah Besar Kecil',['jbkac','jbkck','jbke','jbk3d','jbk4d']],['Jalur',['jld','jlt','jl']],['Shio',['shd','sht','sh']],['Pos',['as','cop','kep','eko']],['Besar Kecil Pos',['bkas','bkcop','bkkep','bkeko']],['Ganjil Genap Pos',['gjas','gjcop','gjkep','gjeko']],['Besar Kecil Ai',['bk2dd','bk2dt','bk2db']],['Ganjil Genap Ai',['gj2dd','gj2dt','gj2db']],['Off Ai',['offai2dd','offai2dt','offai2db']],['Off Jumlah',['offj2dd','offj2dt','offj2db','offj3d','offj4d']],['Off Jalur',['offjld','offjlt','offjl']],['Off Shio',['offshd','offsht','offsh']],['Off 3D · 4D',['off3d','off4d']],['Off Pos',['offas','offcop','offkep','offeko']],['Off Selisih',['offsl2dd','offsl2dt','offsl2db']]];
 const MV_GROUPED=new Set(MV_GROUPS.flatMap(g=>g[1]));
-const MV_SHORT={ai2dd:'AC',ai2dt:'CK',ai2db:'KE',jlac:'AC',jlck:'CK',jlke:'KE',sel2dd:'AC',sel2dt:'CK',sel2db:'KE',jd:'AC',jt:'CK',j2d:'KE',jld:'AC',jlt:'CK',jl:'KE',as:'AS',cop:'CP',kep:'KP',eko:'EK',offas:'AS',offcop:'CP',offkep:'KP',offeko:'EK',offsl2dd:'AC',offsl2dt:'CK',offsl2db:'KE',bkas:'AS',bkcop:'CP',bkkep:'KP',bkeko:'EK',gjas:'AS',gjcop:'CP',gjkep:'KP',gjeko:'EK',offai2dd:'AC',offai2dt:'CK',offai2db:'KE',offj2dd:'AC',offj2dt:'CK',offj2db:'KE',offjld:'AC',offjlt:'CK',offjl:'KE',offshd:'AC',offsht:'CK',offsh:'KE',off3d:'3D',off4d:'4D',j3d:'3D',j4d:'4D',offj3d:'3D',offj4d:'4D',jbkac:'AC',jbkck:'CK',jbke:'KE',jbk3d:'3D',jbk4d:'4D',shd:'AC',sht:'CK',sh:'KE'};
+const MV_SHORT={ai2dd:'AC',ai2dt:'CK',ai2db:'KE',jlac:'AC',jlck:'CK',jlke:'KE',sel2dd:'AC',sel2dt:'CK',sel2db:'KE',jd:'AC',jt:'CK',j2d:'KE',jld:'AC',jlt:'CK',jl:'KE',as:'AS',cop:'CP',kep:'KP',eko:'EK',offas:'AS',offcop:'CP',offkep:'KP',offeko:'EK',offsl2dd:'AC',offsl2dt:'CK',offsl2db:'KE',bkas:'AS',bkcop:'CP',bkkep:'KP',bkeko:'EK',gjas:'AS',gjcop:'CP',gjkep:'KP',gjeko:'EK',offai2dd:'AC',offai2dt:'CK',offai2db:'KE',offj2dd:'AC',offj2dt:'CK',offj2db:'KE',offjld:'AC',offjlt:'CK',offjl:'KE',offshd:'AC',offsht:'CK',offsh:'KE',off3d:'3D',off4d:'4D',j3d:'3D',j4d:'4D',offj3d:'3D',offj4d:'4D',jbkac:'AC',jbkck:'CK',jbke:'KE',jbk3d:'3D',jbk4d:'4D',shd:'AC',sht:'CK',sh:'KE',bk2dd:'AC',bk2dt:'CK',bk2db:'KE',gj2dd:'AC',gj2dt:'CK',gj2db:'KE'};
 function mvSanitize(){   // semua kelompok (Ai, Jarak Lemah, Selisih, Jumlah, Jalur, Shio, Pos, Besar Kecil, Ganjil Genap, Off ...) boleh bareng; rumus lain (cb, ai3d) hanya sendiri
   const all=[...MVSEL],g=all.filter(k=>MV_GROUPED.has(k)),s=all.filter(k=>!MV_GROUPED.has(k));
   if(g.length)s.forEach(k=>MVSEL.delete(k));else s.slice(1).forEach(k=>MVSEL.delete(k));
@@ -1803,8 +1809,8 @@ function bkTrekNotice(x,off){   // notif isi trek: ON -> tab On, OFF -> tab Off
   const cl={1:'kecil',2:'besar'},gl={1:'genap',2:'ganjil'},ord=[...MV_GROUPS.map(g=>g[0]),'Lainnya'];
   const vks=Object.keys(x.M.pos).filter(vk=>VARS[vk]&&/^off/.test(vk)===off&&sumRel(vk)).sort((a,b)=>ord.indexOf(trkGrp(a))-ord.indexOf(trkGrp(b)));
   const cont=(vk,i)=>{const V=VARS[vk];try{
-    if(BKX[vk]!==undefined||JBX[vk]!==undefined)return [...new Set(i.s)].map(v=>cl[v]||v).join(' + ');
-    if(GJX[vk]!==undefined)return [...new Set(i.s)].map(v=>gl[v]||v).join(' + ');
+    if(BKX[vk]!==undefined||JBX[vk]!==undefined||/^bk2d/.test(vk))return [...new Set(i.s)].map(v=>cl[v]||v).join(' + ');
+    if(GJX[vk]!==undefined||/^gj2d/.test(vk))return [...new Set(i.s)].map(v=>gl[v]||v).join(' + ');
     const a=i.s.slice().sort((p,q)=>p-q);return a.map(v=>shF(v,V.mod,V)).join(V.mod!==10?', ':' ');}catch(e){return (i.s||[]).join(' ');}};
   let n=0;const body=vks.map(vk=>{const it=(x.M.pos[vk].items||[]).filter(i=>Array.isArray(i.s)&&i.s.length);if(!it.length)return '';
     const c=TRK_COL[trkGrp(vk)]||'#888',key=(off?'off:':'on:')+vk;n+=it.length;
@@ -1893,13 +1899,15 @@ function fillIds(x,grp){   // kolom "Isi data": satu baris per trek AI di Bank (
   return L.length;
 }
 // ===== ringkasan: semua trek di Bank, mana yang masuk rekap tab/kelompok ini dan apa fungsinya =====
-const VKPOS={ai2db:[2,3],ai2dt:[1,2],ai2dd:[0,1],ai3d:[1,2,3],cb:[0,1,2,3],sh:[2,3],sht:[1,2],shd:[0,1],jl:[2,3],jlt:[1,2],jld:[0,1],as:[0],cop:[1],kep:[2],eko:[3],j2d:[2,3],jt:[1,2],jd:[0,1],sel2db:[2,3],sel2dt:[1,2],sel2dd:[0,1],jlke:[2,3],jlck:[1,2],jlac:[0,1],bkas:[0],bkcop:[1],bkkep:[2],bkeko:[3],gjas:[0],gjcop:[1],gjkep:[2],gjeko:[3],offas:[0],offcop:[1],offkep:[2],offeko:[3],offsl2db:[2,3],offsl2dt:[1,2],offsl2dd:[0,1],offai2db:[2,3],offai2dt:[1,2],offai2dd:[0,1],offj2db:[2,3],offj2dt:[1,2],offj2dd:[0,1],offjl:[2,3],offjlt:[1,2],offjld:[0,1],offsh:[2,3],offsht:[1,2],offshd:[0,1],off3d:[1,2,3],off4d:[0,1,2,3],j3d:[1,2,3],j4d:[0,1,2,3],offj3d:[1,2,3],offj4d:[0,1,2,3],jbke:[2,3],jbkck:[1,2],jbkac:[0,1],jbk3d:[1,2,3],jbk4d:[0,1,2,3]};
+const VKPOS={ai2db:[2,3],ai2dt:[1,2],ai2dd:[0,1],ai3d:[1,2,3],cb:[0,1,2,3],sh:[2,3],sht:[1,2],shd:[0,1],jl:[2,3],jlt:[1,2],jld:[0,1],as:[0],cop:[1],kep:[2],eko:[3],j2d:[2,3],jt:[1,2],jd:[0,1],sel2db:[2,3],sel2dt:[1,2],sel2dd:[0,1],jlke:[2,3],jlck:[1,2],jlac:[0,1],bkas:[0],bkcop:[1],bkkep:[2],bkeko:[3],gjas:[0],gjcop:[1],gjkep:[2],gjeko:[3],offas:[0],offcop:[1],offkep:[2],offeko:[3],offsl2db:[2,3],offsl2dt:[1,2],offsl2dd:[0,1],offai2db:[2,3],offai2dt:[1,2],offai2dd:[0,1],offj2db:[2,3],offj2dt:[1,2],offj2dd:[0,1],offjl:[2,3],offjlt:[1,2],offjld:[0,1],offsh:[2,3],offsht:[1,2],offshd:[0,1],off3d:[1,2,3],off4d:[0,1,2,3],j3d:[1,2,3],j4d:[0,1,2,3],offj3d:[1,2,3],offj4d:[0,1,2,3],jbke:[2,3],jbkck:[1,2],jbkac:[0,1],jbk3d:[1,2,3],jbk4d:[0,1,2,3],bk2dd:[0,1],bk2dt:[1,2],bk2db:[2,3],gj2dd:[0,1],gj2dt:[1,2],gj2db:[2,3]};
 // ===== kelompok rumus (centang = ikut rekap): otomatis menyesuaikan mode, bisa diubah manual =====
 const SUMCATS=[['AI',[['ai2db','AI KE'],['ai2dt','AI CK'],['ai2dd','AI AC'],['ai3d','AI 3D']]],
  ['Posisi',[['as','Pos A'],['cop','Pos C'],['kep','Pos K'],['eko','Pos E']]],
  ['Off',[['offai2db','Off KE'],['offai2dt','Off CK'],['offai2dd','Off AC'],['off3d','Off 3D'],['off4d','Off 4D'],['offas','Off Pos A'],['offcop','Off Pos C'],['offkep','Off Pos K'],['offeko','Off Pos E']]],
  ['Besar Kecil',[['bkas','BK A'],['bkcop','BK C'],['bkkep','BK K'],['bkeko','BK E']]],
  ['Ganjil Genap',[['gjas','GG A'],['gjcop','GG C'],['gjkep','GG K'],['gjeko','GG E']]],
+ ['BK Ai',[['bk2dd','BK Ai AC'],['bk2dt','BK Ai CK'],['bk2db','BK Ai KE']]],
+ ['GG Ai',[['gj2dd','GG Ai AC'],['gj2dt','GG Ai CK'],['gj2db','GG Ai KE']]],
  ['CB / Jumlah',[['cb','CB'],['j2d','Jumlah KE'],['jt','Jumlah CK'],['jd','Jumlah AC'],['offj2db','Off Jumlah KE'],['offj2dt','Off Jumlah CK'],['offj2dd','Off Jumlah AC'],['j3d','Jumlah 3D'],['j4d','Jumlah 4D'],['offj3d','Off Jumlah 3D'],['offj4d','Off Jumlah 4D']]],
  ['Jumlah Besar Kecil',[['jbkac','JBK AC'],['jbkck','JBK CK'],['jbke','JBK KE'],['jbk3d','JBK 3D'],['jbk4d','JBK 4D']]],
  ['Selisih',[['sel2db','Selisih KE'],['sel2dt','Selisih CK'],['sel2dd','Selisih AC'],['offsl2db','Off Selisih KE'],['offsl2dt','Off Selisih CK'],['offsl2dd','Off Selisih AC']]],
@@ -1965,7 +1973,9 @@ function bkCore(x,grp,mode){
   const P={ai2db:{n:[2,3],f:(d,S)=>S.has(d[2])||S.has(d[3])},ai2dt:{n:[1,2],f:(d,S)=>S.has(d[1])||S.has(d[2])},ai2dd:{n:[0,1],f:(d,S)=>S.has(d[0])||S.has(d[1])},
     ai3d:{n:[1,2,3],f:(d,S)=>S.has(d[1])||S.has(d[2])||S.has(d[3])},cb:{n:[0,1,2,3],f:(d,S)=>d.some(v=>v!==undefined&&S.has(v))},
     sh:{n:[2,3],f:(d,S)=>S.has(shi(sv(d,2,3)))},sht:{n:[1,2],f:(d,S)=>S.has(shi(sv(d,1,2)))},shd:{n:[0,1],f:(d,S)=>S.has(shi(sv(d,0,1)))},
-    jl:{n:[2,3],f:(d,S)=>S.has(jal(sv(d,2,3)))},jlt:{n:[1,2],f:(d,S)=>S.has(jal(sv(d,1,2)))},jld:{n:[0,1],f:(d,S)=>S.has(jal(sv(d,0,1)))}};
+    jl:{n:[2,3],f:(d,S)=>S.has(jal(sv(d,2,3)))},jlt:{n:[1,2],f:(d,S)=>S.has(jal(sv(d,1,2)))},jld:{n:[0,1],f:(d,S)=>S.has(jal(sv(d,0,1)))},
+    bk2dd:{n:[0,1],f:(d,S)=>S.has(d[0]>=5?2:1)||S.has(d[1]>=5?2:1)},bk2dt:{n:[1,2],f:(d,S)=>S.has(d[1]>=5?2:1)||S.has(d[2]>=5?2:1)},bk2db:{n:[2,3],f:(d,S)=>S.has(d[2]>=5?2:1)||S.has(d[3]>=5?2:1)},
+    gj2dd:{n:[0,1],f:(d,S)=>S.has(d[0]%2?2:1)||S.has(d[1]%2?2:1)},gj2dt:{n:[1,2],f:(d,S)=>S.has(d[1]%2?2:1)||S.has(d[2]%2?2:1)},gj2db:{n:[2,3],f:(d,S)=>S.has(d[2]%2?2:1)||S.has(d[3]%2?2:1)}};
   const O={as:{n:[0],f:(d,S)=>S.has(d[0])},cop:{n:[1],f:(d,S)=>S.has(d[1])},kep:{n:[2],f:(d,S)=>S.has(d[2])},eko:{n:[3],f:(d,S)=>S.has(d[3])},
     j2d:{n:[2,3],f:(d,S)=>S.has(dr([d[2],d[3]]))},jt:{n:[1,2],f:(d,S)=>S.has(dr([d[1],d[2]]))},jd:{n:[0,1],f:(d,S)=>S.has(dr([d[0],d[1]]))},j3d:{n:[1,2,3],f:(d,S)=>S.has(dr([d[1],d[2],d[3]]))},j4d:{n:[0,1,2,3],f:(d,S)=>S.has(dr([d[0],d[1],d[2],d[3]]))},
     sel2db:{n:[2,3],f:(d,S)=>S.has(Math.abs(d[2]-d[3]))},sel2dt:{n:[1,2],f:(d,S)=>S.has(Math.abs(d[1]-d[2]))},sel2dd:{n:[0,1],f:(d,S)=>S.has(Math.abs(d[0]-d[1]))},
