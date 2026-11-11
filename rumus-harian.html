@@ -78,12 +78,14 @@ h2{color:#fff}
 #rkRoot .pn .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:rgba(0,0,0,.4);font-weight:700;color:var(--ac)}
 #rkRoot .pn.top .ph{background:var(--ac);color:#10132a}
 #rkRoot .pn button{padding:4px 10px}
+#rkRoot textarea.rszd{resize:none!important;display:block;border-bottom-left-radius:0;border-bottom-right-radius:0}
+#rkRoot .rsz{display:flex;align-items:center;justify-content:center;gap:8px;min-height:34px;margin:0;background:rgba(255,201,51,.22);border:1px solid var(--ac);border-radius:0 0 8px 8px;color:var(--ac);font-size:13px;font-weight:700;touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none}
+#rkRoot .rsz b{font-size:18px;line-height:1;letter-spacing:2px}
 #rkRoot #msg{font-size:13px;margin:6px 0;color:#3ddc6b}
 #rkRoot .rkchk{display:flex;gap:8px;align-items:center;margin:8px 0 0;color:var(--fg);font-size:13px}
 </style>
 </head>
 <body>
-<div style="margin:0 0 6px"><a href="index.html" style="color:var(--ac);text-decoration:none;font-size:13px;font-weight:700">‹ Kembali ke Scan</a></div>
 <h1>Rumus Harian</h1>
 
 <div class="card k1">
@@ -174,7 +176,7 @@ h2{color:#fff}
 </div>
 
 <div id="rkRoot">
-<div class="card k5">
+<div class="card k5" style="display:none">
   <h2>📊 Rekap Angka 2D · 3D · 4D <span style="font-weight:400;font-size:13px">— dari Bank Harian</span></h2>
   <div class="tabs" id="tabs"><button data-n="2" class="on">2D</button><button data-n="3">3D</button><button data-n="4">4D</button></div>
   <input type="checkbox" id="auto" style="display:none">   <!-- rekap otomatis dimatikan: pakai tombol Rekap final di kartu bawah -->
@@ -239,12 +241,12 @@ h2{color:#fff}
   <div id="onPane" style="display:none"></div>
 </div>
 
-<div class="card k3">
+<div class="card k3" style="display:none">
   <div class="rkr"><b>Top</b><input id="top" type="number" min="1" value="100"><b style="flex:0 0 52px">Pemisah</b>
     <select id="sep"><option>*</option><option>#</option><option>,</option><option>.</option></select></div>
   <div class="rkrow"><button class="pri" id="go">Rekap</button><button id="paste">Tempel</button><button class="red" id="reset">Reset</button></div>
-  <div id="msg"></div>
 </div>
+<div id="msg" style="margin:0 2px 10px"></div>
 
 <div class="card k2" id="topCard">
   <h2 id="hTop">LN TOP</h2>
@@ -323,8 +325,8 @@ function normalize(j){
   return out;
 }
 
-// Sumber otomatis: ?data=... bila ada; kalau tidak, result.json satu folder.
-// result.json = milik situs ini sendiri (satu folder dengan halaman ini), tanpa cadangan dari situs lain.
+// Sumber otomatis: ?data=... bila ada; kalau tidak, result.json satu folder, lalu situs WongBagus.
+const SITE = 'https://alifavif-cmd.github.io/-WONGBAGUS-PREDICTION-/result.json';
 async function fetchJson(url){
   const r = await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now());
   if(!r.ok) throw new Error('HTTP '+r.status+' ('+url+')');
@@ -349,7 +351,7 @@ function applyData(j,label){
 }
 async function load(){
   const q = new URLSearchParams(location.search).get('data');
-  const srcs = q ? [q] : ['result.json'];
+  const srcs = q ? [q] : ['result.json', SITE];
   $('status').className=''; $('status').textContent='Memuat…';
   let errs = [];
   for(const u of srcs){
@@ -475,8 +477,8 @@ const FW=V=>V.rng?'patah':(V.off?'kena':'zonk');
 const rhMissVals=(row,S)=>[...new Set((row.marks||[]).map(m=>m[0]).filter(x=>S.includes(x)))];
 const rhMissTxt=(row,S,V)=>{if(!V)return '';
   if(V.off){const v=rhMissVals(row,S);return v.length?' masuk '+(/selisih/.test(V.name)?'selisih ':'')+v.join(','):'';}
-  if(/selisih/.test(V.name)){const v=[...new Set((row.marks||[]).map(m=>m[0]))];return v.length?' keluar selisih '+v.join(','):'';}
-  return '';};
+  if(/selisih/.test(V.name)){const v=[...new Set((row.marks||[]).map(m=>m[0]))];return v.length?' keluar selisih '+v.join(','):'';}   // trek selisih ON zonk: tulis selisih yang sebenarnya keluar
+  return '';};   // trek off patah: tulis angka yang masuk
 const mapEl=(b,v,mod)=>{const x=(b+v)%mod;return mod===10?x:(x||mod);};
 // ch: hasil (oldest->newest, 4 digit). Baris uji i = n-1-L .. n-2 ; baris prediksi i = n-1
 function rhRows(ch,spec,vk,L){
@@ -1017,98 +1019,14 @@ function wbIsAdmin(){return true;   // simpan ke Bank Harian dibuka untuk semua 
   return false;
 }
 // ===== Bank Harian (sendiri) + rekap untuk tab Bank/Prediksi =====
-const SHB_BASE='wb_harian_bank_v1',SHR_BASE='wb_harian_rekap_v1';
-// ===== Bank Harian dipisah per akun (member tidak lagi melihat bank admin di HP yang sama) =====
-function wbhIsAdmin(){try{const c=JSON.parse(localStorage.getItem('wg_admin_cred')||'null');return !!(c&&c.token&&c.exp>Date.now());}catch(e){return false;}}
-function wbhMember(){if(wbhIsAdmin())return null;try{const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null');return (u&&!u.isAdmin&&u.id)?u:null;}catch(e){return null;}}
-function wbhWho(){const u=wbhMember();return u?String(u.phone||u.id).toLowerCase().replace(/[^a-z0-9]/g,'_'):'';}
-const shbKey=()=>{const w=wbhWho();return w?SHB_BASE+'__'+w:SHB_BASE;};      // admin/tamu tetap kunci lama
-const shrKey=()=>{const w=wbhWho();return w?SHR_BASE+'__'+w:SHR_BASE;};
+const SHB_KEY='wb_harian_bank_v1',SHR_KEY='wb_harian_rekap_v1';
 const SH_NAME={};Object.keys(VARS).forEach(k=>{SH_NAME[k]=VARS[k].name;});
-const shbGet=()=>{try{let a=JSON.parse(localStorage.getItem(shbKey())||'[]');if(!Array.isArray(a))return [];
+const shbGet=()=>{try{let a=JSON.parse(localStorage.getItem(SHB_KEY)||'[]');if(!Array.isArray(a))return [];
   if(a.some(x=>x&&x.vk==='ke')){   // migrasi: 'kepala ekor' sama dengan Ai belakang -> gabung ke ai2db, buang yang dobel
     const have=new Set(),out=[];a.forEach(x=>{if(!x)return;if(x.vk==='ke')x.vk='ai2db';const k=[x.mkt,x.vk,JSON.stringify(x.spec),(x.base||[]).join(','),x.day||0,x.L,x.P].join('|');if(have.has(k))return;have.add(k);out.push(x);});
-    a=out;try{localStorage.setItem(shbKey(),JSON.stringify(a));}catch(e){}}
+    a=out;try{localStorage.setItem(SHB_KEY,JSON.stringify(a));}catch(e){}}
   return a.filter(x=>x&&VARS[x.vk]);}catch(e){return [];}};
-const shbSet=a=>{try{localStorage.setItem(shbKey(),JSON.stringify(a));}catch(e){}try{wbhMark();}catch(e){}};
-
-// ===== Sinkron Bank Harian member -> Worker (bin member), supaya admin bisa melihat bank + trek =====
-const WBH_WORKER='https://steep-resonance-6a71.kjago7822.workers.dev';
-const WBH_SITES={'kjago7822.github.io':'kjago7822','wgus543-hub.github.io':'wgus543-hub','mamakeavif-star.github.io':'mamakeavif-star','adinealif-byte.github.io':'adinealif-byte','bototomart787-png.github.io':'scenangka-rekap'};
-const WBH_ACCOUNT=WBH_SITES[String(location.hostname).toLowerCase()]||'mamakeavif-star';   // sama dengan index.html
-const wbhUrl=k=>WBH_WORKER.replace(/\/+$/,'')+'/'+WBH_ACCOUNT+'/'+encodeURIComponent(k);
-async function wbhGet(k){const r=await fetch(wbhUrl(k),{cache:'no-store'});if(!r.ok)throw new Error('Gagal baca server (HTTP '+r.status+')');const rec=await r.json();if(rec==null)throw new Error('Respon server kosong');return Array.isArray(rec)?rec:(rec.data||[]);}
-async function wbhPut(k,data){const r=await fetch(wbhUrl(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})});if(!r.ok)throw new Error('Gagal simpan ke server (HTTP '+r.status+')');}
-function wbhToast(m){try{let el=document.getElementById('wbh-toast');if(!el){el=document.createElement('div');el.id='wbh-toast';el.style.cssText='position:fixed;left:50%;bottom:56px;transform:translateX(-50%);z-index:100000;background:#7f1d1d;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;max-width:90%;text-align:center';document.body.appendChild(el);}el.textContent=m;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.display='none';},5000);}catch(e){}}
-// pengaturan dari admin (Edit member > RUMUS HARIAN — terpisah dari Scan Harian), dibaca dari record member di Worker; admin sendiri tanpa batas
-const wbhSetKey=()=>'wbh_set__'+wbhWho(),WBH_DEF={bank:20,mkt:0,maxOut:300,perMkt:0};
-function wbhStoreSet(m){const n=(k,d)=>{const v=parseInt(m[k],10);return v>0?v:d;};try{localStorage.setItem(wbhSetKey(),JSON.stringify({bank:n('rhBankLimit',20),mkt:n('rhMktLimit',0),maxOut:n('rhMaxOut',300),perMkt:n('rhPerMkt',0)}));}catch(e){}}
-function wbhSet(){if(!wbhMember())return null;try{return Object.assign({},WBH_DEF,JSON.parse(localStorage.getItem(wbhSetKey())||'null')||{});}catch(e){return Object.assign({},WBH_DEF);}}
-async function wbhRefreshSet(){const u=wbhMember();if(!u)return;try{const all=await wbhGet('members'),m=all.find(x=>x&&x.id===u.id);if(m)wbhStoreSet(m);}catch(e){}}   // gagal jaringan: pakai simpanan terakhir
-function wbhLimit(){const t=wbhSet();return t?t.bank:0;}   // bawaan 20, sama dengan tampilan admin
-const wbhSynKey=()=>shbKey()+'__synced';
-let wbhBin=null,wbhTimer=null,wbhQ=Promise.resolve();
-async function wbhEnsureBin(){
-  if(wbhBin)return wbhBin;
-  const u=wbhMember();if(!u)throw new Error('Bukan member');
-  const all=await wbhGet('members'),m=all.find(x=>x&&x.id===u.id);
-  if(!m)throw new Error('Akun tidak ditemukan di server');
-  wbhStoreSet(m);
-  if(m.bankBinWG){wbhBin=m.bankBinWG;return wbhBin;}
-  const id='bank-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-  await wbhPut(id,{updatedAt:new Date().toISOString(),owner:m.name});
-  const all2=await wbhGet('members'),t=all2.find(x=>x&&x.id===u.id);   // baca ulang tepat sebelum tulis
-  if(!t)throw new Error('Akun tidak ditemukan di server');
-  if(t.bankBinWG){try{fetch(wbhUrl(id),{method:'DELETE'});}catch(e){}wbhBin=t.bankBinWG;return wbhBin;}
-  t.bankBinWG=id;await wbhPut('members',all2);wbhBin=id;return id;
-}
-// bentuk yang dibaca panel admin: key, mode, status, streak, curPred, trekRows; raw = data asli untuk dipulihkan
-function wbhExport(it){
-  try{
-    const V=VARS[it.vk];if(!V)return null;
-    const fmt=S=>V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join('');
-    const e=shEval(it),ch=chainOf(it.mkt,it.day||0),rows=rhRows(ch,it.spec,it.vk,it.L)||[];
-    const wide=shWide(ch,it.spec,it.vk,it.L)||rows;   // seluruh trek, bukan cuma baris uji L
-    const need=Math.max((e?e.streak:0)+1,rows.length),src=wide.slice(-need);
-    const tr=src.map(r=>{const S=setOf(it.base,r.v,V.mod);return {result:r.res,predStr:fmt(S),hit:r.last?null:!!rhHit(r,S,V)};});
-    return {id:it.id,mkt:it.mkt,key:rhKeyName(it.spec,true)+'.'+RH_VCODE[it.vk],mode:SH_NAME[it.vk]+(it.day?' · '+RH_DAYS[it.day]:''),
-      status:!e?'pending':e.alive?'aktif':'patah',streak:e?e.streak:0,curPred:e?fmt(e.set):'??',savedAt:it.saved||'',trekRows:tr,raw:it};
-  }catch(err){return null;}
-}
-function wbhMark(){if(!wbhMember())return;clearTimeout(wbhTimer);wbhTimer=setTimeout(()=>{wbhQ=wbhQ.then(wbhPush);},1500);}
-async function wbhPush(){
-  const u=wbhMember();if(!u)return;
-  try{
-    const bin=await wbhEnsureBin(),cur=await wbhGet(bin),o=(cur&&!Array.isArray(cur))?cur:{};
-    const arr=shbGet().map(wbhExport).filter(Boolean);
-    const fit=()=>JSON.stringify({data:Object.assign({},o,{rumusHarian:arr})}).length<=190000;
-    if(!fit())arr.forEach(x=>{x.trekRows=x.trekRows.slice(-12);});
-    if(!fit())arr.forEach(x=>{x.trekRows=x.trekRows.slice(-3);});
-    while(arr.length&&!fit())arr.pop();
-    o.rumusHarian=arr;   // bank sendiri, TIDAK menimpa o.harian milik Scan Harian
-    if(Array.isArray(o.harian))o.harian=o.harian.filter(x=>!(x&&x.raw&&x.raw.vk&&x.raw.spec));   // bersihkan sisa data lama yang tercampur
-    o.updatedAt=new Date().toISOString();o.owner=u.name||o.owner;delete o.clearedByAdmin;
-    await wbhPut(bin,o);
-    try{localStorage.setItem(wbhSynKey(),JSON.stringify(arr.map(x=>x.id)));}catch(e){}
-  }catch(e){console.warn('[Rumus Harian] gagal kirim ke server',e);wbhToast('⚠️ Bank Harian tersimpan di HP, tapi gagal dikirim ke server: '+(e.message||e));}
-}
-async function wbhPull(){
-  const u=wbhMember();if(!u)return;
-  try{
-    const bin=await wbhEnsureBin(),o=await wbhGet(bin),legacy=(o&&Array.isArray(o.harian))?o.harian.filter(x=>x&&x.raw&&x.raw.vk&&x.raw.spec):[],srv=(o&&Array.isArray(o.rumusHarian))?o.rumusHarian:(legacy.length?legacy:null),local=shbGet();   // data lama (tercampur di harian) tetap terbaca sekali
-    if(!srv){if(local.length)wbhMark();return;}   // belum ada di server -> unggah bank lokal
-    const sIds=new Set(srv.map(x=>x&&x.id)),synced=new Set(JSON.parse(localStorage.getItem(wbhSynKey())||'[]'));
-    const keep=local.filter(it=>!synced.has(it.id)||sIds.has(it.id));   // yang pernah tersinkron lalu hilang di server = dihapus admin
-    const have=new Set(keep.map(x=>x.id));
-    srv.forEach(x=>{if(x&&x.raw&&VARS[x.raw.vk]&&!have.has(x.id)&&!synced.has(x.id)){keep.push(x.raw);have.add(x.id);}});   // dari perangkat lain
-    const changed=keep.length!==local.length||keep.some((x,i)=>x!==local[i]&&(local[i]||{}).id!==x.id);
-    if(changed){try{localStorage.setItem(shbKey(),JSON.stringify(keep));}catch(e){}shbRender();}
-    try{localStorage.setItem(wbhSynKey(),JSON.stringify([...sIds]));}catch(e){}
-    if(keep.some(x=>!sIds.has(x.id)))wbhMark();
-  }catch(e){console.warn('[Harian] gagal sinkron dari server',e);}
-}
-window.addEventListener('load',()=>{wbhQ=wbhQ.then(wbhPull);});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&wbhMember()){clearTimeout(wbhTimer);wbhQ=wbhQ.then(wbhPush);}else if(document.visibilityState==='visible'&&wbhMember()){wbhQ=wbhQ.then(wbhPull);}});
+const shbSet=a=>{try{localStorage.setItem(SHB_KEY,JSON.stringify(a));}catch(e){}};
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
 const shEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chainOf(mkt,di){
@@ -1130,9 +1048,7 @@ function shEval(it){
 const shKey=it=>[it.mkt,it.vk,rhKeyName(it.spec,false),baseCode(it.base),it.day||0,it.L,it.P].join('|');
 function shbAdd(list){
   const a=shbGet(),have=new Set(a.map(shKey));let n=0;
-  const lim=wbhLimit();let full=0;
-  list.forEach(it=>{if(have.has(shKey(it)))return;if(lim&&a.length>=lim){full++;return;}have.add(shKey(it));a.push(it);n++;});
-  if(full)wbhToast('⚠️ Bank Harian penuh (batas '+lim+' rumus). Hapus rumus lama dulu.');
+  list.forEach(it=>{if(have.has(shKey(it)))return;have.add(shKey(it));a.push(it);n++;});
   shbSet(a);shbRender();return n;
 }
 function shbMake(mkt,day,vk,spec,base,L,P){return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),mkt,day:+day||0,vk,spec,base:[...base],L,P,saved:new Date().toLocaleDateString('id-ID')};}
@@ -1165,15 +1081,21 @@ function shbText(out){
 }
 const shSel=new Set();
 const shOpen=new Set();
+const shRkClosed=new Set((()=>{try{return JSON.parse(localStorage.getItem('wb_shrk_closed')||'[]');}catch(e){return [];}})());
+function shRkSave(){try{localStorage.setItem('wb_shrk_closed',JSON.stringify([...shRkClosed]));}catch(e){}}
 function shbRender(){
   const {out,list}=shbSummary();
-  try{localStorage.setItem(shrKey(),JSON.stringify(out));}catch(e){}
+  try{localStorage.setItem(SHR_KEY,JSON.stringify(out));}catch(e){}
   const el=$('shList');if(!el)return;
   const alive=list.filter(x=>x.e&&x.e.alive).length;
   $('shN').textContent=`(${list.length} rumus · ${alive} aktif)`;
-  const rk=Object.values(out.mk).map(M=>`<div style="margin:6px 0"><b>${shEsc(M.name)}</b><br>`+Object.keys(SH_NAME).filter(vk=>M.pos[vk]).map(vk=>{const P=M.pos[vk];
-    return `${SH_NAME[vk]}: <b>main ${P.top.map(x=>shF(x,P.mod,VARS[vk])).join(' ')||'-'}</b> <span style="color:#777">· ${P.n} rumus · `+Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod,VARS[vk])}-${P.votes[x]}`).join(' ')+'</span>';}).join('<br>')+'</div>').join('');
-  $('shRekap').innerHTML=rk?'<div style="border:1px solid #cfe0c8;border-radius:8px;padding:6px 10px;margin:8px 0;background:rgba(80,160,60,.07)"><b>Rekap suara Bank Harian</b>'+rk+'</div>':'';
+  const rkArrow=c=>`<span style="font-size:18px;font-weight:800;line-height:1;padding:2px 6px">${c?'▼':'▲'}</span>`;
+  const rk=Object.keys(out.mk).map(k=>{const M=out.mk[k],cl=shRkClosed.has('mk:'+k);
+    const body=Object.keys(SH_NAME).filter(vk=>M.pos[vk]).map(vk=>{const P=M.pos[vk];
+      return `${SH_NAME[vk]}: <b>main ${P.top.map(x=>shF(x,P.mod,VARS[vk])).join(' ')||'-'}</b> <span style="color:#c9cfe4">· ${P.n} rumus · `+Object.keys(P.votes).map(Number).sort((a,b)=>P.votes[b]-P.votes[a]||a-b).map(x=>`${shF(x,P.mod,VARS[vk])}-${P.votes[x]}`).join(' ')+'</span>';}).join('<br>');
+    return `<div style="margin:8px 0 0"><div data-rkmk="${shEsc(k)}" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:10px 12px;margin-bottom:4px;background:#10132a;color:#ffc933;border:1px solid #ffc933;border-radius:8px"><b>${shEsc(M.name)}</b>${rkArrow(cl)}</div><div${cl?' style="display:none"':''}>${body}</div></div>`;}).join('');
+  const allCl=shRkClosed.has('all');
+  $('shRekap').innerHTML=rk?`<div style="border:2px solid #ffc933;border-radius:10px;padding:8px;margin:10px 0;background:#1b2147;color:#f2f3fa"><div data-rkall="1" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:10px 12px;background:#ffc933;color:#10132a;border-radius:8px"><b>Rekap suara Bank Harian</b>${rkArrow(allCl)}</div><div${allCl?' style="display:none"':''}>${rk}</div></div>`:'';
   const gb=$('shGab');if(gb)gb.textContent=`Gabung (${[...shSel].filter(id=>list.some(x=>x.it.id===id)).length} dipilih)`;
   const shRow=({it,e})=>{
     const st=!e?'<span style="color:#b36b00">data kurang</span>':e.alive?`<span style="color:#1a9d1a">✅ aktif · trek ${e.streak}×</span>`:'<span style="color:#d22">❌ patah</span>';
@@ -1186,6 +1108,9 @@ function shbRender(){
   const msg=t=>{const b=$('shSave');if(b){const o=b.textContent;b.textContent=t;setTimeout(()=>b.textContent='💾 Simpan rumus di atas',1600);}};
   $('shBank').addEventListener('click',async e=>{
     const t=e.target;
+    const rkh=t.closest&&t.closest('[data-rkall],[data-rkmk]');
+    if(rkh){const key=rkh.hasAttribute('data-rkall')?'all':'mk:'+rkh.getAttribute('data-rkmk');
+      if(shRkClosed.has(key))shRkClosed.delete(key);else shRkClosed.add(key);shRkSave();shbRender();return;}
     if(t.dataset&&t.dataset.shdel){shSel.delete(t.dataset.shdel);shbSet(shbGet().filter(x=>x.id!==t.dataset.shdel));shbRender();return;}
     if(t.id==='shSave'){
       if(!wbIsAdmin()){msg('🔒 Hanya admin');return;}
@@ -1240,11 +1165,10 @@ function shbGabText(ids,extra){
   for(let r=0;r<n;r++){
     const last=R[0][r].last;
     const sets=items.map((x,k)=>{const V=VARS[x.it.vk],row=R[k][r],S=setOf(x.it.base,row.v,V.mod);
-      const ok=rhHit(row,S,V);
-      return {t:V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join(V.mod!==10?',':''),hit:!last&&ok,mt:(!last&&!ok)?rhMissTxt(row,S,V):''};});
+      return {t:V.rng?RO(V,S,x=>x,','):S.map(v=>shF(v,V.mod,V)).join(V.mod!==10?',':''),hit:!last&&rhHit(row,S,V)};});
     const hit=sets.every(z=>z.hit);          // gabungan HIT hanya bila SEMUA rumus hit (sama seperti bank lain)
     if(!last)hits.push(hit);
-    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?'':' ✗'+(()=>{const m=sets.map((z,k)=>z.mt?'Code '+(k+1)+z.mt:'').filter(Boolean);return m.length?' '+m.join('; '):'';})())}`);
+    lines.push(`${R[0][r].res} : ${sets.map(z=>z.t).join(' vs ')}${last?' ?':(hit?'':' ✗')}`);
   }
   let patah=0,streak=0,cur=0;hits.forEach(h=>{if(h)cur=0;else{patah++;cur++;streak=Math.max(streak,cur);}});
   const w=mk0.trim().split(/\s+/)[0].toLowerCase(),flag=RH_FLAG[w]?RH_FLAG[w]+' ':'';
@@ -1459,12 +1383,9 @@ async function mlGo(){
   if(!ms.length){prog.textContent='Pilih minimal 1 pasaran dulu.';return;}
   if(rhFinding){rhFinding=false;while(rhLoop)await new Promise(r=>setTimeout(r,30));}   // hentikan scan satu pasaran
   const vks=MVSEL.size?Object.keys(VARS).filter(k=>MVSEL.has(k)):[$('rhVar').value];
-  await wbhRefreshSet();const WS=wbhSet();   // batas dari admin (member saja)
-  const msL=(WS&&WS.mkt&&ms.length>WS.mkt)?ms.slice(0,WS.mkt):ms;
-  const jobs=[];msL.forEach(m=>vks.forEach(v=>jobs.push([m,v])));
-  let stN=Math.max(0,Math.min(999,parseInt($('mlStopN').value)||0));if(WS&&WS.perMkt)stN=stN?Math.min(stN,WS.perMkt):WS.perMkt;
-  MULTI_RUN=true;rhFinding=true;MLRES=[];MLVIEW.clear();ML_OVR={L:$('mlL').value,P:$('mlP').value,day:$('mlDay').value,max:$('mlMax').value,stop:stN};mlRender();btn.textContent='⏹ Stop scan multi';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
-  let i=0,cancelled=false,total=0,capHit=false;
+  const jobs=[];ms.forEach(m=>vks.forEach(v=>jobs.push([m,v])));
+  MULTI_RUN=true;rhFinding=true;MLRES=[];MLVIEW.clear();ML_OVR={L:$('mlL').value,P:$('mlP').value,day:$('mlDay').value,max:$('mlMax').value,stop:Math.max(0,Math.min(999,parseInt($('mlStopN').value)||0))};mlRender();btn.textContent='⏹ Stop scan multi';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
+  let i=0,cancelled=false;
   try{
     for(const [m,v] of jobs){
       if(!rhFinding){cancelled=true;break;}
@@ -1472,11 +1393,9 @@ async function mlGo(){
       const r=await rhSearch(m,v,p=>{prog.innerHTML=`🔎 ${i}/${jobs.length} · <b>${shEsc(m)}</b> · ${VARS[v].name} · ${p.pct}% · ${p.count}${rhStopN()?'/'+rhStopN():''} hasil · sisa ±${rhEtaTxt(p.eta)} — ketuk tombol untuk batal`;});
       MLRES.push({mkt:m,vk:v,r});mlRender();
       if(r.cancelled){cancelled=true;break;}
-      total+=r.count||0;if(WS&&WS.maxOut&&total>=WS.maxOut){capHit=true;break;}
     }
   }finally{ML_OVR=null;MULTI_RUN=false;rhFinding=false;btn.textContent='🔎 Mulai scan multi';btn.style.background='';btn.style.borderColor='';btn.style.color='';}
-  const note=(WS&&WS.mkt&&ms.length>WS.mkt?` · dibatasi ${WS.mkt} pasaran`:'');
-  prog.textContent=cancelled?'Scan multi dibatalkan — hasil yang sudah selesai tetap bisa dipakai.':capHit?`Scan berhenti: batas ${WS.maxOut} rumus hasil scan tercapai (${i}/${jobs.length} pencarian).`:`Selesai: ${jobs.length} pencarian${note}.`;
+  prog.textContent=cancelled?'Scan multi dibatalkan — hasil yang sudah selesai tetap bisa dipakai.':`Selesai: ${jobs.length} pencarian.`;
 }
 function mlInit(){
   $('mlGo').onclick=mlGo;
@@ -1670,7 +1589,20 @@ function showRes(list,tot,votes){
   const more=keys.filter(p=>p>40).reduce((n,p)=>n+by[p].length,0);
   if(more)h+=`<div class="hint">${more} LN dengan patah lebih dari 40 tidak ditampilkan.</div>`;
   $('groups').innerHTML=h;
+  $('groups').querySelectorAll('textarea.pt').forEach(addGrip);
   return keys.length?keys[0]:null;
+}
+function addGrip(ta){
+  if(!ta||(ta.nextElementSibling&&ta.nextElementSibling.classList.contains('rsz')))return;
+  ta.classList.add('rszd');
+  const g=document.createElement('div');g.className='rsz';g.innerHTML='<b>≡</b> tarik ke bawah untuk perbesar · ketuk = tampil semua <b>≡</b>';
+  ta.after(g);
+  let y0=0,h0=0,mv=false;
+  g.addEventListener('pointerdown',e=>{y0=e.clientY;h0=ta.offsetHeight;mv=false;try{g.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
+  g.addEventListener('pointermove',e=>{if(e.buttons===0&&e.pointerType==='mouse')return;const dy=e.clientY-y0;if(Math.abs(dy)>5)mv=true;if(mv){ta.style.height=Math.max(44,h0+dy)+'px';delete ta.dataset.full;}});
+  g.addEventListener('pointerup',()=>{if(mv)return;
+    if(ta.dataset.full){ta.style.height='';delete ta.dataset.full;}
+    else{ta.style.height=(ta.scrollHeight+6)+'px';ta.dataset.full='1';}});
 }
 $('groups').addEventListener('click',e=>{
   const b=e.target.closest('button[data-cp]');if(!b)return;
@@ -1712,7 +1644,7 @@ $('grid').onclick=e=>{
   const s=c.dataset.s,total=Math.pow(10,N),cur=pool()||new Set(Array.from({length:total},(_,i)=>pad(i,N)));
   if(cur.has(s))cur.delete(s);else cur.add(s);
   $('dasar').value=cur.size===total?'':[...cur].sort().join('*');
-  drawGrid(null);note('LN dasar diubah — tekan Rekap lagi');
+  drawGrid(null);note('LN dasar diubah');
 };
 $('dasar').oninput=()=>drawGrid(null);
 $('go').onclick=rekap;
@@ -1731,7 +1663,7 @@ $('use').onclick=()=>{
 };
 build();
 /* ===== kode, bank otomatis, kirim ke blog ===== */
-const BK=[['Harian',shrKey()],['Shio','wb_shio_rekap_v1']];
+const BK=[['Harian','wb_harian_rekap_v1'],['Shio','wb_shio_rekap_v1']];
 function bkRead(){
   const mk=new Map();
   BK.forEach(([nm,key])=>{try{const j=JSON.parse(localStorage.getItem(key)||'null');
@@ -2209,92 +2141,6 @@ bkFill();autoRun(false);bkSumRefresh();
   // semua fitur tertutup saat halaman pertama dibuka; ketuk judul untuk buka / tutup
   document.querySelectorAll('.card').forEach(function(c){ fold(c,false); });
   var bg=document.getElementById('bkGet'); if(bg) bg.addEventListener('click',function(){ wbOpenCard('topCard'); wbOpenCard('fltCard'); wbOpenCard('sumCard'); });
-})();
-</script>
-<style>[data-wbf-hide="1"]{display:none !important}</style>
-<script>
-/* ===== KUNCI FITUR DARI ADMIN (dikelola di index.html → Admin → Kunci Fitur) =====
-   Fitur yang dikunci DISEMBUNYIKAN dari member. Admin (login di index.html) melihat semuanya.
-   Kunci dibaca dari server situs ini (akun sama dengan index.html) + cache localStorage. */
-(function(){
-  'use strict';
-  var WORKER='https://steep-resonance-6a71.kjago7822.workers.dev';
-  var SITES={'kjago7822.github.io':'kjago7822','wgus543-hub.github.io':'wgus543-hub','mamakeavif-star.github.io':'mamakeavif-star','adinealif-byte.github.io':'adinealif-byte','bototomart787-png.github.io':'scenangka-rekap'};
-  var ACCOUNT=SITES[String(location.hostname).toLowerCase()]||'mamakeavif-star';   // harus sama dengan index.html
-  var SETTINGS_ID='__SETTINGS__', K_G='wg_lockcache_global', K_M='wg_lockcache_members';
-  var FEATS={
-    rh_rumus:['#rhCard'],
-    rh_multi:['#mlCard'],
-    rh_bank :['#shBank'],
-    rh_rekap:['#rkRoot > .card:not(#admCard):not(#sumCard)','#rkRoot > details'],
-    rh_final:['#admCard','#sumCard']
-  };
-  var KEYS=Object.keys(FEATS);
-  function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}}
-  function lockKey(x){return 'wg_mlock_'+String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'_');}
-  function isAdmin(){var c=lsGet('wg_admin_cred',null);return !!(c&&c.token&&c.exp>Date.now());}
-  function member(){return lsGet('wg_logged_member',null);}
-  function logout(){try{localStorage.removeItem('wg_logged_member');localStorage.removeItem('wbp_member');}catch(e){}}
-  function memKey(m){return (m&&(m.phone||m.id)||'');}
-
-  var veil=null;
-  function showVeil(msg,btn,href){
-    if(veil) veil.remove();
-    veil=document.createElement('div');
-    veil.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#0b0f1d;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:#eaf1ff;font:15px/1.5 system-ui,sans-serif';
-    veil.innerHTML='<div style="max-width:320px"><div style="font-size:46px;margin-bottom:8px">🔒</div><div style="margin-bottom:16px">'+msg+'</div><a href="'+href+'" style="display:block;background:#fbbf24;color:#10132a;font-weight:800;text-decoration:none;border-radius:10px;padding:12px">'+btn+'</a></div>';
-    document.body.appendChild(veil);
-  }
-  function hideVeil(){if(veil){veil.remove();veil=null;}}
-  function setHidden(sel,on){
-    document.querySelectorAll(sel).forEach(function(el){ if(on) el.setAttribute('data-wbf-hide','1'); else el.removeAttribute('data-wbf-hide'); });
-  }
-  function apply(){
-    if(isAdmin()){hideVeil();KEYS.forEach(function(k){FEATS[k].forEach(function(s){setHidden(s,false);});});return;}
-    var m=member();
-    if(!m){showVeil('Silakan login dulu di halaman utama.','Ke halaman login','index.html');return;}
-    var g=lsGet(K_G,[]), mm=(lsGet(K_M,{})[lockKey(memKey(m))])||[];
-    var L={}; g.concat(mm).forEach(function(k){L[k]=1;});
-    if(L.rh_all || KEYS.every(function(k){return L[k];})){
-      showVeil('Halaman ini tidak tersedia untuk akun kamu.','‹ Kembali ke Scan','index.html'); return;
-    }
-    hideVeil();
-    KEYS.forEach(function(k){FEATS[k].forEach(function(s){setHidden(s,!!L[k]);});});
-    // kartu pilihan Pasaran ikut disembunyikan kalau tiga fitur yang memakainya terkunci semua
-    var mk=document.getElementById('market'), card=mk&&mk.closest('.card');
-    if(card){ if(L.rh_rumus&&L.rh_multi&&L.rh_bank) card.setAttribute('data-wbf-hide','1'); else card.removeAttribute('data-wbf-hide'); }
-  }
-  function sync(){
-    if(isAdmin()) return Promise.resolve();
-    return fetch(WORKER.replace(/\/+$/,'')+'/'+ACCOUNT+'/members',{cache:'no-store'}).then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
-    }).then(function(rec){
-      var all=Array.isArray(rec)?rec:((rec&&rec.data)||[]);
-      var stg=all.filter(function(x){return x&&x.id===SETTINGS_ID;})[0]||{};
-      var g=Array.isArray(stg.globalLock)?stg.globalLock:(Array.isArray(stg.locked)?stg.locked:[]);
-      var mem={};
-      all.forEach(function(x){
-        if(!x||x.id===SETTINGS_ID||x.id==='ADMIN') return;
-        var a=Array.isArray(x.locked)?x.locked:[];
-        [x.phone,x.id].forEach(function(k){if(k) mem[lockKey(k)]=a;});
-      });
-      try{localStorage.setItem(K_G,JSON.stringify(g));localStorage.setItem(K_M,JSON.stringify(mem));}catch(e){}
-      // akun diblokir / belum di-ACC / masa aktif habis → sesi dicabut, kembali ke halaman login
-      var m=member();
-      if(m&&!m.isAdmin){
-        var fresh=all.filter(function(x){return x&&x.id!==SETTINGS_ID&&x.id!=='ADMIN'&&(x.id===m.id||x.phone===m.phone);})[0];
-        if(fresh){
-          var today=new Date().toISOString().slice(0,10);
-          if(fresh.status==='blocked'||fresh.status==='pending'||(fresh.expiresAt&&today>=fresh.expiresAt)){ logout(); }
-        }
-      }
-    }).catch(function(){});   // gagal jaringan: pakai cache terakhir
-  }
-  function run(){ apply(); sync().then(apply); }
-  run();
-  setInterval(function(){ sync().then(apply); },30000);
-  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') sync().then(apply); });
-  window.addEventListener('storage',apply);
 })();
 </script>
 </body>
