@@ -3956,30 +3956,45 @@ function r4rkRange(t){   // Rengking: "5" = urutan 1-5 · "3-10" = urutan 3 samp
   if(b<1||a>b)return null;
   return [a,b];
 }
-function r4rank(pos){   // Rengking N (2-8) dari rekap suara Bank Harian pasaran terpilih, atau digit manual -> semua pasangan digit x digit
+function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpilih (trek Ai posisi itu + trek Pos A/C/K/E posisinya masing-masing), atau digit manual -> pasangan digit x digit
   const rg=r4rkRange($('r4k'+pos).value),n=rg?rg[1]:0,mv=$('r4km'+pos).value.replace(/\D/g,'');
   if(!n&&!mv)return null;
-  let ds,src;
-  if(mv){ds=[...new Set(mv.split(''))];src='manual';}
+  let dsA,dsB,src,cov=null,VA={},VB={},cutTxt='';
+  if(mv){dsA=dsB=[...new Set(mv.split(''))];src='manual';}
   else{
     let nm='';try{const x=bkRead().find(y=>y.v===r4cur);if(x)nm=String(x.M.name).trim().toLowerCase();}catch(_){}
     if(!nm)return {arr:null,info:'Rengking: ketuk nama pasaran di atas dulu (atau isi digit manual).'};
-    const vk=AI_UT[pos];let P=null;try{const M=shbSummary().out.mk[nm];P=M&&M.pos[vk];}catch(_){}
-    if(!P)return {arr:null,info:'Rengking: tidak ada suara '+(VARS[vk]?VARS[vk].name:vk)+' aktif untuk pasaran ini di Bank Harian.'};
-    const DG=r4parse($('r4d'+pos).value.trim()),votes={};let used=0;   // Digit: hanya rumus dgn jumlah digit dalam rentang yang ikut suara
-    (P.items||[]).forEach(i=>{if(DG.size&&i.d!==undefined&&!DG.has(i.d))return;used++;(i.s||[]).forEach(x=>{votes[x]=(votes[x]||0)+1;});});
+    const vk=AI_UT[pos];let M=null;try{M=shbSummary().out.mk[nm];}catch(_){}
+    const DG=r4parse($('r4d'+pos).value.trim());   // Digit mis. 4-7: trek dengan 4,5,6,7 digit yang ikut rekap
+    const okI=i=>!(DG.size&&i.d!==undefined&&!DG.has(i.d));
+    const PVK=['as','cop','kep','eko'],ix2={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[pos]||[2,3];
+    const take=v=>((M&&M.pos&&M.pos[v]&&M.pos[v].items)||[]).filter(okI);
+    const aiI=take(vk),p1=ix2[0]===ix2[1]?[]:take(PVK[ix2[0]]),p2=take(PVK[ix2[1]]);   // trek Pos ikut rekap di posisinya masing-masing
+    const used=aiI.length+p1.length+p2.length;
+    if(!M||(!used&&!((M.pos&&M.pos[vk]))))return {arr:null,info:'Rengking: tidak ada suara '+(VARS[vk]?VARS[vk].name:vk)+' aktif untuk pasaran ini di Bank Harian.'};
     if(!used)return {arr:null,info:'Rengking: tidak ada rumus dengan Digit '+$('r4d'+pos).value+' di Bank untuk posisi ini.'};
-    const rank=Object.keys(votes).map(Number).sort((a,b)=>votes[b]-votes[a]||a-b);
-    ds=rank.slice(rg[0]-1,rg[1]).map(String);const rl=rg[0]+(rg[1]>rg[0]?'-'+rg[1]:'');src='rengking '+(rg[0]===1?rg[1]:rl)+' dari suara Bank ('+used+' rumus'+(DG.size?', Digit '+$('r4d'+pos).value:'')+')'+(rank.length<rg[1]?' · suara hanya '+rank.length+' digit':'');
-    ds.votes=votes;
+    const add=(V,items)=>items.forEach(i=>{(i.s||[]).forEach(x=>{V[x]=(V[x]||0)+1;});});
+    add(VA,aiI);add(VB,aiI);add(VA,p1);add(VB,p2);
+    const rk=V=>Object.keys(V).map(Number).sort((a,b)=>V[b]-V[a]||a-b);
+    const rA=rk(VA),rB=rk(VB);
+    dsA=rA.slice(rg[0]-1,rg[1]).map(String);dsB=rB.slice(rg[0]-1,rg[1]).map(String);
+    const rl=rg[0]+(rg[1]>rg[0]?'-'+rg[1]:'');
+    const parts=[aiI.length?aiI.length+' Ai':'',p1.length?p1.length+' Pos '+'ACKE'[ix2[0]]:'',p2.length?p2.length+' Pos '+'ACKE'[ix2[1]]:''].filter(Boolean).join(' + ');
+    src='rengking '+(rg[0]===1?rg[1]:rl)+' dari suara Bank ('+used+' trek: '+parts+(DG.size?', Digit '+$('r4d'+pos).value:'')+')'+(Math.min(rA.length,rB.length)<rg[1]?' · suara hanya '+Math.min(rA.length,rB.length)+' digit':'');
+    // hanya angka yang pernah masuk trek yang ikut: Ai = kedua digit dalam satu trek; Pos = digit depan dari trek Pos pertama & digit belakang dari trek Pos kedua
+    cov=new Set();
+    aiI.forEach(i=>{const S=[...(i.s||[])].map(String);S.forEach(a=>S.forEach(b=>cov.add(a+b)));});
+    if(p1.length&&p2.length){const A=new Set(),B=new Set();p1.forEach(i=>(i.s||[]).forEach(x=>A.add(String(x))));p2.forEach(i=>(i.s||[]).forEach(x=>B.add(String(x))));A.forEach(a=>B.forEach(b=>cov.add(a+b)));}
   }
-  let arr=[];ds.forEach(a=>ds.forEach(b=>arr.push(a+b)));
+  let arr=[];dsA.forEach(a=>dsB.forEach(b=>arr.push(a+b)));
+  if(cov&&cov.size){const b4=arr.length;arr=arr.filter(x=>cov.has(x));if(arr.length!==b4)cutTxt=' · '+(b4-arr.length)+' angka dibuang (tidak pernah masuk trek Digit '+$('r4d'+pos).value+')';}
   const N=parseInt($('r4t'+pos).value,10);let topTxt='';
   if(N>0&&N<arr.length){   // Top: N angka terkuat (jumlah suara digit depan + belakang), seri ikut urutan rengking
-    const V=ds.votes||{},sc=x=>(V[x[0]]||0)+(V[x[1]]||0),ix=new Map(arr.map((x,i)=>[x,i]));
+    const sc=x=>(VA[x[0]]||0)+(VB[x[1]]||0),ix=new Map(arr.map((x,i)=>[x,i]));
     arr=arr.slice().sort((x,y)=>sc(y)-sc(x)||ix.get(x)-ix.get(y)).slice(0,N).sort((x,y)=>ix.get(x)-ix.get(y));topTxt=' · Top '+N;
   }
-  return {arr,info:'Digit '+ds.join(' ')+' · '+src+' → '+arr.length+' LN'+topTxt+' · Patah tidak dipakai (rumus patah sudah dibuang Bank)'};
+  const dtxt=dsA.join('')===dsB.join('')?dsA.join(' '):dsA.join(' ')+' | '+dsB.join(' ');
+  return {arr,info:'Digit '+dtxt+' · '+src+cutTxt+' → '+arr.length+' LN'+topTxt+' · Patah tidak dipakai (rumus patah sudah dibuang Bank)'};
 }
 function r4fill(pos){
   try{r4fill0(pos);}catch(e){const b=$('r4a'+pos);if(b)b.textContent='⚠ Gagal hitung: '+e.message+' — cek isian Patah / Digit / Rengking.';}
