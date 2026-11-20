@@ -3996,18 +3996,23 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
   const dtxt=dsA.join('')===dsB.join('')?dsA.join(' '):dsA.join(' ')+' | '+dsB.join(' ');
   return {arr,info:'Digit '+dtxt+' · '+src+cutTxt+' → '+arr.length+' LN'+topTxt+' · Patah tidak dipakai (rumus patah sudah dibuang Bank)'};
 }
-// Kotak LN 2D otomatis melebar ke bawah sesuai isi, supaya semua LN langsung terlihat (maks 70% tinggi layar, lebihnya digulir)
-function r4fit(){
-  R4P.forEach(k=>{
-    const t=$('r4'+k);if(!t)return;
-    const sig=t.value.length+'|'+t.clientWidth;if(t._fit===sig)return;t._fit=sig;
-    t.style.height='auto';
-    const need=t.scrollHeight+4,mx=Math.round(window.innerHeight*0.7);
-    t.style.height=Math.max(64,Math.min(need,mx))+'px';
-    t.style.overflowY=need>mx?'auto':'hidden';
-  });
+// Kotak LN 2D (Depan, Tengah, Belakang) otomatis melebar ke bawah sesuai isi (maks 70% tinggi layar, lebihnya digulir)
+function r4fitOne(t){
+  if(!t||!t.offsetParent)return;   // belum tampil (bagian masih tertutup): lewati, dicek lagi nanti
+  const sig=t.value.length+'|'+t.clientWidth;
+  if(t._fit===sig&&t.scrollHeight<=t.clientHeight+2)return;
+  t._fit=sig;
+  t.style.height='auto';
+  const need=t.scrollHeight+6,mx=Math.max(160,Math.round(window.innerHeight*0.7));
+  t.style.height=Math.max(64,Math.min(need,mx))+'px';
+  t.style.overflowY=need>mx?'auto':'hidden';
+  t._fit=t.value.length+'|'+t.clientWidth;
 }
-setInterval(r4fit,400);
+function r4fit(){['Depan','Tengah','Belakang'].forEach(k=>{try{r4fitOne(document.getElementById('r4'+k));}catch(_){}});}
+setInterval(r4fit,350);
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea[data-r4]'))try{r4fitOne(t);}catch(_){}} );
+document.addEventListener('toggle',()=>setTimeout(r4fit,50),true);
+window.addEventListener('resize',()=>{['Depan','Tengah','Belakang'].forEach(k=>{const t=document.getElementById('r4'+k);if(t)t._fit='';});r4fit();});
 function r4fill(pos){
   try{r4fill0(pos);}catch(e){const b=$('r4a'+pos);if(b)b.textContent='⚠ Gagal hitung: '+e.message+' — cek isian Patah / Digit / Rengking.';}
 }
