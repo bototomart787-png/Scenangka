@@ -3996,6 +3996,18 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
   const dtxt=dsA.join('')===dsB.join('')?dsA.join(' '):dsA.join(' ')+' | '+dsB.join(' ');
   return {arr,info:'Digit '+dtxt+' · '+src+cutTxt+' → '+arr.length+' LN'+topTxt+' · Patah tidak dipakai (rumus patah sudah dibuang Bank)'};
 }
+// Kotak LN 2D otomatis melebar ke bawah sesuai isi, supaya semua LN langsung terlihat (maks 70% tinggi layar, lebihnya digulir)
+function r4fit(){
+  R4P.forEach(k=>{
+    const t=$('r4'+k);if(!t)return;
+    const sig=t.value.length+'|'+t.clientWidth;if(t._fit===sig)return;t._fit=sig;
+    t.style.height='auto';
+    const need=t.scrollHeight+4,mx=Math.round(window.innerHeight*0.7);
+    t.style.height=Math.max(64,Math.min(need,mx))+'px';
+    t.style.overflowY=need>mx?'auto':'hidden';
+  });
+}
+setInterval(r4fit,400);
 function r4fill(pos){
   try{r4fill0(pos);}catch(e){const b=$('r4a'+pos);if(b)b.textContent='⚠ Gagal hitung: '+e.message+' — cek isian Patah / Digit / Rengking.';}
 }
