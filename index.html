@@ -816,26 +816,6 @@ body.wb-alllk #wb-lockmsg{display:block}
   <input type="checkbox" id="auto" style="display:none">   <!-- rekap otomatis dimatikan: pakai tombol Rekap final di kartu bawah -->
 </div>
 
-<div class="card k5" id="admCard">
-  <h2>Rekap final otomatis</h2>
-  <label>Satukan semua trek Bank Harian (+ Scen Shio bila ada) untuk satu pasaran jadi satu rekap final (ikut tab 2D / 3D / 4D)</label>
-  <div class="rkr"><select id="bkSrc"></select><button class="pri" id="bkGet" style="flex:0 0 auto">Rekap final</button></div>
-  <div class="rkr"><b>Kelompok</b><select id="bkGrp"><option value="KE">2D · KE (2 digit belakang)</option><option value="CK">2D · CK (2 digit tengah)</option><option value="AC">2D · AC (2 digit depan)</option><option value="3D">3D (3 digit belakang)</option><option value="4D">4D (4 digit)</option></select></div>
-  <div id="jlKeBox" data-g="KE"></div>
-  <div class="rkr"><button data-jladd="KE">➕ Tambah tempat JL KE</button></div>
-  <div id="jlCkBox" data-g="CK"></div>
-  <div class="rkr"><button data-jladd="CK">➕ Tambah tempat JL CK</button></div>
-  <div id="jlAcBox" data-g="AC"></div>
-  <div class="rkr"><button data-jladd="AC">➕ Tambah tempat JL AC</button></div>
-  <div class="hint">JL = jarak lemah: angka jadi di antara dari–sampai (mis. 20–40) dibuang total, untuk kelompok masing-masing.</div>
-  <div id="bkInfo" class="hint"></div>
-</div>
-
-<div class="card k5" id="sumCard">
-  <h2>📋 Kelompok rumus (centang = ikut rekap)</h2>
-  <div id="bkSum"></div>
-</div>
-
 <div id="isiCard" class="card k6">
   <h2>Isi data</h2>
   <label id="lbIds">Baris AI / BBFS / CT — satu baris = satu trek (maks 100), saling ditarungkan</label>
@@ -892,6 +872,24 @@ body.wb-alllk #wb-lockmsg{display:block}
 <div class="card k5" id="r4Card">
   <h2>🎯 Rekap 4D · 3D otomatis dari 2D Depan · Tengah · Belakang</h2>
   <div class="hint">Jalankan Rekap 2D di tiap Kelompok (<b>AC = Depan</b>, <b>CK = Tengah</b>, <b>KE = Belakang</b>) — hasil semua Patah tersimpan otomatis. Lalu isi <b>Patah</b> tiap posisi di bawah (mis. <b>6</b> atau <b>1-13</b>; kosong = Angka Jadi = patah terkecil). Kolom LN terisi sendiri, 4D dan 3D tersusun otomatis.</div>
+<div id="admCard" style="margin:10px 0;padding:10px;border:1px solid var(--bd);border-radius:10px">
+<div style="font-weight:800;color:var(--acc,#ffc72c);margin:2px 0 6px">① Rekap final otomatis</div>
+  <label>Satukan semua trek Bank Harian (+ Scen Shio bila ada) untuk satu pasaran jadi satu rekap final (ikut tab 2D / 3D / 4D)</label>
+  <div class="rkr"><select id="bkSrc"></select><button class="pri" id="bkGet" style="flex:0 0 auto">Rekap final</button></div>
+  <div class="rkr"><b>Kelompok</b><select id="bkGrp"><option value="KE">2D · KE (2 digit belakang)</option><option value="CK">2D · CK (2 digit tengah)</option><option value="AC">2D · AC (2 digit depan)</option><option value="3D">3D (3 digit belakang)</option><option value="4D">4D (4 digit)</option></select></div>
+  <div id="jlKeBox" data-g="KE"></div>
+  <div class="rkr"><button data-jladd="KE">➕ Tambah tempat JL KE</button></div>
+  <div id="jlCkBox" data-g="CK"></div>
+  <div class="rkr"><button data-jladd="CK">➕ Tambah tempat JL CK</button></div>
+  <div id="jlAcBox" data-g="AC"></div>
+  <div class="rkr"><button data-jladd="AC">➕ Tambah tempat JL AC</button></div>
+  <div class="hint">JL = jarak lemah: angka jadi di antara dari–sampai (mis. 20–40) dibuang total, untuk kelompok masing-masing.</div>
+  <div id="bkInfo" class="hint"></div>
+</div>
+<div id="sumCard" style="margin:10px 0;padding:10px;border:1px solid var(--bd);border-radius:10px">
+<div style="font-weight:800;color:var(--acc,#ffc72c);margin:2px 0 6px">② Kelompok rumus (centang = ikut rekap)</div>
+  <div id="bkSum"></div>
+</div>
   <div class="rkr"><b style="flex:0 0 auto">Rekap 2D masuk ke</b><select id="r4Tgt"><option value="">ikut Kelompok (AC/CK/KE)</option><option value="Depan">Depan</option><option value="Tengah">Tengah</option><option value="Belakang">Belakang</option></select></div>
   <div id="r4Chips" class="rkrow" style="flex-wrap:wrap;gap:6px"></div>
   <div id="r4St" class="hint" style="margin:4px 0"></div>
@@ -3960,7 +3958,9 @@ function r4rkRange(t){   // Rengking: "5" = urutan 1-5 · "3-10" = urutan 3 samp
   if(b<1||a>b)return null;
   return [a,b];
 }
-function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpilih (trek Ai posisi itu + trek Pos A/C/K/E posisinya masing-masing), atau digit manual -> pasangan digit x digit
+// Trek Bank yang berisi DIGIT dan posisi digit-nya (A=0 C=1 K=2 E=3): ikut suara Rengking di posisinya masing-masing
+const R4_SLOT={ai2dd:[0,1],ai2dt:[1,2],ai2db:[2,3],ai3d:[1,2,3],cb:[0,1,2,3],as:[0],cop:[1],kep:[2],eko:[3],jlac:[0],jlck:[1],jlke:[2]};
+function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpilih (semua trek berisi digit), atau digit manual -> pasangan digit x digit
   const rg=r4rkRange($('r4k'+pos).value),n=rg?rg[1]:0,mv=$('r4km'+pos).value.replace(/\D/g,'');
   if(!n&&!mv)return null;
   let dsA,dsB,src,cov=null,VA={},VB={},cutTxt='';
@@ -3968,27 +3968,31 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
   else{
     let nm='';try{const x=bkRead().find(y=>y.v===r4cur);if(x)nm=String(x.M.name).trim().toLowerCase();}catch(_){}
     if(!nm)return {arr:null,info:'Rengking: ketuk nama pasaran di atas dulu (atau isi digit manual).'};
-    const vk=AI_UT[pos];let M=null;try{M=shbSummary().out.mk[nm];}catch(_){}
+    let M=null;try{M=shbSummary().out.mk[nm];}catch(_){}
     const DG=r4parse($('r4d'+pos).value.trim());   // Digit mis. 4-7: trek dengan 4,5,6,7 digit yang ikut rekap
     const okI=i=>!(DG.size&&i.d!==undefined&&!DG.has(i.d));
-    const PVK=['as','cop','kep','eko'],ix2={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[pos]||[2,3];
-    const take=v=>((M&&M.pos&&M.pos[v]&&M.pos[v].items)||[]).filter(okI);
-    const aiI=take(vk),p1=ix2[0]===ix2[1]?[]:take(PVK[ix2[0]]),p2=take(PVK[ix2[1]]);   // trek Pos ikut rekap di posisinya masing-masing
-    const used=aiI.length+p1.length+p2.length;
-    if(!M||(!used&&!((M.pos&&M.pos[vk]))))return {arr:null,info:'Rengking: tidak ada suara '+(VARS[vk]?VARS[vk].name:vk)+' aktif untuk pasaran ini di Bank Harian.'};
-    if(!used)return {arr:null,info:'Rengking: tidak ada rumus dengan Digit '+$('r4d'+pos).value+' di Bank untuk posisi ini.'};
-    const add=(V,items)=>items.forEach(i=>{(i.s||[]).forEach(x=>{V[x]=(V[x]||0)+1;});});
-    add(VA,aiI);add(VB,aiI);add(VA,p1);add(VB,p2);
+    const ix2={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[pos]||[2,3],ia=ix2[0],ib=ix2[1];
+    const trk=[],cnt={};
+    Object.keys(R4_SLOT).forEach(vk=>{
+      const P=M&&M.pos&&M.pos[vk];if(!P)return;const sl=R4_SLOT[vk],hA=sl.includes(ia),hB=sl.includes(ib);if(!hA&&!hB)return;
+      (P.items||[]).filter(okI).forEach(i=>{if(!(i.s&&(i.s.size||i.s.length)))return;trk.push({S:[...i.s].map(String),hA,hB});cnt[vk]=(cnt[vk]||0)+1;});
+    });
+    const used=trk.length;
+    if(!M)return {arr:null,info:'Rengking: tidak ada trek untuk pasaran ini di Bank Harian.'};
+    if(!used)return {arr:null,info:'Rengking: tidak ada trek berisi digit'+(DG.size?' dengan Digit '+$('r4d'+pos).value:'')+' di Bank untuk posisi ini.'};
+    trk.forEach(t=>t.S.forEach(x=>{if(t.hA)VA[x]=(VA[x]||0)+1;if(t.hB)VB[x]=(VB[x]||0)+1;}));
     const rk=V=>Object.keys(V).map(Number).sort((a,b)=>V[b]-V[a]||a-b);
     const rA=rk(VA),rB=rk(VB);
     dsA=rA.slice(rg[0]-1,rg[1]).map(String);dsB=rB.slice(rg[0]-1,rg[1]).map(String);
     const rl=rg[0]+(rg[1]>rg[0]?'-'+rg[1]:'');
-    const parts=[aiI.length?aiI.length+' Ai':'',p1.length?p1.length+' Pos '+'ACKE'[ix2[0]]:'',p2.length?p2.length+' Pos '+'ACKE'[ix2[1]]:''].filter(Boolean).join(' + ');
-    src='rengking '+(rg[0]===1?rg[1]:rl)+' dari suara Bank ('+used+' trek: '+parts+(DG.size?', Digit '+$('r4d'+pos).value:'')+')'+(Math.min(rA.length,rB.length)<rg[1]?' · suara hanya '+Math.min(rA.length,rB.length)+' digit':'');
-    // hanya angka yang pernah masuk trek yang ikut: Ai = kedua digit dalam satu trek; Pos = digit depan dari trek Pos pertama & digit belakang dari trek Pos kedua
-    cov=new Set();
-    aiI.forEach(i=>{const S=[...(i.s||[])].map(String);S.forEach(a=>S.forEach(b=>cov.add(a+b)));});
-    if(p1.length&&p2.length){const A=new Set(),B=new Set();p1.forEach(i=>(i.s||[]).forEach(x=>A.add(String(x))));p2.forEach(i=>(i.s||[]).forEach(x=>B.add(String(x))));A.forEach(a=>B.forEach(b=>cov.add(a+b)));}
+    const nmv=vk=>(typeof SH_NAME!=='undefined'&&SH_NAME[vk])||(VARS[vk]&&VARS[vk].lab)||vk;
+    const parts=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+    const ptxt=parts.slice(0,5).map(vk=>cnt[vk]+' '+nmv(vk)).join(' + ')+(parts.length>5?' + '+(parts.length-5)+' jenis lain':'');
+    src='rengking '+(rg[0]===1?rg[1]:rl)+' dari suara Bank ('+used+' trek: '+ptxt+(DG.size?', Digit '+$('r4d'+pos).value:'')+')'+(Math.min(rA.length,rB.length)<rg[1]?' · suara hanya '+Math.min(rA.length,rB.length)+' digit':'');
+    // hanya angka yang pernah masuk trek yang ikut: trek yang memuat kedua posisi = kedua digit di satu trek; trek satu posisi = digit depan dari trek posisi depan & digit belakang dari trek posisi belakang
+    cov=new Set();const A=new Set(),B=new Set();
+    trk.forEach(t=>{if(t.hA&&t.hB)t.S.forEach(a=>t.S.forEach(b=>cov.add(a+b)));else if(t.hA)t.S.forEach(a=>A.add(a));else if(t.hB)t.S.forEach(b=>B.add(b));});
+    A.forEach(a=>B.forEach(b=>cov.add(a+b)));
   }
   let arr=[];dsA.forEach(a=>dsB.forEach(b=>arr.push(a+b)));
   if(cov&&cov.size){const b4=arr.length;arr=arr.filter(x=>cov.has(x));if(arr.length!==b4)cutTxt=' · '+(b4-arr.length)+' angka dibuang (tidak pernah masuk trek Digit '+$('r4d'+pos).value+')';}
@@ -4000,23 +4004,6 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
   const dtxt=dsA.join('')===dsB.join('')?dsA.join(' '):dsA.join(' ')+' | '+dsB.join(' ');
   return {arr,info:'Digit '+dtxt+' · '+src+cutTxt+' → '+arr.length+' LN'+topTxt+' · Patah tidak dipakai (rumus patah sudah dibuang Bank)'};
 }
-// Kotak LN 2D (Depan, Tengah, Belakang) otomatis melebar ke bawah sesuai isi (maks 70% tinggi layar, lebihnya digulir)
-function r4fitOne(t){
-  if(!t||!t.offsetParent)return;   // belum tampil (bagian masih tertutup): lewati, dicek lagi nanti
-  const sig=t.value.length+'|'+t.clientWidth;
-  if(t._fit===sig&&t.scrollHeight<=t.clientHeight+2)return;
-  t._fit=sig;
-  t.style.height='auto';
-  const need=t.scrollHeight+6,mx=Math.max(160,Math.round(window.innerHeight*0.7));
-  t.style.height=Math.max(64,Math.min(need,mx))+'px';
-  t.style.overflowY=need>mx?'auto':'hidden';
-  t._fit=t.value.length+'|'+t.clientWidth;
-}
-function r4fit(){['Depan','Tengah','Belakang'].forEach(k=>{try{r4fitOne(document.getElementById('r4'+k));}catch(_){}});}
-setInterval(r4fit,350);
-document.addEventListener('input',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea[data-r4]'))try{r4fitOne(t);}catch(_){}} );
-document.addEventListener('toggle',()=>setTimeout(r4fit,50),true);
-window.addEventListener('resize',()=>{['Depan','Tengah','Belakang'].forEach(k=>{const t=document.getElementById('r4'+k);if(t)t._fit='';});r4fit();});
 function r4fill(pos){
   try{r4fill0(pos);}catch(e){const b=$('r4a'+pos);if(b)b.textContent='⚠ Gagal hitung: '+e.message+' — cek isian Patah / Digit / Rengking.';}
 }
@@ -4469,7 +4456,13 @@ let sumSel=null,sumMode='';
 const sumIdx=()=>bkIdx($('bkGrp').value||'KE')||[2,3];
 const sumRel=vk=>{const p=VKPOS[vk];return !!p&&p.every(i=>sumIdx().includes(i));};
 const sumAuto=()=>new Set(Object.keys(VKPOS).filter(vk=>VARS[vk]&&sumRel(vk)));
-function sumGet(){const k=N+':'+($('bkGrp').value||'KE');if(!sumSel||sumMode!==k){sumSel=sumAuto();sumMode=k;}return sumSel;}   // ganti tab / kelompok -> centang otomatis ulang sesuai kebutuhan
+let sumSeen=new Set();
+function sumGet(){
+  const k=N+':'+($('bkGrp').value||'KE');
+  if(!sumSel||sumMode!==k){sumSel=sumAuto();sumMode=k;sumSeen=new Set(sumSel);}
+  else sumAuto().forEach(vk=>{if(!sumSeen.has(vk)){sumSeen.add(vk);sumSel.add(vk);}});   // jenis trek yang baru masuk Bank otomatis ikut rekap (yang sudah kamu cabut centangnya tetap dicabut)
+  return sumSel;
+}   // ganti tab / kelompok -> centang otomatis ulang sesuai kebutuhan
 function bkDigX(x,g){   // Digit per kelompok: hanya trek dengan jumlah digit dalam rentang yang ikut rekap kelompok itu
   const el=$('r4d'+({AC:'Depan',CK:'Tengah',KE:'Belakang'}[g]||'')),t=el?el.value.trim():'';if(!t)return x;
   const DG=r4parse(t);if(!DG.size)return x;const pos={};
@@ -4519,7 +4512,7 @@ function bkAuditHtml(x0,grp){   // audit: semua trek di Bank -> masuk rekap atau
 $('bkSum').addEventListener('toggle',e=>{if(e.target&&e.target.id==='bkAudit')bkAuditOpen=e.target.open;},true);
 $('bkSum').addEventListener('change',e=>{const c=e.target.closest&&e.target.closest('input[data-sv]');if(!c)return;const S=sumGet();c.checked?S.add(c.dataset.sv):S.delete(c.dataset.sv);bkSumRefresh();});
 $('bkSum').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-sumact]');if(!b)return;const a=b.dataset.sumact;sumGet();
-  sumSel=a==='none'?new Set():sumAuto();bkSumRefresh();});
+  sumSel=a==='none'?new Set():sumAuto();sumSeen=sumAuto();bkSumRefresh();});
 function jlVis(){const IDX=sumIdx();[['jlKeBox',[2,3]],['jlCkBox',[1,2]],['jlAcBox',[0,1]]].forEach(([id,pp])=>{const b=$(id);if(!b)return;const show=pp.every(i=>IDX.includes(i));b.style.display=show?'':'none';const nx=b.nextElementSibling;if(nx&&nx.querySelector&&nx.querySelector('[data-jladd]'))nx.style.display=show?'':'none';});}   // tempat JL hanya muncul untuk mode yang butuh
 function bkSumRefresh(){try{jlVis();bkFill();const x=bkRead().find(y=>y.v===$('bkSrc').value);if(!$('bkSum'))return;if(!x){$('bkSum').innerHTML='<div class="hint">Bank Harian masih kosong — simpan rumus lewat 💾 Simpan.</div>';return;}bkSumRender(x,$('bkGrp').value||'KE');}catch(e){}}
 const NDONLY=new Set(['ai3d','cb','off3d','off4d','j3d','j4d','offj3d','offj4d','jbk3d','jbk4d']),PAIRLAB={KE:'2D belakang',CK:'2D tengah',AC:'2D depan'};
