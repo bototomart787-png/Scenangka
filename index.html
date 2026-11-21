@@ -900,7 +900,8 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div id="r4Info" class="hint" style="margin:6px 0"></div>
   <div class="r4box"><div class="ph"><span>Hasil 4D (ab∈Depan · bc∈Tengah · cd∈Belakang) · <span id="r4nO">0</span> angka</span></div><textarea id="r4out" rows="3" readonly placeholder="Hasil 4D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy">Salin 4D</button><button id="r4Use">Pakai di tab 4D</button></div>
-  <div class="r4box"><div class="ph"><span>Hasil 3D (bc∈Tengah · cd∈Belakang) · <span id="r4n3">0</span> angka</span></div><textarea id="r4out3" rows="3" readonly placeholder="Hasil 3D tampil di sini"></textarea></div>
+  <div class="r4box"><div class="ph"><span>AI / CT / CB 3D · <span id="r4nAI3">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 3D hanya lolos jika memuat salah satu digit di tiap baris. Trek <b>CB</b> dan <b>AI 3D</b> dari Bank masuk otomatis (tanda #cb / #ai); ketikan manual juga boleh.</div><textarea id="r4ai3" rows="4" style="min-height:96px" data-r4x="1" placeholder="AI/CT/CB 3D — satu baris satu kumpulan digit"></textarea></div>
+<div class="r4box"><div class="ph"><span>Hasil 3D (bc∈Tengah · cd∈Belakang) · <span id="r4n3">0</span> angka</span></div><textarea id="r4out3" rows="3" readonly placeholder="Hasil 3D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy3">Salin 3D</button><button id="r4Use3">Pakai di tab 3D</button><button class="red" id="r4Reset">Kosongkan semua</button></div>
   <div class="r4box" id="aiBox"><div class="ph"><span>🧠 Skor AI cerdas · 2D / 3D / 4D</span></div>
   <div class="hint" style="padding-top:6px">Skor gabungan per kelompok: <b>trek 50%</b> (angka bertahan di banyak tingkat Patah) + <b>frekuensi result 25%</b> (sering keluar di jendela terakhir) + <b>lama tidak keluar 25%</b>. Hasilnya berupa peringkat angka.</div>
@@ -3921,8 +3922,39 @@ $('use').onclick=()=>{
 /* ===== Rekap 4D / 3D otomatis dari 2D Depan / Tengah / Belakang ===== */
 const R4K='wb_rek4d_v2',R4P=['Depan','Tengah','Belakang'],R4G={AC:'Depan',CK:'Tengah',KE:'Belakang'};
 let R2={};
+// Trek Bank yang dikeluarkan satu per satu dari rekap tiap posisi (Bank sendiri tidak dihapus)
+const R4EXK='wb_rek4d_ex',R4EX={Depan:new Set(),Tengah:new Set(),Belakang:new Set()},R4TRK={};
+try{const q=JSON.parse(localStorage.getItem(R4EXK)||'{}');Object.keys(R4EX).forEach(k=>(q[k]||[]).forEach(v=>R4EX[k].add(v)));}catch(_){}
+function r4exSave(){try{const o={};Object.keys(R4EX).forEach(k=>o[k]=[...R4EX[k]]);localStorage.setItem(R4EXK,JSON.stringify(o));}catch(_){}}
+const r4tk=(vk,i)=>vk+'|'+i.c+'|'+[...(i.s||[])].map(String).sort().join('');
+function r4trkList(x,g){
+  const k=R4G[g],el=$('r4d'+k),t=el?el.value.trim():'',DG=t?r4parse(t):null,list=[];
+  Object.keys(x.M.pos).forEach(vk=>{if(!sumRel(vk))return;(x.M.pos[vk].items||[]).forEach(i=>{
+    if(!(i.s&&(i.s.size||i.s.length)))return;const key=r4tk(vk,i);
+    list.push({vk,key,d:i.d,c:i.c,ex:R4EX[k].has(key),dg:!!(DG&&DG.size&&!DIG_EXEMPT(vk)&&i.d!==undefined&&!DG.has(i.d))});});});
+  return list;
+}
+const escT=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function r4trkRender(k){
+  const el=$('r4tk'+k);if(!el)return;const g=Object.keys(R4G).find(z=>R4G[z]===k),list=R4TRK[g];
+  if(!list||!list.length){el.innerHTML=list?'<div class="hint" style="padding:2px 0">Belum ada trek Bank yang masuk rekap posisi '+k+'.</div>':'';return;}
+  const nmv=vk=>(typeof SH_NAME!=='undefined'&&SH_NAME[vk])||(VARS[vk]&&VARS[vk].lab)||vk;
+  const chip=(r,mode)=>{
+    const txt=nmv(r.vk)+(r.d!==undefined?' · '+r.d+' digit':'');
+    const bs='margin-left:6px;padding:0 8px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-weight:800';
+    const base='display:inline-flex;align-items:center;margin:3px 6px 3px 0;padding:4px 8px;border-radius:10px;border:1px solid var(--bd);font-size:12.5px;';
+    if(mode==='ex')return `<span title="${escT(r.c||'')}" style="${base}opacity:.6;text-decoration:line-through">${escT(txt)}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="inc" style="${bs}">↺</button></span>`;
+    if(mode==='dg')return `<span title="${escT(r.c||'')}" style="${base}opacity:.45">${escT(txt)} · Digit ${escT($('r4d'+k).value)}: tidak ikut</span>`;
+    return `<span title="${escT(r.c||'')}" style="${base}${/^off|^jl(ke|ck|ac)$/.test(r.vk)?'border-color:#ff8d84;':''}">${escT(txt)}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="${bs}">✕</button></span>`;
+  };
+  const on=list.filter(r=>!r.ex&&!r.dg),ex=list.filter(r=>r.ex),dg=list.filter(r=>!r.ex&&r.dg);
+  el.innerHTML=`<div style="font-weight:800;margin:2px 0">Trek yang ikut rekap ${k} (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk ✕ untuk mengeluarkan satu per satu</span></div>`
+    +(on.length?on.map(r=>chip(r,'on')).join(''):'<div class="hint" style="padding:2px 0">Tidak ada trek yang ikut — LN tidak terpangkas.</div>')
+    +(dg.length?`<div style="font-size:12px;color:var(--mut);margin-top:4px">Tidak ikut karena Digit:</div>`+dg.map(r=>chip(r,'dg')).join(''):'')
+    +(ex.length?`<div style="font-size:12px;color:var(--mut);margin-top:4px">Dikeluarkan (${ex.length}) <button data-r4tkall="${k}" style="margin-left:6px;padding:0 8px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit">↺ kembalikan semua</button></div>`+ex.map(r=>chip(r,'ex')).join(''):'');
+}
 if(!document.getElementById('r4kl')){const dl=document.createElement('datalist');dl.id='r4kl';dl.innerHTML=['2','3','4','5','6','7','8','9','10','3-10','1-10'].map(v=>'<option value="'+v+'">').join('');document.body.appendChild(dl);}
-$('r4Pos').innerHTML=R4P.map(k=>`<div class="r4box"><div class="ph"><span>2D ${k} · <span id="r4n${k}">0</span> LN</span></div><div class="r4row"><b>Patah</b><input id="r4p${k}" data-r4p="${k}" placeholder="mis. 6 atau 1-13 (kosong = Angka Jadi)"></div><div class="r4row"><b>Top</b><input id="r4t${k}" data-r4p="${k}" inputmode="numeric" placeholder="batasi N angka teratas, mis. 10 (kosong = semua)"></div><div class="r4row"><b>Rengking</b><input id="r4k${k}" data-r4p="${k}" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4km${k}" data-r4p="${k}" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="r4row"><b>CT</b><input id="r4c${k}" data-r4p="${k}" inputmode="numeric" autocomplete="off" placeholder="mis. 56 (kosong = off)"><select id="r4cm${k}" data-r4p="${k}" style="flex:0 0 112px"><option value="any">salah satu</option><option value="all">semua</option></select></div><div class="hint" id="r4cn${k}" style="padding-top:0"></div><div class="r4row"><b>Digit</b><input id="r4d${k}" data-r4d="${k}" inputmode="text" value="1-9" placeholder="trek berapa digit, mis. 1-9 atau 4-7"></div><div class="hint" id="r4a${k}">Belum ada rekap 2D untuk ${k}.</div><textarea id="r4${k}" rows="2" data-r4="${k}" placeholder="LN 2D ${k} (terisi otomatis, bisa diedit)"></textarea><div class="hint" style="padding-top:6px;color:#ff8d84"><b>OFF 2D ${k}</b> — digit yang mati total di posisi ${k} · <span id="r4no${k}">0</span> digit</div><textarea id="r4o${k}" rows="1" data-r4x="1" placeholder="OFF digit ${k}, mis. 12345678"></textarea><div class="hint" id="r4ok${k}" style="padding-top:6px"></div></div>`).join('');
+$('r4Pos').innerHTML=R4P.map(k=>`<div class="r4box"><div class="ph"><span>2D ${k} · <span id="r4n${k}">0</span> LN</span></div><div class="r4row"><b>Patah</b><input id="r4p${k}" data-r4p="${k}" placeholder="mis. 6 atau 1-13 (kosong = Angka Jadi)"></div><div class="r4row"><b>Top</b><input id="r4t${k}" data-r4p="${k}" inputmode="numeric" placeholder="batasi N angka teratas, mis. 10 (kosong = semua)"></div><div class="r4row"><b>Rengking</b><input id="r4k${k}" data-r4p="${k}" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4km${k}" data-r4p="${k}" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="r4row"><b>CT</b><input id="r4c${k}" data-r4p="${k}" inputmode="numeric" autocomplete="off" placeholder="mis. 56 (kosong = off)"><select id="r4cm${k}" data-r4p="${k}" style="flex:0 0 112px"><option value="any">salah satu</option><option value="all">semua</option></select></div><div class="hint" id="r4cn${k}" style="padding-top:0"></div><div class="r4row"><b>Digit</b><input id="r4d${k}" data-r4d="${k}" inputmode="text" value="1-9" placeholder="trek berapa digit, mis. 1-9 atau 4-7"></div><div class="hint" id="r4a${k}">Belum ada rekap 2D untuk ${k}.</div><div id="r4tk${k}" style="padding:2px 0 8px"></div><textarea id="r4${k}" rows="2" data-r4="${k}" placeholder="LN 2D ${k} (terisi otomatis, bisa diedit)"></textarea><div class="hint" style="padding-top:6px;color:#ff8d84"><b>OFF 2D ${k}</b> — digit yang mati total di posisi ${k} · <span id="r4no${k}">0</span> digit</div><textarea id="r4o${k}" rows="1" data-r4x="1" placeholder="OFF digit ${k}, mis. 12345678"></textarea><div class="hint" id="r4ok${k}" style="padding-top:6px"></div></div>`).join('');
 function r4parse(t){
   const ps=new Set();
   String(t).replace(/\s*[-–]\s*/g,'-').split(/[,\s]+/).filter(Boolean).forEach(x=>{
@@ -3946,7 +3978,7 @@ function r4set(pos){
   S.forEach(n=>{if(all?C.every(d=>n.includes(d)):C.some(d=>n.includes(d)))o.add(n);});
   return o;
 }
-function r4save(){try{const o={R2,p:{},ln:{}};R4P.forEach(k=>{o.p[k]=$('r4p'+k).value;(o.t=o.t||{})[k]=$('r4t'+k).value;(o.d=o.d||{})[k]=$('r4d'+k).value;o.ln[k]=$('r4'+k).value;});o.ai=$('r4ai').value;o.o2={};R4P.forEach(k=>{o.o2[k]=$('r4o'+k).value;});o.off=$('r4off').value;localStorage.setItem(R4K,JSON.stringify(o));}catch(_){}}
+function r4save(){try{const o={R2,p:{},ln:{}};R4P.forEach(k=>{o.p[k]=$('r4p'+k).value;(o.t=o.t||{})[k]=$('r4t'+k).value;(o.d=o.d||{})[k]=$('r4d'+k).value;o.ln[k]=$('r4'+k).value;});o.ai=$('r4ai').value;o.ai3=$('r4ai3').value;o.o2={};R4P.forEach(k=>{o.o2[k]=$('r4o'+k).value;});o.off=$('r4off').value;localStorage.setItem(R4K,JSON.stringify(o));}catch(_){}}
 const R4RK='wb_r4rk_v1';
 function r4rkSave(){try{const o={};R4P.forEach(k=>{o[k]={n:$('r4k'+k).value,m:$('r4km'+k).value,c:$('r4c'+k).value,cm:$('r4cm'+k).value};});localStorage.setItem(R4RK,JSON.stringify(o));}catch(_){}}
 function r4rkRange(t){   // Rengking: "5" = urutan 1-5 · "3-10" = urutan 3 sampai 10 · "1-10" = semua · kosong/off = mati (maks 10)
@@ -4069,7 +4101,8 @@ function r4render(){
   R4P.forEach(k=>{$('r4n'+k).textContent=r4set(k).size;const C=r4ct(k),h=$('r4cn'+k);
     if(h)h.textContent=C.length?'CT '+C.join(' & ')+' ('+(($('r4cm'+k).value==='all')?'semua digit wajib ada':'salah satu digit ada')+') → '+r4set(k).size+' dari '+toks($('r4'+k).value,2).length+' LN':'';});
   const AI=$('r4ai').value.split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),OFF=new Set(toks($('r4off').value,4));
-  $('r4nAI').textContent=AI.length;$('r4nOF').textContent=OFF.size;
+  const AI3=($('r4ai3')?$('r4ai3').value:'').split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size);
+  $('r4nAI').textContent=AI.length;$('r4nOF').textContent=OFF.size;if($('r4nAI3'))$('r4nAI3').textContent=AI3.length;
   const XD=r4off('Depan'),XT=r4off('Tengah'),XB=r4off('Belakang');
   R4P.forEach(k=>{const X=r4off(k),L=r4set(k),el=$('r4ok'+k);$('r4no'+k).textContent=X.size;
     if(!X.size){el.textContent='';return;}
@@ -4085,8 +4118,9 @@ function r4render(){
     if(AI.length&&!AI.every(z=>[...s].some(d=>z.has(d))))continue;
     o4.push(s);
   }
-  if(T.size||B.size||XT.size||XB.size)for(let v=0;v<1000;v++){
+  if(T.size||B.size||XT.size||XB.size||AI3.length)for(let v=0;v<1000;v++){
     const s=pad(v,3);
+    if(AI3.length&&!AI3.every(z=>[...s].some(d=>z.has(d))))continue;
     if(XT.has(s[0])||XT.has(s[1])||XB.has(s[1])||XB.has(s[2]))continue;
     if(T.size&&!T.has(s.slice(0,2)))continue;
     if(B.size&&!B.has(s.slice(1,3)))continue;
@@ -4094,7 +4128,7 @@ function r4render(){
   }
   $('r4out').value=o4.join(sep);$('r4nO').textContent=o4.length;
   $('r4out3').value=o3.join(sep);$('r4n3').textContent=o3.length;
-  const used=[D.size?'Depan':'',T.size?'Tengah':'',B.size?'Belakang':'',AI.length?'AI/CT/CB':'',XD.size?'OFF Depan':'',XT.size?'OFF Tengah':'',XB.size?'OFF Belakang':''].filter(Boolean);
+  const used=[D.size?'Depan':'',T.size?'Tengah':'',B.size?'Belakang':'',AI.length?'AI/CT/CB 4D':'',AI3.length?'AI/CT/CB 3D':'',XD.size?'OFF Depan':'',XT.size?'OFF Tengah':'',XB.size?'OFF Belakang':''].filter(Boolean);
   $('r4Info').textContent=used.length?`Dipakai: ${used.join(' + ')} → 4D ${o4.length} angka${OFF.size?' (OFF '+OFF.size+' dibuang'+(OFF.size>1000?' ⚠ banyak sekali — cek kotak 4D OFF, ini bukan dibuat otomatis oleh rekap':'')+')':''} · 3D ${o3.length} angka (3D memakai Tengah + Belakang)`:'Belum ada isi — jalankan Rekap 2D di Kelompok AC / CK / KE.';
   addGrip($('r4out'));addGrip($('r4out3'));r4save();
 }
@@ -4138,6 +4172,17 @@ function r4chips(){
   if(!l.length){const h=document.createElement('span');h.className='hint';h.textContent='Bank Harian masih kosong — simpan rumus lewat 💾 Simpan.';box.appendChild(h);return;}
   l.forEach(x=>{const b=document.createElement('button');b.dataset.r4pas=x.v;b.textContent=x.M.name;b.style.cssText='flex:0 0 auto;padding:10px 14px;font-weight:700';if(x.v===r4cur)b.className='pri';box.appendChild(b);});
 }
+// Trek CB (colok bebas) dari Bank pasaran terpilih otomatis masuk kotak "AI / CT / CB 4D" (satu trek = satu baris, ditandai #cb; baris ketikan manual tidak disentuh)
+function r4cbFill(x){
+  const nm=String(x.M.name).trim().toLowerCase(),M=shbSummary().out.mk[nm];
+  const lines=(vk)=>{const o=new Set(),P=M&&M.pos&&M.pos[vk];((P&&P.items)||[]).forEach(i=>{const d=[...(i.s||[])].map(String).sort().join('');if(d)o.add(d);});return o;};
+  const put=(ta,tagged)=>{if(!ta)return;const keep=ta.value.split('\n').filter(l=>l.trim()&&!/#(cb|ai)\s*$/.test(l));
+    ta.value=[...keep,...tagged].join('\n');};
+  const cb=[...lines('cb')].map(d=>d+' #cb'),ai3=[...lines('ai3d')].map(d=>d+' #ai');
+  put($('r4ai'),cb);                 // 4D: trek CB
+  const seen=new Set(cb.map(z=>z.split(' ')[0]));
+  put($('r4ai3'),[...cb,...ai3.filter(z=>!seen.has(z.split(' ')[0]))]);   // 3D: trek CB + AI 3D
+}
 function r4auto(v){
   try{_shbMemo=shbSummary0();}catch(_){_shbMemo=null;}   // hitung Bank sekali saja, bukan puluhan kali
   try{return r4auto0(v);}finally{_shbMemo=null;}
@@ -4150,7 +4195,7 @@ function r4auto0(v){
   try{
     bkFill();$('bkSrc').value=v;wbSrcLbl();userPicked=true;$('r4Tgt').value='';R2={};
     ['AC','CK','KE'].forEach(g=>{
-      try{$('bkGrp').value=g;$('bkGrp').onchange();$('bkGrp').value=g;bkGo(true);}
+      try{$('bkGrp').value=g;$('bkGrp').onchange();$('bkGrp').value=g;bkGo(true);try{R4TRK[g]=r4trkList(x,g);}catch(_){}}
       catch(e){errs.push(g+': '+e.message);}
     });
   }finally{
@@ -4158,7 +4203,7 @@ function r4auto0(v){
     $('r4Tgt').value=tgt0;
     try{$('bkGrp').value=grp0;$('bkGrp').onchange();$('bkGrp').value=grp0;bkGo(true);}catch(_){}
   }
-  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});r4render();
+  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});try{r4cbFill(x);}catch(_){}r4render();R4P.forEach(k=>{try{r4trkRender(k);}catch(_){}});
   const n=k=>r4set(k).size;
   try{aiRun();}catch(_){}   // skor AI otomatis ikut terhitung setiap rekap pasaran selesai
   st.textContent=`✓ ${x.M.name}: Depan ${n('Depan')} LN · Tengah ${n('Tengah')} LN · Belakang ${n('Belakang')} LN (Patah kosong = Angka Jadi; isi Patah di bawah untuk ubah)`+(errs.length?' · gagal: '+errs.join('; '):'');
@@ -4166,6 +4211,12 @@ function r4auto0(v){
 $('r4Card').addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.r4d)return;r4save();if(r4cur)try{r4auto(r4cur);}catch(_){}});   // Digit berubah -> hitung ulang rekap pasaran terpilih
 $('r4Card').addEventListener('pointerdown',()=>{r4chips();},true);
 let r4busy=false;
+$('r4Card').addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('button[data-r4tkx],button[data-r4tkall]');if(!t)return;
+  if(t.dataset.r4tkall){R4EX[t.dataset.r4tkall].clear();}
+  else{const k=t.dataset.r4tkx,key=decodeURIComponent(t.dataset.key);if(t.dataset.act==='ex')R4EX[k].add(key);else R4EX[k].delete(key);}
+  r4exSave();r4kickLater(150);
+});
 $('r4Card').addEventListener('click',e=>{const b=e.target.closest('button[data-r4pas]');if(!b)return;
   if(r4busy)return;r4busy=true;const v=b.dataset.r4pas;
   $('r4St').textContent='⏳ Memproses '+b.textContent+'… mohon tunggu';
@@ -4284,7 +4335,7 @@ $('aiUse').onclick=()=>{
   r4render();$('aiOut').insertAdjacentHTML('afterbegin','<div style="color:#7ee787;margin-bottom:6px">✓ Top dipakai sebagai LN 2D Depan · Tengah · Belakang (4D/3D ikut tersusun).</div>');
 };
 $('r4offClr').onclick=()=>{$('r4off').value='';r4render();try{r4save();}catch(_){}};
-$('r4Reset').onclick=()=>{R2={};R4P.forEach(k=>{$('r4o'+k).value='';$('r4c'+k).value='';$('r4cm'+k).value='any';});$('r4ai').value='';$('r4off').value='';R4P.forEach(k=>{$('r4p'+k).value='';$('r4t'+k).value='';$('r4d'+k).value='1-9';$('r4'+k).value='';r4fill(k);});r4render();};
+$('r4Reset').onclick=()=>{R2={};R4P.forEach(k=>{$('r4o'+k).value='';$('r4c'+k).value='';$('r4cm'+k).value='any';});$('r4ai').value='';$('r4ai3').value='';$('r4off').value='';R4P.forEach(k=>{$('r4p'+k).value='';$('r4t'+k).value='';$('r4d'+k).value='1-9';$('r4'+k).value='';r4fill(k);});r4render();};
 $('r4Reset').addEventListener('click',()=>{R4P.forEach(k=>{$('r4k'+k).value='';$('r4km'+k).value='';$('r4'+k).value='';r4fill(k);});r4rkSave();r4render();});
 $('sep').addEventListener('change',r4render);
 try{
@@ -4293,11 +4344,11 @@ try{
   R4P.forEach(k=>{if(o.p&&o.p[k])$('r4p'+k).value=o.p[k];if(o.t&&o.t[k])$('r4t'+k).value=o.t[k];if(o.d&&o.d[k]!==undefined)$('r4d'+k).value=o.d[k];if(o.ln&&o.ln[k])$('r4'+k).value=o.ln[k];if(R2[k])r4fill(k);});
   R4P.forEach(k=>{if(o.ln&&o.ln[k])$('r4'+k).value=o.ln[k];});
   if(o.o2)R4P.forEach(k=>{if(o.o2[k])$('r4o'+k).value=o.o2[k];});
-  if(o.ai)$('r4ai').value=o.ai;if(o.off)$('r4off').value=o.off;
+  if(o.ai)$('r4ai').value=o.ai;if(o.ai3)$('r4ai3').value=o.ai3;if(o.off)$('r4off').value=o.off;
 }catch(_){}
 try{const q=JSON.parse(localStorage.getItem(R4RK)||'{}');R4P.forEach(k=>{if(q[k]){$('r4k'+k).value=q[k].n||'';$('r4km'+k).value=q[k].m||'';$('r4c'+k).value=q[k].c||'';$('r4cm'+k).value=q[k].cm||'any';}});}catch(_){}
 r4render();
-['r4ai','r4off','r4oDepan','r4oTengah','r4oBelakang'].forEach(i=>{const t=$(i);if(t){if(t.rows<4)t.rows=4;t.style.minHeight='96px';addGrip(t);}});   // kotak isi CT/AI/OFF: lebih tinggi + bisa ditarik
+['r4ai','r4ai3','r4off','r4oDepan','r4oTengah','r4oBelakang'].forEach(i=>{const t=$(i);if(t){if(t.rows<4)t.rows=4;t.style.minHeight='96px';addGrip(t);}});   // kotak isi CT/AI/OFF: lebih tinggi + bisa ditarik
 build();
 /* ===== kode, bank otomatis ===== */
 const BK=[['Harian','wb_harian_rekap_v1'],['Shio','wb_shio_rekap_v1']];
@@ -4496,10 +4547,10 @@ function sumGet(){
   return sumSel;
 }   // ganti tab / kelompok -> centang otomatis ulang sesuai kebutuhan
 const DIG_EXEMPT=vk=>/^off/.test(vk)||['jlke','jlck','jlac','jl','jlt','jld','sh','sht','shd'].includes(vk);   // off, jarak lemah, jalur, shio: tidak ikut disaring Digit (inti pangkas LN)
-function bkDigX(x,g){   // Digit per kelompok: hanya trek dengan jumlah digit dalam rentang yang ikut rekap kelompok itu
-  const el=$('r4d'+({AC:'Depan',CK:'Tengah',KE:'Belakang'}[g]||'')),t=el?el.value.trim():'';if(!t)return x;
-  const DG=r4parse(t);if(!DG.size)return x;const pos={};
-  Object.keys(x.M.pos).forEach(vk=>{const P=x.M.pos[vk];pos[vk]=Object.assign({},P,{items:(P.items||[]).filter(i=>DIG_EXEMPT(vk)||i.d===undefined||DG.has(i.d))});});
+function bkDigX(x,g){   // Digit per kelompok + trek yang dikeluarkan manual: hanya trek tersisa yang ikut rekap kelompok itu
+  const nmP=R4G[g],EX=nmP?R4EX[nmP]:null,el=nmP?$('r4d'+nmP):null,t=el?el.value.trim():'',DG=t?r4parse(t):null;
+  const useDG=!!(DG&&DG.size),useEX=!!(EX&&EX.size);if(!useDG&&!useEX)return x;const pos={};
+  Object.keys(x.M.pos).forEach(vk=>{const P=x.M.pos[vk];pos[vk]=Object.assign({},P,{items:(P.items||[]).filter(i=>(!useDG||DIG_EXEMPT(vk)||i.d===undefined||DG.has(i.d))&&!(useEX&&EX.has(r4tk(vk,i))))});});
   return Object.assign({},x,{M:Object.assign({},x.M,{pos})});
 }
 function bkSelX(x){const S=sumGet(),pos={};Object.keys(x.M.pos).forEach(vk=>{if(S.has(vk))pos[vk]=x.M.pos[vk];});return Object.assign({},x,{M:Object.assign({},x.M,{pos})});}
@@ -4517,6 +4568,7 @@ function bkSumRender(x,grp){
   try{box.insertAdjacentHTML('beforeend',bkAuditHtml(x,grp));}catch(e){}
 }
 let bkAuditOpen=false;
+let bkAuditRows=new Set();
 function bkAuditHtml(x0,grp){   // audit: semua trek di Bank -> masuk rekap atau tidak (+ alasan), ON / OFF, bentrok
   const S=sumGet(),lab=N===2?'2D '+({KE:'belakang',CK:'tengah',AC:'depan'}[grp]||grp):N+'D';
   const BC=bkConsensus(bkSelX(x0)),rows=[];let nIn=0,nOut=0,nWarn=0,nEmpty=0,tot=0;
@@ -4525,7 +4577,7 @@ function bkAuditHtml(x0,grp){   // audit: semua trek di Bank -> masuk rekap atau
     const dgEl=$('r4d'+({AC:'Depan',CK:'Tengah',KE:'Belakang'}[grp]||'')),dgTxt=dgEl?dgEl.value.trim():'',DGa=dgTxt?r4parse(dgTxt):null;
     const it=(DGa&&DGa.size&&!DIG_EXEMPT(vk))?it0.filter(i=>i.d===undefined||DGa.has(i.d)):it0,nDig=it0.length-it.length;
     if(!all.length)return;tot+=all.length;nEmpty+=all.length-it0.length;
-    if(!it.length){if(nDig>0){nOut+=nDig;rows.push({vk,n:nDig,off:/^off/.test(vk),inn:false,why:'dibuang oleh Digit '+dgTxt+' (trek ini '+[...new Set(it0.map(i=>i.d))].join(',')+' digit)',warn:'',g:trkGrp(vk)});}return;}
+    if(!it.length){if(nDig>0){nOut+=nDig;rows.push({vk,n:nDig,off:/^off/.test(vk),inn:false,why:'dibuang oleh Digit '+dgTxt+' (trek ini '+[...new Set(it0.map(i=>i.d))].join(',')+' digit)',warn:'',g:trkGrp(vk),items:it0,DGa,dgTxt});}return;}
     if(nDig>0)nOut+=nDig;
     const off=/^off/.test(vk),rel=sumRel(vk),ck=S.has(vk),inn=rel&&ck;let why='',warn='';
     if(!VARS[vk])why='trek tidak dikenal';else if(!rel)why='bukan untuk mode '+lab;else if(!ck)why='tidak dicentang di Kelompok rumus';
@@ -4535,18 +4587,29 @@ function bkAuditHtml(x0,grp){   // audit: semua trek di Bank -> masuk rekap atau
       else if(OFFX[vk]&&BC.conf[OFFX[vk]])warn='digit bentrok dgn trek on '+[...BC.conf[OFFX[vk]]].sort().join('')+' → tidak di-off';
     }
     if(inn){nIn+=it.length;if(warn)nWarn++;}else nOut+=it.length;
-    rows.push({vk,n:it.length,off,inn,why,warn,g:trkGrp(vk),dg:nDig});
+    rows.push({vk,n:it.length,off,inn,why,warn,g:trkGrp(vk),dg:nDig,items:it0,DGa,dgTxt});
   });
   const ord=[...MV_GROUPS.map(g=>g[0]),'Lainnya'];rows.sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const line=r=>{const c=TRK_COL[r.g]||'#888',bd=`<span style="display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:8px;font-size:11.5px;font-weight:700;color:#fff;background:${r.off?'#e5594f':'#2f9e6b'}">${r.off?'OFF':'ON'}</span>`;
     const st=r.inn?(r.warn?`<span style="color:#ffb347">⚠ masuk · ${r.warn}</span>`:'<span style="color:#3fd08a">✅ masuk rekap</span>'):`<span style="color:#ff7b6b">⛔ tidak masuk · ${r.why}</span>`;
-    return `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-left:4px solid ${c};padding:3px 0 3px 6px;font-size:13px">${bd}<b style="color:${c}">${shEsc(SH_NAME[r.vk]||r.vk)}</b><span style="color:var(--mut)">${r.n} trek</span>${st}${r.dg?`<span style="color:#ff7b6b"> · ${r.dg} trek lain dibuang Digit</span>`:''}</div>`;};
+    return `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-left:4px solid ${c};padding:3px 0 3px 6px;font-size:13px">${bd}<b style="color:${c}">${shEsc(SH_NAME[r.vk]||r.vk)}</b><span style="color:var(--mut)">${r.n} trek</span>${st}${r.dg?`<span style="color:#ff7b6b"> · ${r.dg} trek lain dibuang Digit</span>`:''}<span style="margin-left:auto;color:var(--mut);font-size:12px">▸ rincian</span></div>`;};
+  const fmtI=(r,i)=>{const V=VARS[r.vk]||{};try{return [...(i.s||[])].sort((a,b)=>a-b).map(z=>shF(z,V.mod,V)).join(' ');}catch(_){return [...(i.s||[])].join(' ');}};
+  const body=r=>{
+    const grp=new Map();(r.items||[]).forEach(i=>{const k=i.d===undefined?'?':i.d;if(!grp.has(k))grp.set(k,[]);grp.get(k).push(i);});
+    const keys=[...grp.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(a-b));
+    return keys.map(k=>{const arr=grp.get(k);
+      return `<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${k==='?'?'digit tidak diketahui':k+' digit'} <span style="font-weight:400;color:var(--mut)">· ${arr.length} trek</span></div>`
+        +arr.map(i=>{const drop=!!(r.DGa&&r.DGa.size&&!DIG_EXEMPT(r.vk)&&i.d!==undefined&&!r.DGa.has(i.d));
+          return `<span title="${shEsc(i.c||'')}${drop?' — tidak ikut (Digit '+shEsc(r.dgTxt)+')':''}" style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;${drop?'opacity:.45;text-decoration:line-through':''}">${shEsc(fmtI(r,i))}</span>`;}).join('');
+    }).join('')||'<div class="hint">Tidak ada isi.</div>';
+  };
+  const rowHtml=r=>`<details data-vk="${r.vk}" ${bkAuditRows.has(r.vk)?'open':''}><summary style="cursor:pointer;list-style:none;display:block">${line(r)}</summary><div style="padding:2px 0 8px 14px">${body(r)}<div class="hint" style="padding-top:4px">Tahan satu trek untuk melihat nama rumusnya. Yang dicoret = tidak ikut karena Digit.</div></div></details>`;
   return `<details id="bkAudit" ${bkAuditOpen?'open':''} style="margin-top:10px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Cek semua trek Bank: <span style="color:#3fd08a">${nIn} masuk</span> · <span style="color:#ff7b6b">${nOut} tidak masuk</span>${nWarn?` · <span style="color:#ffb347">${nWarn} bentrok</span>`:''} (dari ${tot} trek)</summary>`
-    +(rows.length?rows.map(line).join(''):'<div class="hint">Bank kosong.</div>')
+    +(rows.length?rows.map(rowHtml).join(''):'<div class="hint">Bank kosong.</div>')
     +(nEmpty?`<div class="hint">${nEmpty} trek kosong (tanpa angka) dilewati.</div>`:'')
     +`<div class="hint">ON = trek pilih angka · OFF = trek buang angka. "Tidak masuk" karena tidak cocok mode ${lab} atau belum dicentang; centang di atas lalu Rekap final.</div></details>`;
 }
-$('bkSum').addEventListener('toggle',e=>{if(e.target&&e.target.id==='bkAudit')bkAuditOpen=e.target.open;},true);
+$('bkSum').addEventListener('toggle',e=>{const t=e.target;if(!t)return;if(t.id==='bkAudit')bkAuditOpen=t.open;else if(t.dataset&&t.dataset.vk){if(t.open)bkAuditRows.add(t.dataset.vk);else bkAuditRows.delete(t.dataset.vk);}},true);
 $('bkSum').addEventListener('change',e=>{const c=e.target.closest&&e.target.closest('input[data-sv]');if(!c)return;const S=sumGet();c.checked?S.add(c.dataset.sv):S.delete(c.dataset.sv);bkSumRefresh();});
 $('bkSum').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-sumact]');if(!b)return;const a=b.dataset.sumact;sumGet();
   sumSel=a==='none'?new Set():sumAuto();sumSeen=sumAuto();bkSumRefresh();});
