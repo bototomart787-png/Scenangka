@@ -872,10 +872,12 @@ body.wb-alllk #wb-lockmsg{display:block}
 <div class="card k5" id="r4Card">
   <h2>🎯 Rekap 4D · 3D otomatis dari 2D Depan · Tengah · Belakang</h2>
   <div class="hint">Jalankan Rekap 2D di tiap Kelompok (<b>AC = Depan</b>, <b>CK = Tengah</b>, <b>KE = Belakang</b>) — hasil semua Patah tersimpan otomatis. Lalu isi <b>Patah</b> tiap posisi di bawah (mis. <b>6</b> atau <b>1-13</b>; kosong = Angka Jadi = patah terkecil). Kolom LN terisi sendiri, 4D dan 3D tersusun otomatis.</div>
+<div style="font-weight:800;margin:10px 0 6px">Pilih pasaran <span style="font-weight:400;font-size:12px;color:var(--mut)">(satu kali, berlaku untuk rekap 2D Depan · Tengah · Belakang · 3D · 4D)</span></div>
+  <div id="r4Chips" class="rkrow" style="flex-wrap:wrap;gap:6px"></div>
 <div id="admCard" style="margin:10px 0;padding:10px;border:1px solid var(--bd);border-radius:10px">
 <div style="font-weight:800;color:var(--acc,#ffc72c);margin:2px 0 6px">① Rekap final otomatis</div>
-  <label>Satukan semua trek Bank Harian (+ Scen Shio bila ada) untuk satu pasaran jadi satu rekap final (ikut tab 2D / 3D / 4D)</label>
-  <div class="rkr"><select id="bkSrc"></select><button class="pri" id="bkGet" style="flex:0 0 auto">Rekap final</button></div>
+  <label>Satukan semua trek Bank Harian (+ Scen Shio bila ada) untuk pasaran yang dipilih di atas jadi satu rekap final (ikut Kelompok di bawah)</label>
+  <div class="rkr"><span id="bkSrcLbl" style="flex:1;font-weight:700">Pasaran: (pilih di atas)</span><select id="bkSrc" style="display:none"></select><button class="pri" id="bkGet" style="flex:0 0 auto">Rekap final</button></div>
   <div class="rkr"><b>Kelompok</b><select id="bkGrp"><option value="KE">2D · KE (2 digit belakang)</option><option value="CK">2D · CK (2 digit tengah)</option><option value="AC">2D · AC (2 digit depan)</option><option value="3D">3D (3 digit belakang)</option><option value="4D">4D (4 digit)</option></select></div>
   <div id="jlKeBox" data-g="KE"></div>
   <div class="rkr"><button data-jladd="KE">➕ Tambah tempat JL KE</button></div>
@@ -891,7 +893,6 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div id="bkSum"></div>
 </div>
   <div class="rkr"><b style="flex:0 0 auto">Rekap 2D masuk ke</b><select id="r4Tgt"><option value="">ikut Kelompok (AC/CK/KE)</option><option value="Depan">Depan</option><option value="Tengah">Tengah</option><option value="Belakang">Belakang</option></select></div>
-  <div id="r4Chips" class="rkrow" style="flex-wrap:wrap;gap:6px"></div>
   <div id="r4St" class="hint" style="margin:4px 0"></div>
   <div id="r4Pos"></div>
   <div class="r4box"><div class="ph"><span>AI / CT / CB 4D · <span id="r4nAI">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 4D hanya lolos jika memuat salah satu digit di tiap baris. AI, CT, dan CB diperlakukan sama.</div><textarea id="r4ai" rows="5" style="min-height:120px" data-r4x="1" placeholder="AI/CT/CB 4D — satu baris satu kumpulan digit"></textarea></div>
@@ -3958,6 +3959,22 @@ function r4rkRange(t){   // Rengking: "5" = urutan 1-5 · "3-10" = urutan 3 samp
   if(b<1||a>b)return null;
   return [a,b];
 }
+// Kotak LN 2D (Depan, Tengah, Belakang) otomatis melebar ke bawah sesuai isi (maks 70% tinggi layar, lebihnya digulir)
+function r4fitOne(t){
+  if(!t||!t.offsetParent)return;   // belum tampil (bagian masih tertutup): lewati, dicek lagi nanti
+  const sig=t.value.length+'|'+t.clientWidth;
+  if(t._fit===sig&&t.scrollHeight<=t.clientHeight+2)return;
+  t.style.height='auto';
+  const need=t.scrollHeight+6,mx=Math.max(160,Math.round(window.innerHeight*0.7));
+  t.style.height=Math.max(64,Math.min(need,mx))+'px';
+  t.style.overflowY=need>mx?'auto':'hidden';
+  t._fit=t.value.length+'|'+t.clientWidth;
+}
+function r4fit(){['Depan','Tengah','Belakang'].forEach(k=>{try{r4fitOne(document.getElementById('r4'+k));}catch(_){}});}
+setInterval(r4fit,350);
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea[data-r4]'))try{r4fitOne(t);}catch(_){}});
+document.addEventListener('toggle',()=>setTimeout(r4fit,50),true);
+window.addEventListener('resize',()=>{['Depan','Tengah','Belakang'].forEach(k=>{const t=document.getElementById('r4'+k);if(t)t._fit='';});r4fit();});
 // Trek Bank yang berisi DIGIT dan posisi digit-nya (A=0 C=1 K=2 E=3): ikut suara Rengking di posisinya masing-masing
 const R4_SLOT={ai2dd:[0,1],ai2dt:[1,2],ai2db:[2,3],ai3d:[1,2,3],cb:[0,1,2,3],as:[0],cop:[1],kep:[2],eko:[3],jlac:[0],jlck:[1],jlke:[2]};
 function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpilih (semua trek berisi digit), atau digit manual -> pasangan digit x digit
@@ -4110,6 +4127,7 @@ $('r4Use').onclick=()=>r4use(4,$('r4Use'),'Pakai di tab 4D','r4out');
 $('r4Use3').onclick=()=>r4use(3,$('r4Use3'),'Pakai di tab 3D','r4out3');
 /* --- ketuk pasaran: jalankan Rekap final AC, CK, KE sekaligus lalu isi Depan/Tengah/Belakang --- */
 let r4sig='',r4cur='';
+function wbSrcLbl(){try{const sl=$('bkSrc'),o=sl&&sl.options[sl.selectedIndex],e=$('bkSrcLbl');if(e)e.textContent='Pasaran: '+(o&&sl.value?o.textContent:'(pilih di atas)');}catch(_){}}
 function r4chips(){
   let l=[];try{l=bkRead();}catch(_){}
   const sig=l.map(x=>x.v+'|'+x.M.name).join(';')+'#'+r4cur;
@@ -4128,7 +4146,7 @@ function r4auto0(v){
   const grp0=$('bkGrp').value,tgt0=$('r4Tgt').value,errs=[];
   st.textContent='Memproses '+x.M.name+'…';
   try{
-    bkFill();$('bkSrc').value=v;userPicked=true;$('r4Tgt').value='';R2={};
+    bkFill();$('bkSrc').value=v;wbSrcLbl();userPicked=true;$('r4Tgt').value='';R2={};
     ['AC','CK','KE'].forEach(g=>{
       try{$('bkGrp').value=g;$('bkGrp').onchange();$('bkGrp').value=g;bkGo(true);}
       catch(e){errs.push(g+': '+e.message);}
@@ -4284,6 +4302,7 @@ function bkFill(){
   $('bkSrc').innerHTML=l.length?l.map(x=>`<option value="${x.v}">${x.t}</option>`).join(''):'<option value="">(bank kosong — simpan rumus ke Bank Harian dulu)</option>';
   if(cur&&l.some(x=>x.v===cur))$('bkSrc').value=cur;
   if(!userPicked){const mk=String(G('market')&&G('market').value||'').trim().toLowerCase();if(mk&&l.some(x=>x.v===mk))$('bkSrc').value=mk;}
+  wbSrcLbl();
 }
 $('bkSrc').onfocus=bkFill;
 
@@ -4422,7 +4441,7 @@ function bkApply(){
   return filled;
 }
 $('fTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-ft]');if(!b)return;const on=b.dataset.ft==='on';$('offPane').style.display=on?'none':'';$('onPane').style.display=on?'':'none';$('fTabs').querySelectorAll('button').forEach(z=>z.className=z===b?'pri':'');});
-$('bkSrc').onchange=()=>{userPicked=true;autoRun(true);bkSumRefresh();};
+$('bkSrc').onchange=()=>{userPicked=true;wbSrcLbl();autoRun(true);bkSumRefresh();};
 $('bkGrp').onchange=()=>{
   const v=$('bkGrp').value,want=v==='3D'?3:v==='4D'?4:2,tb=$('tabs').querySelector('button[data-n="'+want+'"]');
   if(want!==N&&tb){tb.click();$('bkGrp').value=v;}
