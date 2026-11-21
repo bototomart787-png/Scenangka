@@ -2229,7 +2229,7 @@ function wbShowLockedMsg(label) {
 function wbLockedRumus() {
   const out = new Set();
   try {
-    if (typeof WB_ADMIN_CRED !== 'undefined' && WB_ADMIN_CRED) return out;
+    if (wbIsAdminNow()) return out;
     wbGetEffectiveLocked(wbCurrentMemberKey()).forEach(k => { if (String(k).indexOf('rv:') === 0) out.add(String(k).slice(3)); });
   } catch(e) {}
   return out;
@@ -2272,8 +2272,12 @@ function wbRumusApply() {
     });
   }catch(e){}
 }
+function wbIsAdminNow() {
+  if (typeof WB_ADMIN_CRED !== 'undefined' && WB_ADMIN_CRED) return true;
+  try { const u = JSON.parse(localStorage.getItem('wg_logged_member') || 'null'); return !!(u && (u.isAdmin === true || u.id === 'ADMIN')); } catch(e) { return false; }
+}
 function wbApplyLocks0() {
-  if(WB_ADMIN_CRED){
+  if(wbIsAdminNow()){
     document.querySelectorAll('.wb-lk').forEach(el => el.classList.remove('wb-lk'));
     document.body.classList.remove('wb-alllk'); return;
   }
