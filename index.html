@@ -895,13 +895,13 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div class="rkr"><b style="flex:0 0 auto">Rekap 2D masuk ke</b><select id="r4Tgt"><option value="">ikut Kelompok (AC/CK/KE)</option><option value="Depan">Depan</option><option value="Tengah">Tengah</option><option value="Belakang">Belakang</option></select></div>
   <div id="r4St" class="hint" style="margin:4px 0"></div>
   <div id="r4Pos"></div>
-  <div class="r4box"><div class="ph"><span>AI / CT / CB 4D · <span id="r4nAI">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 4D hanya lolos jika memuat salah satu digit di tiap baris. AI, CT, dan CB diperlakukan sama.</div><div class="r4row"><b>Rengking</b><input id="r4kAI" data-r4x="1" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4kmAI" data-r4x="1" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="hint" id="r4kiAI" style="padding-top:4px"></div><textarea id="r4ai" rows="5" style="min-height:120px" data-r4x="1" placeholder="AI/CT/CB 4D — satu baris satu kumpulan digit"></textarea></div>
+  <div class="r4box"><div class="ph"><span>AI / CT / CB 4D · <span id="r4nAI">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 4D hanya lolos jika memuat salah satu digit di tiap baris. AI, CT, dan CB diperlakukan sama. <b>Rengking</b> kosong = semua baris wajib kena. Isi Rengking (mis. 3) = angka diurutkan menurut jumlah baris yang kena: 1 = paling banyak kena, 3 = tiga tingkat teratas — jadi trek yang patah tidak mengosongkan hasil.</div><label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:700"><input type="checkbox" id="r4onAI" data-r4x="1" checked style="width:22px;height:22px;flex:0 0 auto"> Aktif (ON = ikut menyaring · OFF = diabaikan, isi tetap tersimpan)</label><div class="r4row"><b>Rengking</b><input id="r4kAI" data-r4x="1" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4kmAI" data-r4x="1" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="hint" id="r4kiAI" style="padding-top:4px"></div><textarea id="r4ai" rows="5" style="min-height:120px" data-r4x="1" placeholder="AI/CT/CB 4D — satu baris satu kumpulan digit"></textarea></div>
 <div id="r4tkcb" style="padding:2px 0 8px"></div>
   <div class="r4box"><div class="ph"><span>4D OFF (mati total) · <span id="r4nOF">0</span> angka</span><button id="r4offClr" style="padding:2px 10px">Kosongkan</button></div><div class="hint" style="padding-top:6px">Angka 4D di sini dibuang total dari hasil.</div><textarea id="r4off" rows="4" style="min-height:96px" data-r4x="1" placeholder="4D OFF — pisah * , # . atau spasi"></textarea></div>
   <div id="r4Info" class="hint" style="margin:6px 0"></div>
   <div class="r4box"><div class="ph"><span>Hasil 4D (ab∈Depan · bc∈Tengah · cd∈Belakang) · <span id="r4nO">0</span> angka</span></div><textarea id="r4out" rows="3" readonly placeholder="Hasil 4D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy">Salin 4D</button><button id="r4Use">Pakai di tab 4D</button></div>
-  <div class="r4box"><div class="ph"><span>AI / CT / CB 3D · <span id="r4nAI3">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 3D hanya lolos jika memuat salah satu digit di tiap baris. Trek <b>CB</b> dan <b>AI 3D</b> dari Bank masuk otomatis (hanya deretan digit); ketikan manual juga boleh.</div><div class="r4row"><b>Rengking</b><input id="r4kAI3" data-r4x="1" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4kmAI3" data-r4x="1" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="hint" id="r4kiAI3" style="padding-top:4px"></div><textarea id="r4ai3" rows="4" style="min-height:96px" data-r4x="1" placeholder="AI/CT/CB 3D — satu baris satu kumpulan digit"></textarea></div>
+  <div class="r4box"><div class="ph"><span>AI / CT / CB 3D · <span id="r4nAI3">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 3D hanya lolos jika memuat salah satu digit di tiap baris. Trek <b>CB</b> dan <b>AI 3D</b> dari Bank masuk otomatis (hanya deretan digit); ketikan manual juga boleh. <b>Rengking</b> bekerja sama seperti di 4D (tingkat jumlah baris yang kena).</div><label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:700"><input type="checkbox" id="r4onAI3" data-r4x="1" checked style="width:22px;height:22px;flex:0 0 auto"> Aktif (ON = ikut menyaring · OFF = diabaikan, isi tetap tersimpan)</label><div class="r4row"><b>Rengking</b><input id="r4kAI3" data-r4x="1" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4kmAI3" data-r4x="1" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="hint" id="r4kiAI3" style="padding-top:4px"></div><textarea id="r4ai3" rows="4" style="min-height:96px" data-r4x="1" placeholder="AI/CT/CB 3D — satu baris satu kumpulan digit"></textarea></div>
 <div id="r4tkai3d" style="padding:2px 0 8px"></div>
 <div class="r4box"><div class="ph"><span>Hasil 3D (bc∈Tengah · cd∈Belakang) · <span id="r4n3">0</span> angka</span></div><textarea id="r4out3" rows="3" readonly placeholder="Hasil 3D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy3">Salin 3D</button><button id="r4Use3">Pakai di tab 3D</button><button class="red" id="r4Reset">Kosongkan semua</button></div>
@@ -4011,7 +4011,7 @@ function r4set(pos){
   S.forEach(n=>{if(all?C.every(d=>n.includes(d)):C.some(d=>n.includes(d)))o.add(n);});
   return o;
 }
-function r4save(){try{const o={R2,p:{},ln:{}};R4P.forEach(k=>{o.p[k]=$('r4p'+k).value;(o.t=o.t||{})[k]=$('r4t'+k).value;(o.d=o.d||{})[k]=$('r4d'+k).value;o.ln[k]=$('r4'+k).value;});o.ai=$('r4ai').value;o.ai3=$('r4ai3').value;o.o2={};R4P.forEach(k=>{o.o2[k]=$('r4o'+k).value;});o.off=$('r4off').value;o.rk={a:[$('r4kAI').value,$('r4kmAI').value],b:[$('r4kAI3').value,$('r4kmAI3').value]};o.auto={r4ai:[...R4AUTO.r4ai],r4ai3:[...R4AUTO.r4ai3]};localStorage.setItem(R4K,JSON.stringify(o));}catch(_){}}
+function r4save(){try{const o={R2,p:{},ln:{}};R4P.forEach(k=>{o.p[k]=$('r4p'+k).value;(o.t=o.t||{})[k]=$('r4t'+k).value;(o.d=o.d||{})[k]=$('r4d'+k).value;o.ln[k]=$('r4'+k).value;});o.ai=$('r4ai').value;o.ai3=$('r4ai3').value;o.o2={};R4P.forEach(k=>{o.o2[k]=$('r4o'+k).value;});o.off=$('r4off').value;o.rk={a:[$('r4kAI').value,$('r4kmAI').value],b:[$('r4kAI3').value,$('r4kmAI3').value]};o.on={a:$('r4onAI').checked,b:$('r4onAI3').checked};o.auto={r4ai:[...R4AUTO.r4ai],r4ai3:[...R4AUTO.r4ai3]};localStorage.setItem(R4K,JSON.stringify(o));}catch(_){}}
 const R4RK='wb_r4rk_v1';
 function r4rkSave(){try{const o={};R4P.forEach(k=>{o[k]={n:$('r4k'+k).value,m:$('r4km'+k).value,c:$('r4c'+k).value,cm:$('r4cm'+k).value};});localStorage.setItem(R4RK,JSON.stringify(o));}catch(_){}}
 function r4rkRange(t){   // Rengking: "5" = urutan 1-5 · "3-10" = urutan 3 sampai 10 · "1-10" = semua · kosong/off = mati (maks 10)
@@ -4129,33 +4129,34 @@ function r4fill0(pos){
   const mg=R4META[{Depan:'AC',Tengah:'CK',Belakang:'KE'}[pos]],mt=mg?((mg.on+mg.pen)?` · dasar rekap: ${mg.on} trek ON + ${mg.pen} penahan (off/JL)`:' · ⚠ belum ada trek yang ikut rekap posisi ini, jadi LN tidak terpangkas (cek 🔎 Cek semua trek Bank)'):'';
   box.textContent=`Dari rekap ${d.lab}: ${txt?ur:'Angka Jadi · '+ur} → ${arr.length} LN · tersedia Patah ${keys.length?keys[0]+'–'+keys[keys.length-1]:'-'}${topTxt}${mt}`;
 }
-function r4aiPool(rows,kId,mId,infoId){   // Rengking untuk kotak AI/CT/CB: digit diurut dari suara terbanyak di semua baris -> angka hanya boleh memakai digit peringkat terpilih
-  const inf=$(infoId),rg=r4rkRange($(kId).value),mv=$(mId).value.replace(/\D/g,''),v={};
+function r4aiPool(rows,kId,mId,infoId,on){   // digit manual (opsional) = angka hanya boleh memakai digit itu; tampilkan suara digit
+  const inf=$(infoId),mv=$(mId).value.replace(/\D/g,''),v={};
   rows.forEach(z=>z.forEach(d=>{v[d]=(v[d]||0)+1;}));
-  const rk=Object.keys(v).sort((a,b)=>v[b]-v[a]||a-b),all=rk.map(d=>d+'('+v[d]+')').join(' ');
-  let pool=null,t='';
-  if(mv){pool=new Set(mv.split(''));t='Rengking manual: hanya digit '+[...pool].join(' ');}
-  else if(rg){
-    const pick=rk.slice(rg[0]-1,rg[1]);
-    if(pick.length){pool=new Set(pick);t='Rengking '+(rg[0]===1?rg[1]:rg[0]+'-'+rg[1])+': hanya digit '+pick.join(' ')+(pick.length<rg[1]-rg[0]+1?' (suara hanya '+rk.length+' digit)':'');}
-    else t='Rengking: belum ada baris digit, belum bisa diperingkat.';
-  }
-  if(inf)inf.textContent=(t?t+' · ':'')+(all?'suara digit: '+all:'');
-  return pool;
+  const all=Object.keys(v).sort((a,b)=>v[b]-v[a]||a-b).map(d=>d+'('+v[d]+')').join(' '),pool=mv?new Set(mv.split('')):null;
+  if(inf)inf.textContent=(on===false?'⛔ OFF — kotak ini diabaikan · ':'')+(pool?'Digit manual: hanya '+[...pool].join(' ')+' · ':'')+(all?'suara digit: '+all:'');
+  return on===false?null:pool;
+}
+function r4tier(items,rg,tot){   // Rengking = tingkat jumlah baris yang kena: 1 = paling banyak kena, 2 = tingkat di bawahnya, dst
+  if(!items.length)return {out:[],txt:'Rengking: tidak ada angka kandidat (cek isi Depan / Tengah / Belakang).'};
+  const hs=[...new Set(items.map(x=>x.h))].sort((a,b)=>b-a),pick=hs.slice(rg[0]-1,rg[1]),ok=new Set(pick),cnt={};
+  items.forEach(x=>{cnt[x.h]=(cnt[x.h]||0)+1;});
+  return {out:items.filter(x=>ok.has(x.h)).map(x=>x.s),
+    txt:'Rengking '+(rg[0]===1?rg[1]:rg[0]+'-'+rg[1])+': '+(pick.length?pick.map(h=>'kena '+h+'/'+tot+' baris ('+cnt[h]+' angka)').join(' · '):'tingkat tidak ada (hanya '+hs.length+' tingkat)')};
 }
 function r4render(){
   const D=r4set('Depan'),T=r4set('Tengah'),B=r4set('Belakang'),sep=$('sep').value,o4=[],o3=[];
   R4P.forEach(k=>{$('r4n'+k).textContent=r4set(k).size;const C=r4ct(k),h=$('r4cn'+k);
     if(h)h.textContent=C.length?'CT '+C.join(' & ')+' ('+(($('r4cm'+k).value==='all')?'semua digit wajib ada':'salah satu digit ada')+') → '+r4set(k).size+' dari '+toks($('r4'+k).value,2).length+' LN':'';});
-  const AI=$('r4ai').value.split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),OFF=new Set(toks($('r4off').value,4));
-  const AI3=($('r4ai3')?$('r4ai3').value:'').split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size);
-  const P4=r4aiPool(AI,'r4kAI','r4kmAI','r4kiAI'),P3=r4aiPool(AI3,'r4kAI3','r4kmAI3','r4kiAI3');
-  $('r4nAI').textContent=AI.length;$('r4nOF').textContent=OFF.size;if($('r4nAI3'))$('r4nAI3').textContent=AI3.length;
+  const AIr=$('r4ai').value.split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),A4=$('r4onAI').checked,A3=$('r4onAI3').checked,AI=A4?AIr:[],OFF=new Set(toks($('r4off').value,4));
+  const AI3r=($('r4ai3')?$('r4ai3').value:'').split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),AI3=A3?AI3r:[];
+  const P4=r4aiPool(AIr,'r4kAI','r4kmAI','r4kiAI',A4),P3=r4aiPool(AI3r,'r4kAI3','r4kmAI3','r4kiAI3',A3);
+  $('r4nAI').textContent=AIr.length+(A4?'':' (OFF)');$('r4nOF').textContent=OFF.size;if($('r4nAI3'))$('r4nAI3').textContent=AI3r.length+(A3?'':' (OFF)');
   const XD=r4off('Depan'),XT=r4off('Tengah'),XB=r4off('Belakang');
   R4P.forEach(k=>{const X=r4off(k),L=r4set(k),el=$('r4ok'+k);$('r4no'+k).textContent=X.size;
     if(!X.size){el.textContent='';return;}
     const ok=[];for(let v=0;v<100;v++){const t=pad(v,2);if(X.has(t[0])||X.has(t[1]))continue;if(L.size&&!L.has(t))continue;ok.push(t);}
     el.textContent='Sisa angka on: '+(ok.join('*')||'kosong')+' ('+ok.length+')';});
+  const rk4=A4?r4rkRange($('r4kAI').value):null,rk3=A3?r4rkRange($('r4kAI3').value):null,c4=[],c3=[];
   if(D.size||T.size||B.size||AI.length||P4||XD.size||XT.size||XB.size)for(let v=0;v<10000;v++){
     const s=pad(v,4);
     if(OFF.has(s))continue;
@@ -4163,19 +4164,23 @@ function r4render(){
     if(D.size&&!D.has(s.slice(0,2)))continue;
     if(T.size&&!T.has(s.slice(1,3)))continue;
     if(B.size&&!B.has(s.slice(2,4)))continue;
-    if(AI.length&&!AI.every(z=>[...s].some(d=>z.has(d))))continue;
     if(P4&&![...s].every(d=>P4.has(d)))continue;
+    if(rk4&&AI.length){c4.push({s,h:AI.filter(z=>[...s].some(d=>z.has(d))).length});continue;}
+    if(AI.length&&!AI.every(z=>[...s].some(d=>z.has(d))))continue;
     o4.push(s);
   }
+  if(rk4&&AI.length){const t=r4tier(c4,rk4,AI.length);o4.push(...t.out);const e=$('r4kiAI');if(e)e.textContent=t.txt+' · '+e.textContent;}
   if(T.size||B.size||XT.size||XB.size||AI3.length||P3)for(let v=0;v<1000;v++){
     const s=pad(v,3);
-    if(AI3.length&&!AI3.every(z=>[...s].some(d=>z.has(d))))continue;
     if(P3&&![...s].every(d=>P3.has(d)))continue;
+    if(rk3&&AI3.length){if(XT.has(s[0])||XT.has(s[1])||XB.has(s[1])||XB.has(s[2]))continue;if(T.size&&!T.has(s.slice(0,2)))continue;if(B.size&&!B.has(s.slice(1,3)))continue;c3.push({s,h:AI3.filter(z=>[...s].some(d=>z.has(d))).length});continue;}
+    if(AI3.length&&!AI3.every(z=>[...s].some(d=>z.has(d))))continue;
     if(XT.has(s[0])||XT.has(s[1])||XB.has(s[1])||XB.has(s[2]))continue;
     if(T.size&&!T.has(s.slice(0,2)))continue;
     if(B.size&&!B.has(s.slice(1,3)))continue;
     o3.push(s);
   }
+  if(rk3&&AI3.length){const t=r4tier(c3,rk3,AI3.length);o3.push(...t.out);const e=$('r4kiAI3');if(e)e.textContent=t.txt+' · '+e.textContent;}
   $('r4out').value=o4.join(sep);$('r4nO').textContent=o4.length;
   $('r4out3').value=o3.join(sep);$('r4n3').textContent=o3.length;
   const used=[D.size?'Depan':'',T.size?'Tengah':'',B.size?'Belakang':'',AI.length?'AI/CT/CB 4D':'',AI3.length?'AI/CT/CB 3D':'',P4?'Rengking 4D':'',P3?'Rengking 3D':'',XD.size?'OFF Depan':'',XT.size?'OFF Tengah':'',XB.size?'OFF Belakang':''].filter(Boolean);
@@ -4392,7 +4397,7 @@ $('aiUse').onclick=()=>{
   r4render();$('aiOut').insertAdjacentHTML('afterbegin','<div style="color:#7ee787;margin-bottom:6px">✓ Top dipakai sebagai LN 2D Depan · Tengah · Belakang (4D/3D ikut tersusun).</div>');
 };
 $('r4offClr').onclick=()=>{$('r4off').value='';r4render();try{r4save();}catch(_){}};
-$('r4Reset').onclick=()=>{R2={};R4P.forEach(k=>{$('r4o'+k).value='';$('r4c'+k).value='';$('r4cm'+k).value='any';});$('r4ai').value='';$('r4ai3').value='';$('r4off').value='';['r4kAI','r4kmAI','r4kAI3','r4kmAI3'].forEach(i=>{$(i).value='';});R4AUTO.r4ai.clear();R4AUTO.r4ai3.clear();R4P.forEach(k=>{$('r4p'+k).value='';$('r4t'+k).value='';$('r4d'+k).value='1-9';$('r4'+k).value='';r4fill(k);});r4render();};
+$('r4Reset').onclick=()=>{R2={};R4P.forEach(k=>{$('r4o'+k).value='';$('r4c'+k).value='';$('r4cm'+k).value='any';});$('r4ai').value='';$('r4ai3').value='';$('r4off').value='';['r4kAI','r4kmAI','r4kAI3','r4kmAI3'].forEach(i=>{$(i).value='';});R4AUTO.r4ai.clear();R4AUTO.r4ai3.clear();$('r4onAI').checked=true;$('r4onAI3').checked=true;R4P.forEach(k=>{$('r4p'+k).value='';$('r4t'+k).value='';$('r4d'+k).value='1-9';$('r4'+k).value='';r4fill(k);});r4render();};
 $('r4Reset').addEventListener('click',()=>{R4P.forEach(k=>{$('r4k'+k).value='';$('r4km'+k).value='';$('r4'+k).value='';r4fill(k);});r4rkSave();r4render();});
 $('sep').addEventListener('change',r4render);
 try{
@@ -4405,6 +4410,7 @@ try{
   if(o.auto){['r4ai','r4ai3'].forEach(i=>{R4AUTO[i]=new Set(o.auto[i]||[]);});}
   ['r4ai','r4ai3'].forEach(i=>{const t=$(i);if(!t||!/#(cb|ai)/.test(t.value))return;   // data lama bertanda #cb/#ai: tanda dibuang, barisnya dianggap isi otomatis
     t.value=t.value.split('\n').map(l=>{if(/#(cb|ai)\s*$/.test(l)){const d=l.replace(/\s*#(cb|ai)\s*$/,'').trim();if(d)R4AUTO[i].add(d);return d;}return l;}).filter(l=>l.trim()).join('\n');});
+  if(o.on){$('r4onAI').checked=o.on.a!==false;$('r4onAI3').checked=o.on.b!==false;}
   if(o.rk){$('r4kAI').value=o.rk.a[0]||'';$('r4kmAI').value=o.rk.a[1]||'';$('r4kAI3').value=o.rk.b[0]||'';$('r4kmAI3').value=o.rk.b[1]||'';}
 }catch(_){}
 try{const q=JSON.parse(localStorage.getItem(R4RK)||'{}');R4P.forEach(k=>{if(q[k]){$('r4k'+k).value=q[k].n||'';$('r4km'+k).value=q[k].m||'';$('r4c'+k).value=q[k].c||'';$('r4cm'+k).value=q[k].cm||'any';}});}catch(_){}
