@@ -896,11 +896,13 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div id="r4St" class="hint" style="margin:4px 0"></div>
   <div id="r4Pos"></div>
   <div class="r4box"><div class="ph"><span>AI / CT / CB 4D · <span id="r4nAI">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 4D hanya lolos jika memuat salah satu digit di tiap baris. AI, CT, dan CB diperlakukan sama.</div><textarea id="r4ai" rows="5" style="min-height:120px" data-r4x="1" placeholder="AI/CT/CB 4D — satu baris satu kumpulan digit"></textarea></div>
+<div id="r4tkcb" style="padding:2px 0 8px"></div>
   <div class="r4box"><div class="ph"><span>4D OFF (mati total) · <span id="r4nOF">0</span> angka</span><button id="r4offClr" style="padding:2px 10px">Kosongkan</button></div><div class="hint" style="padding-top:6px">Angka 4D di sini dibuang total dari hasil.</div><textarea id="r4off" rows="4" style="min-height:96px" data-r4x="1" placeholder="4D OFF — pisah * , # . atau spasi"></textarea></div>
   <div id="r4Info" class="hint" style="margin:6px 0"></div>
   <div class="r4box"><div class="ph"><span>Hasil 4D (ab∈Depan · bc∈Tengah · cd∈Belakang) · <span id="r4nO">0</span> angka</span></div><textarea id="r4out" rows="3" readonly placeholder="Hasil 4D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy">Salin 4D</button><button id="r4Use">Pakai di tab 4D</button></div>
   <div class="r4box"><div class="ph"><span>AI / CT / CB 3D · <span id="r4nAI3">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 3D hanya lolos jika memuat salah satu digit di tiap baris. Trek <b>CB</b> dan <b>AI 3D</b> dari Bank masuk otomatis (tanda #cb / #ai); ketikan manual juga boleh.</div><textarea id="r4ai3" rows="4" style="min-height:96px" data-r4x="1" placeholder="AI/CT/CB 3D — satu baris satu kumpulan digit"></textarea></div>
+<div id="r4tkai3d" style="padding:2px 0 8px"></div>
 <div class="r4box"><div class="ph"><span>Hasil 3D (bc∈Tengah · cd∈Belakang) · <span id="r4n3">0</span> angka</span></div><textarea id="r4out3" rows="3" readonly placeholder="Hasil 3D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy3">Salin 3D</button><button id="r4Use3">Pakai di tab 3D</button><button class="red" id="r4Reset">Kosongkan semua</button></div>
   <div class="r4box" id="aiBox"><div class="ph"><span>🧠 Skor AI cerdas · 2D / 3D / 4D</span></div>
@@ -3923,35 +3925,65 @@ $('use').onclick=()=>{
 const R4K='wb_rek4d_v2',R4P=['Depan','Tengah','Belakang'],R4G={AC:'Depan',CK:'Tengah',KE:'Belakang'};
 let R2={};
 // Trek Bank yang dikeluarkan satu per satu dari rekap tiap posisi (Bank sendiri tidak dihapus)
-const R4EXK='wb_rek4d_ex',R4EX={Depan:new Set(),Tengah:new Set(),Belakang:new Set()},R4TRK={};
+const R4EXK='wb_rek4d_ex',R4EX={Depan:new Set(),Tengah:new Set(),Belakang:new Set(),CB:new Set()},R4TRK={};
 try{const q=JSON.parse(localStorage.getItem(R4EXK)||'{}');Object.keys(R4EX).forEach(k=>(q[k]||[]).forEach(v=>R4EX[k].add(v)));}catch(_){}
 function r4exSave(){try{const o={};Object.keys(R4EX).forEach(k=>o[k]=[...R4EX[k]]);localStorage.setItem(R4EXK,JSON.stringify(o));}catch(_){}}
 const r4tk=(vk,i)=>vk+'|'+i.c+'|'+[...(i.s||[])].map(String).sort().join('');
+const R4AIVK=new Set(['ai2dd','ai2dt','ai2db','ai3d']),R4TKOPEN=new Set();   // hanya trek AI / CT / CB yang ditampilkan di tab posisi
 function r4trkList(x,g){
-  const k=R4G[g],el=$('r4d'+k),t=el?el.value.trim():'',DG=t?r4parse(t):null,list=[];
-  Object.keys(x.M.pos).forEach(vk=>{if(!sumRel(vk))return;(x.M.pos[vk].items||[]).forEach(i=>{
-    if(!(i.s&&(i.s.size||i.s.length)))return;const key=r4tk(vk,i);
-    list.push({vk,key,d:i.d,c:i.c,ex:R4EX[k].has(key),dg:!!(DG&&DG.size&&!DIG_EXEMPT(vk)&&i.d!==undefined&&!DG.has(i.d))});});});
+  const k=R4G[g],ix={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[k]||[2,3],el=$('r4d'+k),t=el?el.value.trim():'',DG=t?r4parse(t):null,list=[];
+  Object.keys(R4_SLOT).filter(vk=>R4AIVK.has(vk)).forEach(vk=>{
+    const sl=R4_SLOT[vk];if(!(sl.includes(ix[0])||sl.includes(ix[1])))return;
+    const P=x.M.pos[vk];((P&&P.items)||[]).forEach(i=>{
+      if(!(i.s&&(i.s.size||i.s.length)))return;const key=r4tk(vk,i);
+      list.push({vk,key,d:i.d,c:i.c,s:[...i.s].map(Number).sort((a,b)=>a-b),ex:R4EX[k].has(key),dg:!!(DG&&DG.size&&!DIG_EXEMPT(vk)&&i.d!==undefined&&!DG.has(i.d))});});});
   return list;
 }
 const escT=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function r4cbPanel(vk,label,hostId,x){
+  const host=$(hostId);if(!host)return;
+  const P=x.M.pos[vk],items=((P&&P.items)||[]).filter(i=>i.s&&(i.s.size||i.s.length)).map(i=>({key:r4tk(vk,i),d:i.d,c:i.c,s:[...i.s].map(Number).sort((a,b)=>a-b)}));
+  items.forEach(r=>{r.ex=R4EX.CB.has(r.key);});
+  if(!items.length){host.innerHTML='';return;}
+  const on=items.filter(r=>!r.ex),ex=items.filter(r=>r.ex),cnt={};on.forEach(r=>r.s.forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
+  const rank=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]||a-b),mx=rank.length?cnt[rank[0]]:1;
+  const rankTxt=rank.map(d=>d+': '+cnt[d]).join('\n'),trkTxt=on.map(r=>r.s.join('')).join('\n');
+  const bs='padding:2px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12.5px';
+  const chip=(r,act)=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px;${act==='inc'?'opacity:.6;text-decoration:line-through':''}">${r.s.join('')}<button data-r4tkx="CB" data-key="${encodeURIComponent(r.key)}" data-act="${act}" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none;font-weight:800">${act==='inc'?'↺':'✕'}</button></span>`;
+  const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
+  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(a-b));
+  const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`+byD.get(z).map(r=>chip(r,'ex')).join('')).join('');
+  host.innerHTML=`<details data-r4tkd="${vk}" ${R4TKOPEN.has(vk)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek ${label} dari Bank (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
+    +(on.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button data-r4cp="rank" data-pos="${vk}" style="${bs}">📋 Salin peringkat</button><button data-r4cp="trk" data-pos="${vk}" style="${bs}">📋 Salin semua trek</button></div>
+      <div style="font-weight:700;margin:4px 0">Peringkat digit <span style="font-weight:400;font-size:12px;color:var(--mut)">(terbanyak di atas, jumlah trek yang memuat digit itu)</span></div>
+      ${rank.map(d=>`<div style="display:flex;align-items:center;gap:8px;margin:2px 0;font-size:13px"><b style="width:16px;text-align:right">${d}</b><span style="display:inline-block;height:10px;border-radius:5px;background:#3fd08a;width:${Math.max(4,Math.round(cnt[d]/mx*55))}%"></span><span style="color:var(--mut)">${cnt[d]} trek</span></div>`).join('')}
+      <textarea readonly rows="1" data-r4cpbox="rank" style="position:absolute;left:-9999px;top:0">${escT(rankTxt)}</textarea><textarea readonly rows="1" data-r4cpbox="trk" style="position:absolute;left:-9999px;top:0">${escT(trkTxt)}</textarea>
+      <div style="font-weight:700;margin:10px 0 2px">Semua trek <span style="font-weight:400;font-size:12px;color:var(--mut)">(✕ = keluarkan, Bank tidak terhapus)</span></div>
+      <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Semua trek ${label} dikeluarkan.</div>`)
+    +(ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="CB" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`+ex.map(r=>chip(r,'inc')).join(''):'')+`</details>`;
+}
 function r4trkRender(k){
   const el=$('r4tk'+k);if(!el)return;const g=Object.keys(R4G).find(z=>R4G[z]===k),list=R4TRK[g];
-  if(!list||!list.length){el.innerHTML=list?'<div class="hint" style="padding:2px 0">Belum ada trek Bank yang masuk rekap posisi '+k+'.</div>':'';return;}
-  const nmv=vk=>(typeof SH_NAME!=='undefined'&&SH_NAME[vk])||(VARS[vk]&&VARS[vk].lab)||vk;
-  const chip=(r,mode)=>{
-    const txt=nmv(r.vk)+(r.d!==undefined?' · '+r.d+' digit':'');
-    const bs='margin-left:6px;padding:0 8px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-weight:800';
-    const base='display:inline-flex;align-items:center;margin:3px 6px 3px 0;padding:4px 8px;border-radius:10px;border:1px solid var(--bd);font-size:12.5px;';
-    if(mode==='ex')return `<span title="${escT(r.c||'')}" style="${base}opacity:.6;text-decoration:line-through">${escT(txt)}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="inc" style="${bs}">↺</button></span>`;
-    if(mode==='dg')return `<span title="${escT(r.c||'')}" style="${base}opacity:.45">${escT(txt)} · Digit ${escT($('r4d'+k).value)}: tidak ikut</span>`;
-    return `<span title="${escT(r.c||'')}" style="${base}${/^off|^jl(ke|ck|ac)$/.test(r.vk)?'border-color:#ff8d84;':''}">${escT(txt)}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="${bs}">✕</button></span>`;
-  };
+  if(!list){el.innerHTML='';return;}
   const on=list.filter(r=>!r.ex&&!r.dg),ex=list.filter(r=>r.ex),dg=list.filter(r=>!r.ex&&r.dg);
-  el.innerHTML=`<div style="font-weight:800;margin:2px 0">Trek yang ikut rekap ${k} (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk ✕ untuk mengeluarkan satu per satu</span></div>`
-    +(on.length?on.map(r=>chip(r,'on')).join(''):'<div class="hint" style="padding:2px 0">Tidak ada trek yang ikut — LN tidak terpangkas.</div>')
-    +(dg.length?`<div style="font-size:12px;color:var(--mut);margin-top:4px">Tidak ikut karena Digit:</div>`+dg.map(r=>chip(r,'dg')).join(''):'')
-    +(ex.length?`<div style="font-size:12px;color:var(--mut);margin-top:4px">Dikeluarkan (${ex.length}) <button data-r4tkall="${k}" style="margin-left:6px;padding:0 8px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit">↺ kembalikan semua</button></div>`+ex.map(r=>chip(r,'ex')).join(''):'');
+  const cnt={};on.forEach(r=>r.s.forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
+  const rank=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]||a-b),mx=rank.length?cnt[rank[0]]:1;
+  const rankTxt=rank.map(d=>d+': '+cnt[d]).join('\n'),trkTxt=on.map(r=>r.s.join('')).join('\n');
+  const bs='padding:2px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12.5px';
+  const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
+  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(a-b));
+  const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`
+    +byD.get(z).map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;font-weight:800">✕</button></span>`).join('')).join('');
+  const exH=ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="${k}" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`
+    +ex.map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;opacity:.6;text-decoration:line-through">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="inc" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none">↺</button></span>`).join(''):'';
+  el.innerHTML=`<details data-r4tkd="${k}" ${R4TKOPEN.has(k)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek AI / CT yang ikut rekap ${k} (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
+    +(on.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button data-r4cp="rank" data-pos="${k}" style="${bs}">📋 Salin peringkat</button><button data-r4cp="trk" data-pos="${k}" style="${bs}">📋 Salin semua trek</button></div>
+      <div style="font-weight:700;margin:4px 0">Peringkat digit <span style="font-weight:400;font-size:12px;color:var(--mut)">(terbanyak di atas, jumlah trek yang memuat digit itu)</span></div>
+      ${rank.map(d=>`<div style="display:flex;align-items:center;gap:8px;margin:2px 0;font-size:13px"><b style="width:16px;text-align:right">${d}</b><span style="display:inline-block;height:10px;border-radius:5px;background:#3fd08a;width:${Math.max(4,Math.round(cnt[d]/mx*55))}%"></span><span style="color:var(--mut)">${cnt[d]} trek</span></div>`).join('')}
+      <textarea readonly rows="1" data-r4cpbox="rank" style="position:absolute;left:-9999px;top:0">${escT(rankTxt)}</textarea><textarea readonly rows="1" data-r4cpbox="trk" style="position:absolute;left:-9999px;top:0">${escT(trkTxt)}</textarea>
+      <div style="font-weight:700;margin:10px 0 2px">Semua trek <span style="font-weight:400;font-size:12px;color:var(--mut)">(✕ = keluarkan dari rekap ${k}, Bank tidak terhapus)</span></div>
+      <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Belum ada trek AI / CT / CB untuk posisi ${k} di Bank.</div>`)
+    +(dg.length?`<div style="font-size:12px;color:var(--mut);margin-top:8px">${dg.length} trek tidak ikut karena Digit ${escT($('r4d'+k).value)}.</div>`:'')+exH+`</details>`;
 }
 if(!document.getElementById('r4kl')){const dl=document.createElement('datalist');dl.id='r4kl';dl.innerHTML=['2','3','4','5','6','7','8','9','10','3-10','1-10'].map(v=>'<option value="'+v+'">').join('');document.body.appendChild(dl);}
 $('r4Pos').innerHTML=R4P.map(k=>`<div class="r4box"><div class="ph"><span>2D ${k} · <span id="r4n${k}">0</span> LN</span></div><div class="r4row"><b>Patah</b><input id="r4p${k}" data-r4p="${k}" placeholder="mis. 6 atau 1-13 (kosong = Angka Jadi)"></div><div class="r4row"><b>Top</b><input id="r4t${k}" data-r4p="${k}" inputmode="numeric" placeholder="batasi N angka teratas, mis. 10 (kosong = semua)"></div><div class="r4row"><b>Rengking</b><input id="r4k${k}" data-r4p="${k}" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4km${k}" data-r4p="${k}" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="r4row"><b>CT</b><input id="r4c${k}" data-r4p="${k}" inputmode="numeric" autocomplete="off" placeholder="mis. 56 (kosong = off)"><select id="r4cm${k}" data-r4p="${k}" style="flex:0 0 112px"><option value="any">salah satu</option><option value="all">semua</option></select></div><div class="hint" id="r4cn${k}" style="padding-top:0"></div><div class="r4row"><b>Digit</b><input id="r4d${k}" data-r4d="${k}" inputmode="text" value="1-9" placeholder="trek berapa digit, mis. 1-9 atau 4-7"></div><div class="hint" id="r4a${k}">Belum ada rekap 2D untuk ${k}.</div><div id="r4tk${k}" style="padding:2px 0 8px"></div><textarea id="r4${k}" rows="2" data-r4="${k}" placeholder="LN 2D ${k} (terisi otomatis, bisa diedit)"></textarea><div class="hint" style="padding-top:6px;color:#ff8d84"><b>OFF 2D ${k}</b> — digit yang mati total di posisi ${k} · <span id="r4no${k}">0</span> digit</div><textarea id="r4o${k}" rows="1" data-r4x="1" placeholder="OFF digit ${k}, mis. 12345678"></textarea><div class="hint" id="r4ok${k}" style="padding-top:6px"></div></div>`).join('');
@@ -4024,7 +4056,7 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
     const trk=[],cnt={};
     Object.keys(R4_SLOT).forEach(vk=>{
       const P=M&&M.pos&&M.pos[vk];if(!P)return;const sl=R4_SLOT[vk],hA=sl.includes(ia),hB=sl.includes(ib);if(!hA&&!hB)return;
-      (P.items||[]).filter(okI).forEach(i=>{if(!(i.s&&(i.s.size||i.s.length)))return;trk.push({S:[...i.s].map(String),hA,hB});cnt[vk]=(cnt[vk]||0)+1;});
+      (P.items||[]).filter(i=>okI(i)&&!(R4EX[pos]&&R4EX[pos].has(r4tk(vk,i)))&&!((vk==='cb'||vk==='ai3d')&&R4EX.CB.has(r4tk(vk,i)))).forEach(i=>{if(!(i.s&&(i.s.size||i.s.length)))return;trk.push({S:[...i.s].map(String),hA,hB});cnt[vk]=(cnt[vk]||0)+1;});
     });
     const used=trk.length;
     if(!M)return {arr:null,info:'Rengking: tidak ada trek untuk pasaran ini di Bank Harian.'};
@@ -4175,7 +4207,7 @@ function r4chips(){
 // Trek CB (colok bebas) dari Bank pasaran terpilih otomatis masuk kotak "AI / CT / CB 4D" (satu trek = satu baris, ditandai #cb; baris ketikan manual tidak disentuh)
 function r4cbFill(x){
   const nm=String(x.M.name).trim().toLowerCase(),M=shbSummary().out.mk[nm];
-  const lines=(vk)=>{const o=new Set(),P=M&&M.pos&&M.pos[vk];((P&&P.items)||[]).forEach(i=>{const d=[...(i.s||[])].map(String).sort().join('');if(d)o.add(d);});return o;};
+  const lines=(vk)=>{const o=new Set(),P=M&&M.pos&&M.pos[vk];((P&&P.items)||[]).filter(i=>!R4EX.CB.has(r4tk(vk,i))).forEach(i=>{const d=[...(i.s||[])].map(String).sort().join('');if(d)o.add(d);});return o;};
   const put=(ta,tagged)=>{if(!ta)return;const keep=ta.value.split('\n').filter(l=>l.trim()&&!/#(cb|ai)\s*$/.test(l));
     ta.value=[...keep,...tagged].join('\n');};
   const cb=[...lines('cb')].map(d=>d+' #cb'),ai3=[...lines('ai3d')].map(d=>d+' #ai');
@@ -4203,7 +4235,7 @@ function r4auto0(v){
     $('r4Tgt').value=tgt0;
     try{$('bkGrp').value=grp0;$('bkGrp').onchange();$('bkGrp').value=grp0;bkGo(true);}catch(_){}
   }
-  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});try{r4cbFill(x);}catch(_){}r4render();R4P.forEach(k=>{try{r4trkRender(k);}catch(_){}});
+  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});try{r4cbFill(x);}catch(_){}r4render();R4P.forEach(k=>{try{r4trkRender(k);}catch(_){}});try{r4cbPanel('cb','CB (colok bebas)','r4tkcb',x);r4cbPanel('ai3d','AI 3D','r4tkai3d',x);}catch(_){}
   const n=k=>r4set(k).size;
   try{aiRun();}catch(_){}   // skor AI otomatis ikut terhitung setiap rekap pasaran selesai
   st.textContent=`✓ ${x.M.name}: Depan ${n('Depan')} LN · Tengah ${n('Tengah')} LN · Belakang ${n('Belakang')} LN (Patah kosong = Angka Jadi; isi Patah di bawah untuk ubah)`+(errs.length?' · gagal: '+errs.join('; '):'');
@@ -4211,7 +4243,13 @@ function r4auto0(v){
 $('r4Card').addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.r4d)return;r4save();if(r4cur)try{r4auto(r4cur);}catch(_){}});   // Digit berubah -> hitung ulang rekap pasaran terpilih
 $('r4Card').addEventListener('pointerdown',()=>{r4chips();},true);
 let r4busy=false;
+$('r4Card').addEventListener('toggle',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.r4tkd){if(t.open)R4TKOPEN.add(t.dataset.r4tkd);else R4TKOPEN.delete(t.dataset.r4tkd);}},true);
 $('r4Card').addEventListener('click',e=>{
+  const cp=e.target.closest&&e.target.closest('button[data-r4cp]');
+  if(cp){const box=cp.closest('details').querySelector('textarea[data-r4cpbox="'+cp.dataset.r4cp+'"]'),txt=box?box.value:'',old=cp.textContent;
+    const done=()=>{cp.textContent='✓ Tersalin';setTimeout(()=>{cp.textContent=old;},1400);};
+    const fb=()=>{try{box.style.left='0';box.select();document.execCommand('copy');box.style.left='-9999px';done();}catch(_){cp.textContent='Gagal salin';}};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fb);else fb();return;}
   const t=e.target.closest&&e.target.closest('button[data-r4tkx],button[data-r4tkall]');if(!t)return;
   if(t.dataset.r4tkall){R4EX[t.dataset.r4tkall].clear();}
   else{const k=t.dataset.r4tkx,key=decodeURIComponent(t.dataset.key);if(t.dataset.act==='ex')R4EX[k].add(key);else R4EX[k].delete(key);}
