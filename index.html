@@ -908,7 +908,8 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div class="hint" style="padding-top:6px">Skor gabungan per kelompok: <b>trek 50%</b> (angka bertahan di banyak tingkat Patah) + <b>frekuensi result 25%</b> (sering keluar di jendela terakhir) + <b>lama tidak keluar 25%</b>. Hasilnya berupa peringkat angka.</div>
   <div class="rkr"><b style="flex:0 0 auto">Top</b><input id="aiN" inputmode="numeric" value="10"><b style="flex:0 0 auto">Jendela result</b><input id="aiW" inputmode="numeric" value="200"></div>
   <div class="rkrow"><button class="pri" id="aiGo">Hitung skor</button><button id="aiUse">Pakai Top ke LN</button></div>
-  <div id="aiOut" class="hint" style="word-break:break-word;margin-top:6px"></div></div>
+  <div id="aiOut" class="hint" style="word-break:break-word;margin-top:6px"></div>
+  <div id="jjOut" style="margin-top:10px"></div></div>
 </div>
 
 <div class="card k4" id="gridCard">
@@ -4387,12 +4388,57 @@ function aiRun(){
   }
   {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
    H.push('<button type="button" data-cp="'+all.replace(/\n/g,'&#10;')+'" style="width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#111;font-weight:800;cursor:pointer">📋 Salin semua (2D Depan · Tengah · Belakang · 4D · 3D)</button>');}
+  H.push('<button type="button" data-jjlog="1" style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:inherit;font-weight:700;cursor:pointer">💾 Catat prediksi ini untuk Uji jujur (dicek otomatis saat result berikutnya keluar)</button>');
   R4P.forEach(k=>H.push(aiChips(L[k],'2D '+k,TR[k]?'':'(tanpa trek, hanya data result)')));
   H.push(aiChips(o4,'4D','ab∈Depan · bc∈Tengah · cd∈Belakang (di bawah angka: potongan 2D-nya)'));
   H.push(aiChips(o3,'3D','bc∈Tengah · cd∈Belakang'));
-  aiLast={R:L,N,s4:o4,s3:o3};out.innerHTML=H.join('');
+  aiLast={R:L,N,s4:o4,s3:o3};out.innerHTML=H.join('');try{jjRender();}catch(_){}
 }
 $('aiGo').onclick=aiRun;
+
+// ===== UJI JUJUR (ke depan): catat daftar hari ini, cek ke result berikutnya, bandingkan dengan peluang kebetulan =====
+const JJK='jujurLog_v1';
+function jjLoad(){try{const a=JSON.parse(localStorage.getItem(JJK)||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}}
+function jjSave(a){try{localStorage.setItem(JJK,JSON.stringify(a.slice(-300)));}catch(_){}}
+function jjNext(mk,asOf){   // result pertama setelah tanggal asOf (data DATA urut terbaru→lama)
+  let best=null;DATA.forEach(d=>{if(d.market!==mk||!d.date||d.date<=asOf)return;if(!best||d.date<best.date)best=d;});
+  return best?best.num.padStart(4,'0').slice(-4):null;
+}
+function jjRender(){
+  const el=$('jjOut');if(!el)return;
+  const logs=jjLoad(),T=[
+    ['2D Depan',l=>l.D,r=>r.slice(0,2),100],['2D Tengah',l=>l.T,r=>r.slice(1,3),100],['2D Belakang',l=>l.B,r=>r.slice(2,4),100],
+    ['3D',l=>l.d3,r=>r.slice(1),1000],['4D',l=>l.d4,r=>r,10000]];
+  if(!logs.length){el.innerHTML='<div class="hint">📊 <b>Uji jujur</b>: tekan “💾 Catat prediksi” setiap kali Anda memakai daftar. Begitu result berikutnya keluar, hasilnya dicek di sini dan dibandingkan dengan peluang kebetulan.</div>';return;}
+  const ready=DATA&&DATA.length;
+  const rows=T.map(([nm,get,cut,space])=>{
+    let n=0,hit=0,ep=0,vr=0;
+    logs.forEach(l=>{const lst=get(l);if(!lst||!lst.length||!ready)return;const r=jjNext(l.mk,l.asOf);if(r==null)return;
+      const p=Math.min(1,lst.length/space);n++;ep+=p;vr+=p*(1-p);if(lst.indexOf(cut(r))>=0)hit++;});
+    if(!n)return `<tr><td>${nm}</td><td colspan="4" style="opacity:.6">belum ada yang bisa dicek</td></tr>`;
+    const rate=hit/n*100,ch=ep/n*100,z=vr>0?(hit-ep)/Math.sqrt(vr):0;
+    let v=n<30?'⏳ data belum cukup (min. 30 catatan)':z>2?'✅ di atas kebetulan':z<-2?'⚠ di bawah kebetulan':'⚖ sama dengan kebetulan';
+    return `<tr><td>${nm}</td><td>${hit}/${n}</td><td><b>${rate.toFixed(1)}%</b></td><td>${ch.toFixed(1)}%</td><td>${v}</td></tr>`;
+  }).join('');
+  const pend=ready?logs.filter(l=>jjNext(l.mk,l.asOf)==null).length:logs.length;
+  el.innerHTML=`<div style="font-weight:700;color:var(--ac);margin-bottom:4px">📊 Uji jujur ke depan · ${logs.length} catatan${pend?` · ${pend} menunggu result`:''}</div>
+  <div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr style="opacity:.7;text-align:left"><th>Jenis</th><th>Kena</th><th>Hasil</th><th>Kebetulan</th><th>Kesimpulan</th></tr>${rows}</table></div>
+  <div class="hint" style="margin-top:4px">“Kebetulan” = persentase kena kalau angka dipilih acak dengan ukuran daftar yang sama. Hanya hasil <b>setelah</b> daftar dicatat yang dihitung, jadi tidak bisa menipu diri sendiri. Selisih kecil dengan sampel sedikit hampir selalu kebetulan.</div>
+  <button type="button" data-jjdel="1" style="margin-top:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12px">🗑 Hapus semua catatan</button>`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-jjlog],[data-jjdel]');if(!b)return;
+  if(b.dataset.jjdel){if(confirm('Hapus semua catatan Uji jujur?')){jjSave([]);jjRender();}return;}
+  try{
+    const mk=aiMk();if(!aiLast||!mk){alert('Hitung skor dulu dan pilih pasaran.');return;}
+    let asOf='';DATA.forEach(d=>{if(d.market===mk&&d.date>asOf)asOf=d.date;});
+    if(!asOf){alert('Tanggal result terakhir pasaran ini tidak terbaca.');return;}
+    const rec={mk,asOf,D:aiLast.R.Depan.map(r=>r.n),T:aiLast.R.Tengah.map(r=>r.n),B:aiLast.R.Belakang.map(r=>r.n),d4:aiLast.s4.map(r=>r.n),d3:aiLast.s3.map(r=>r.n)};
+    const a=jjLoad().filter(l=>!(l.mk===mk&&l.asOf===asOf));a.push(rec);jjSave(a);jjRender();
+    const o=b.textContent;b.textContent='✓ Tercatat untuk result setelah '+asOf;setTimeout(()=>{b.textContent=o;},1800);
+  }catch(err){alert('Gagal mencatat: '+err.message);}
+});
+setTimeout(()=>{try{jjRender();}catch(_){}},1500);
 $('aiOut').addEventListener('click',async e=>{   // Salin 2D Depan / Tengah / Belakang / 4D / 3D: ketuk tombol Salin atau barisnya
   const t=e.target.closest('[data-cp]');if(!t)return;const txt=t.dataset.cp;let ok=false;
   try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(_){}
