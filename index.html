@@ -634,9 +634,6 @@ body.wb-alllk #wb-lockmsg{display:block}
         <button onclick="wbAccAddDays(180)" style="flex:1;padding:8px;border-radius:7px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.1);color:#22d3ee;font-size:11px;font-weight:800;cursor:pointer">+180 hari</button>
         <button onclick="wbAccAddDays(365)" style="flex:1;padding:8px;border-radius:7px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.1);color:#22d3ee;font-size:11px;font-weight:800;cursor:pointer">+365 hari</button>
       </div>
-      <label style="display:block;font-size:11px;color:var(--muted);margin:4px 0 3px">📦 Batas rumus di Bank</label>
-      <input type="number" id="acc-banklimit" min="1" max="300" inputmode="numeric" placeholder="100" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);font-size:13px;margin-bottom:3px">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Kosongkan = bawaan 100. Aman sampai ±140; di atas itu trek dipangkas otomatis.</div>
       <div id="acc-limits"></div>
       <label style="display:flex;gap:8px;align-items:center;font-size:12px;margin-bottom:10px"><input type="checkbox" id="acc-wa" checked style="width:auto"> 📲 Kirim info akun lewat WhatsApp setelah simpan</label>
       <button id="acc-save" onclick="wbAccSave()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.15);color:#10b981;font-size:13px;font-weight:800;cursor:pointer">💾 Simpan</button>
@@ -770,7 +767,7 @@ body.wb-alllk #wb-lockmsg{display:block}
 </div>
 
 <div class="card k6" id="abCard">
-  <h2>🤖 Bank Otomatis <span id="abSt" style="font-weight:400;font-size:13px"></span></h2>
+  <h2>🤖 Scan Otomatis <span id="abSt" style="font-weight:400;font-size:13px"></span></h2>
   <div class="stopHint" style="margin-top:0">Pilih pasaran, centang rumus yang mau diisi (semua kelompok seperti Scan Multi), atur <b>digit · trek · put</b>. Bank terisi sendiri: tanpa scan manual, tanpa centang hasil, tanpa tombol simpan. <b>put</b> = baris uji (panjang trek), <b>trek</b> = jumlah trek yang dicari per digit.</div>
   <details><summary id="abMSum" style="cursor:pointer;font-weight:600">Pilih pasaran</summary>
     <div class="row" style="margin:6px 0"><button id="abMAll" style="flex:0 0 auto">Pilih semua</button><button id="abMNone" style="flex:0 0 auto">Kosongkan</button></div>
@@ -927,7 +924,7 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div id="utOut" style="font-size:13px;line-height:1.5"></div>
 </div>
 
-<details class="card k6"><summary style="cursor:pointer;color:var(--ac)">📖 Catatan label rekap</summary><div class="hint" style="line-height:1.55;margin-top:6px">
+<details class="card k6" id="catCard"><summary style="cursor:pointer;color:var(--ac)">📖 Catatan label rekap</summary><div class="hint" style="line-height:1.55;margin-top:6px">
 <b>LN</b> = satu angka (2D/3D/4D). <b>LN dasar</b> = daftar angka yang dipakai (kosong = semua). <b>LN off</b> = angka yang dibuang.<br>
 <b>AI</b> = angka ikut (kena jika salah satu digit ada di baris) · <b>BBFS</b> = wajib tarung (semua digit angka ada di baris; 2D 2 digit, 3D 3 digit, 4D 4 digit) · <b>CT</b> = baris berisi angka jadi.<br>
 <b>angka main</b> = digit paling banyak muncul di semua baris. <b>LN TOP</b> = angka yang kena semua baris (patah 0). <b>Patah k</b> = angka yang meleset di k baris. <b>ANGKA JADI</b> = kelompok patah paling kecil yang ada.<br>
@@ -1190,8 +1187,8 @@ let _wbAcc = { id:'', mode:'edit', baseExp:'', pkgLabels:[] };
 // key = nama field di record member; dibaca langsung oleh halaman Prediksi / Harian / Otomatis (prediksi.html).
 // Kosong = bawaan. Admin sendiri selalu tanpa batas.
 const WB_LIMIT_GROUPS = [
-  { t:'📅 BANK HARIAN MEMBER', f:[
-    { key:'rhBankLimit', l:'Batas bank — maks trek yang boleh tersimpan', max:600, ph:'bawaan 100' } ] }
+  { t:'📦 BANK MEMBER', f:[
+    { key:'rhBankLimit', l:'Batas bank — maks trek/rumus yang boleh tersimpan (satu batas untuk semua Bank)', max:600, ph:'bawaan 100' } ] }
 ];
 const WB_LIMITS = WB_LIMIT_GROUPS.reduce((a,g)=>a.concat(g.f.map(f=>Object.assign({grp:g.t},f))),[]);
 function wbBuildLimitFields(){
@@ -1226,9 +1223,8 @@ async function wbOpenAcc(id, mode){
   if(isAcc){ const t = wbAddDays(null, s.trialDays); if(!exp || exp < t) exp = t; } // uji coba dihitung dari hari di-ACC
   document.getElementById('acc-exp').value = exp;
   document.getElementById('acc-wa').checked = true;
-  document.getElementById('acc-banklimit').value = u.bankLimit || '';
   wbBuildLimitFields();
-  WB_LIMITS.forEach(f => { const el = document.getElementById('acc-'+f.key); if(el) el.value = u[f.key] || ''; });
+  WB_LIMITS.forEach(f => { const el = document.getElementById('acc-'+f.key); if(el) el.value = u[f.key] || (f.key==='rhBankLimit' ? (u.bankLimit||'') : '') || ''; });   // data lama: batas lama (bankLimit) ikut terbawa
   document.getElementById('acc-save').textContent = isAcc ? '✅ ACC & Kirim WA' : '💾 Simpan';
   document.getElementById('wb-acc-overlay').style.display = 'block';
 }
@@ -1245,9 +1241,6 @@ async function wbAccSave(){
   const plan = document.getElementById('acc-plan').value;
   const exp = document.getElementById('acc-exp').value;
   const sendWa = document.getElementById('acc-wa').checked;
-  const blRaw = document.getElementById('acc-banklimit').value.trim();
-  let bl = null;
-  if(blRaw !== ''){ bl = parseInt(blRaw, 10); if(!(bl >= 1 && bl <= 300)){ alert('Batas bank harus angka 1–300, atau kosongkan (= 100).'); return; } }
   const lim = {};
   for(const f of WB_LIMITS){
     const raw = document.getElementById('acc-'+f.key).value.trim();
@@ -1256,6 +1249,7 @@ async function wbAccSave(){
     if(!(n >= 1 && n <= f.max)){ alert('['+(f.grp||'').replace(/^\S+\s/,'')+'] '+f.l.split(' — ')[0].split(' (')[0] + ': isi angka 1–' + f.max + ', atau kosongkan (= bawaan).'); return; }
     lim[f.key] = n;
   }
+  const bl = lim.rhBankLimit;   // satu batas bank; bankLimit lama disamakan agar halaman lain tetap cocok
   if(pw.length < 4){ alert('Password minimal 4 karakter.'); return; }
   if(!/^\d{4}-\d{2}-\d{2}$/.test(exp)){ alert('Masa aktif harus berupa tanggal (pilih lewat kalender).'); return; }
   const btn = document.getElementById('acc-save'); const btnTxt = btn.textContent;
@@ -1278,7 +1272,6 @@ async function wbAccSave(){
     if((before.password||'') !== pw) ch.push('password');
     if((before.plan||'Basic') !== plan) ch.push('paket '+(before.plan||'Basic')+' → '+plan);
     if((before.expiresAt||'') !== exp) ch.push('masa aktif '+(before.expiresAt||'-')+' → '+exp);
-    if((before.bankLimit||null) !== bl) ch.push('batas bank '+(before.bankLimit||'bawaan')+' → '+(bl||'bawaan'));
     WB_LIMITS.forEach(f => { if((before[f.key]||null) !== lim[f.key]) ch.push(f.key+' '+(before[f.key]||'bawaan')+' → '+(lim[f.key]||'bawaan')); });
     await jAddAdminLog(after.id, after.name, isAcc?'Activated':'EditAccount', 'Admin: '+(ch.join(', ')||'tanpa perubahan'));
     WB_ALL_USERS = wbRealMembers(all);
@@ -1960,18 +1953,20 @@ const WB_G2 = 'BANK';
 const WB_G3 = 'REKAP';
 const WB_GRP_NOTE = {};
 WB_GRP_NOTE[WB_G0] = '🔒 Satu tombol: seluruh halaman Rumus disembunyikan dari member';
-WB_GRP_NOTE[WB_G1] = '🔍 Semua cara mencari trek (Cari Rumus, Scan Multi, Bank Otomatis, Uji trek)';
+WB_GRP_NOTE[WB_G1] = '🔍 Semua cara mencari trek (Rumus Harian, Scan Multi, Scan Otomatis, Uji trek)';
 WB_GRP_NOTE[WB_G2] = '📅 Bank Harian member (isinya bisa dilihat admin)';
-WB_GRP_NOTE[WB_G3] = '🎯 Rekap angka dan rekap final';
+WB_GRP_NOTE[WB_G3] = '🎯 Rekap final, rekap 4D·3D, rekap angka 2D, dan catatan';
 const WB_FEATURES = [
   { grp:WB_G0, key:'rh_all',    label:'KUNCI SEMUA FITUR (seluruh halaman)', selectors:[] },
-  { grp:WB_G1, key:'rh_rumus',  label:'Cari Rumus (Rumus Harian)',   selectors:['#rhCard'] },
+  { grp:WB_G1, key:'rh_rumus',  label:'Rumus Harian (Cari Rumus)',   selectors:['#rhCard'] },
   { grp:WB_G1, key:'rh_multi',  label:'Scan Multi Pasaran',          selectors:['#mlCard'] },
-  { grp:WB_G1, key:'rh_auto',   label:'Bank Otomatis (cari trek otomatis)', selectors:['#abCard'] },
+  { grp:WB_G1, key:'rh_auto',   label:'Scan Otomatis (cari trek & isi Bank Harian otomatis)', selectors:['#abCard'] },
   { grp:WB_G1, key:'rh_uji',    label:'Uji kekuatan trek lanjut',    selectors:['#utCard'] },
   { grp:WB_G2, key:'rh_bank',   label:'Bank Harian',                 selectors:['#shBank'] },
-  { grp:WB_G3, key:'rh_rekap',  label:'Rekap Angka 2D·3D·4D (filter, top, LN)', selectors:['#fltCard','#topCard','#gridCard','#isiCard','#hdnRekap','#hdnTop'] },
-  { grp:WB_G3, key:'rh_final',  label:'Rekap Final Otomatis & Rekap 4D·3D', selectors:['#admCard','#sumCard','#r4Card'] },
+  { grp:WB_G3, key:'rh_final',  label:'① Rekap final otomatis & ② Kelompok rumus', selectors:['#admCard','#sumCard'] },
+  { grp:WB_G3, key:'rh_4d3d',   label:'Rekap 4D · 3D otomatis (Depan·Tengah·Belakang, AI/CT/CB, Rengking)', selectors:['#r4Card'] },
+  { grp:WB_G3, key:'rh_rekap',  label:'Rekap angka 2D: Isi data · Filter · LN TOP · LN dasar', selectors:['#fltCard','#topCard','#gridCard','#isiCard','#hdnRekap','#hdnTop'] },
+  { grp:WB_G3, key:'rh_catatan',label:'Catatan label rekap',         selectors:['#catCard'] },
 ];
 
 // Kelompokkan fitur (urutan sesuai WB_FEATURES) → [{name, items:[indeks]}]
@@ -2164,7 +2159,7 @@ function wbRumusLockHtml(mSet) {
   const n = ks.filter(k => mSet.has('rv:'+k)).length;
   return `<div style="margin:14px 0 6px;padding:10px 12px;border-radius:10px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.06)">
     <div style="font-size:12px;font-weight:800;color:#f59e0b">🔢 Kunci Rumus (semua pencarian) — ${n} dikunci</div>
-    <div style="font-size:10.5px;color:#8b949e;margin:4px 0 8px;line-height:1.5">Centang = <b style="color:#e6edf3">DIKUNCI</b>: rumus itu tidak muncul dan tidak ikut dicari di <b style="color:#e6edf3">Cari Rumus, Scan Multi, Bank Otomatis, dan Uji trek</b> milik member ini.</div>
+    <div style="font-size:10.5px;color:#8b949e;margin:4px 0 8px;line-height:1.5">Centang = <b style="color:#e6edf3">DIKUNCI</b>: rumus itu tidak muncul dan tidak ikut dicari di <b style="color:#e6edf3">Cari Rumus, Scan Multi, Scan Otomatis, dan Uji trek</b> milik member ini.</div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <button onclick="wbMemberRumusAll(true)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);color:#f87171;font-size:11px;font-weight:800;cursor:pointer">🔒 Kunci semua rumus</button>
       <button onclick="wbMemberRumusAll(false)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.1);color:#10b981;font-size:11px;font-weight:800;cursor:pointer">🔓 Buka semua rumus</button>
@@ -2227,7 +2222,7 @@ function wbShowLockedMsg(label) {
 
 // ── APPLY LOCKS ────────────────────────────────────────────────
 // Fitur terkunci DISEMBUNYIKAN (class wb-lk = display:none!important). Admin selalu melihat semuanya.
-// Rumus Bank Otomatis yang dikunci admin untuk member ini (kunci 'rv:<rumus>'). Admin: tidak ada yang dikunci.
+// Rumus Scan Otomatis yang dikunci admin untuk member ini (kunci 'rv:<rumus>'). Admin: tidak ada yang dikunci.
 function wbLockedRumus() {
   const out = new Set();
   try {
@@ -2243,7 +2238,7 @@ function wbApplyLocks() {
 function wbRumusApply() {
   if (typeof VARS === 'undefined') return;
   const L = wbLockedRumus(), keys = Object.keys(VARS), free = keys.filter(k => !L.has(k));
-  // 1) Bank Otomatis
+  // 1) Scan Otomatis
   try{ if(window.wbAbRefresh) window.wbAbRefresh(); }catch(e){}
   // 2) Cari Rumus (dropdown)
   try{
@@ -2286,7 +2281,7 @@ function wbApplyLocks0() {
   const locked = wbGetEffectiveLocked(wbCurrentMemberKey());
   const all = locked.has('rh_all');
   WB_FEATURES.forEach(f => {
-    const on = all || locked.has(f.key);
+    const on = all || locked.has(f.key) || (f.key==='rh_4d3d' && locked.has('rh_final'));   // kunci lama 'rh_final' dulu juga mencakup Rekap 4D·3D
     f.selectors.forEach(sel => document.querySelectorAll(sel).forEach(el => el.classList.toggle('wb-lk', on)));
   });
   document.body.classList.toggle('wb-alllk', all);
@@ -3383,7 +3378,7 @@ function shbRender(){
     const idx=[...box.querySelectorAll('input[data-ck]:checked')].map(c=>+c.dataset.ck);
     if(!idx.length||!ctx){t.textContent='Centang dulu minimal 1';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
     const day=$('rhDay').value,n=shbAdd(idx.map(i=>shbMake(ctx.mkt,day,ctx.vk,F[i].sp,F[i].base,ctx.L,ctx.P)));
-    idx.forEach(i=>{const c=box.querySelector('input[data-ck="'+i+'"]');if(c&&c.parentNode)c.parentNode.remove();});   // yang sudah masuk Bank otomatis hilang dari hasil scan
+    idx.forEach(i=>{const c=box.querySelector('input[data-ck="'+i+'"]');if(c&&c.parentNode)c.parentNode.remove();});   // yang sudah masuk Scan otomatis hilang dari hasil scan
     if(!box.querySelector('input[data-ck]')){
       const act=$('rhGab')&&$('rhGab').parentNode;if(act)act.remove();
       ['rhGabBox','rhGabCopy'].forEach(id=>{const e=$(id);if(e)e.remove();});
@@ -3683,7 +3678,7 @@ function mlInit(){
       if(!idx.length||!ctx)return;pil+=idx.length;sv.push([+el.dataset.bi,idx]);
       n+=shbAdd(idx.map(i=>shbMake(ctx.mkt,ctx.day,ctx.vk,F[i].sp,F[i].base,ctx.L,ctx.P)));
     });
-    if(sv.length){   // hasil yang sudah masuk Bank otomatis hilang dari daftar scan
+    if(sv.length){   // hasil yang sudah masuk Scan otomatis hilang dari daftar scan
       $('mlOut').querySelectorAll('input[data-ck]').forEach(c=>c.checked=false);
       sv.forEach(([bi,idx])=>{const x=MLRES[bi];if(!x||!x.r)return;x.r.top=(x.r.top||[]).filter((_,i)=>!idx.includes(i));x.r.count=Math.max(0,(x.r.count||0)-idx.length);x._saved=1;});
       MLRES=MLRES.filter(x=>!(x._saved&&(!x.r.top||!x.r.top.length)));
@@ -4424,7 +4419,7 @@ try{const q=JSON.parse(localStorage.getItem(R4RK)||'{}');R4P.forEach(k=>{if(q[k]
 r4render();
 ['r4ai','r4ai3','r4off','r4oDepan','r4oTengah','r4oBelakang'].forEach(i=>{const t=$(i);if(t){if(t.rows<4)t.rows=4;t.style.minHeight='96px';addGrip(t);}});   // kotak isi CT/AI/OFF: lebih tinggi + bisa ditarik
 build();
-/* ===== kode, bank otomatis ===== */
+/* ===== kode, scan otomatis ===== */
 const BK=[['Harian','wb_harian_rekap_v1'],['Shio','wb_shio_rekap_v1']];
 function bkRead(){
   const mk=new Map();
@@ -4617,7 +4612,7 @@ let sumSeen=new Set();
 function sumGet(){
   const k=N+':'+($('bkGrp').value||'KE');
   if(!sumSel||sumMode!==k){sumSel=sumAuto();sumMode=k;sumSeen=new Set(sumSel);}
-  else sumAuto().forEach(vk=>{if(!sumSeen.has(vk)){sumSeen.add(vk);sumSel.add(vk);}});   // jenis trek yang baru masuk Bank otomatis ikut rekap (yang sudah kamu cabut centangnya tetap dicabut)
+  else sumAuto().forEach(vk=>{if(!sumSeen.has(vk)){sumSeen.add(vk);sumSel.add(vk);}});   // jenis trek yang baru masuk Scan otomatis ikut rekap (yang sudah kamu cabut centangnya tetap dicabut)
   return sumSel;
 }   // ganti tab / kelompok -> centang otomatis ulang sesuai kebutuhan
 const DIG_EXEMPT=vk=>/^off/.test(vk)||['jlke','jlck','jlac','jl','jlt','jld','sh','sht','shd'].includes(vk);   // off, jarak lemah, jalur, shio: tidak ikut disaring Digit (inti pangkas LN)
@@ -4912,7 +4907,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 })();
 </script>
 <script>
-/* ===== Bank Otomatis: isi Bank Harian sendiri (semua kelompok rumus) ===== */
+/* ===== Scan Otomatis: isi Bank Harian sendiri (semua kelompok rumus) ===== */
 (function(){
   const G=id=>document.getElementById(id);
   if(!G('abCard'))return;
@@ -5004,7 +4999,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     if(fromAuto&&localStorage.getItem(SIGKEY)===sig()&&autoCount()){refreshStatus();return;}
     if(MULTI_RUN||rhFinding){prog.textContent='Ada scan lain yang sedang jalan — selesaikan atau batalkan dulu.';return;}
     busy=true;MULTI_RUN=true;rhFinding=true;
-    btn.textContent='⏹ Stop bank otomatis';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
+    btn.textContent='⏹ Stop scan otomatis';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
     // mistik di formulir dikosongkan sementara supaya pencarian bebas (bukan terkunci rumus yang terakhir dibuka)
     const mid=['rhM1','rhM2','rhM4'],keep=mid.map(id=>G(id)?G(id).value:'');mid.forEach(id=>{if(G(id))G(id).value='';});
     const lines=[];let i=0,added=0,cancelled=false;log.innerHTML='';
@@ -5032,7 +5027,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
       try{shbRender();}catch(e){}
     }
     if(!cancelled){try{localStorage.setItem(SIGKEY,sig());}catch(e){}}
-    prog.textContent=cancelled?'Bank otomatis dihentikan — hasil yang sudah selesai tetap masuk Bank.':`Selesai: ${jobs.length} pencarian, ${added} trek baru masuk Bank Harian.`;
+    prog.textContent=cancelled?'Scan otomatis dihentikan — hasil yang sudah selesai tetap masuk Bank.':`Selesai: ${jobs.length} pencarian, ${added} trek baru masuk Bank Harian.`;
     log.innerHTML=lines.map(l=>`<div style="padding:1px 0">${l}</div>`).join('');
     refreshStatus();
   }
@@ -5057,7 +5052,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 })();
 </script>
 <script>
-/* ===== Rekap Bank Otomatis: rekap 2D / 4D / 3D khusus trek otomatis (semua kelompok rumus) ===== */
+/* ===== Rekap Scan Otomatis: rekap 2D / 4D / 3D khusus trek otomatis (semua kelompok rumus) ===== */
 (function(){
   const G=id=>document.getElementById(id);
   if(!G('abRkCard'))return;
@@ -5072,7 +5067,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 
   G('rkPos').innerHTML=PV.map(([k])=>`<div style="${BOX}"><div style="font-weight:700;color:var(--ac);margin-bottom:4px">2D ${k} · <span id="rkn${k}">0</span> LN</div>
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px"><b>Patah</b><input id="rkp${k}" data-p="${k}" inputmode="numeric" placeholder="mis. 2 atau 0-3 (kosong = Angka Jadi)" style="flex:1;min-width:0" value="${esc(cfg.p[k]||'')}"></div>
-    <div id="rka${k}" style="font-size:12.5px;color:var(--mut);margin-bottom:4px">Belum ada trek Bank Otomatis untuk ${k}.</div>
+    <div id="rka${k}" style="font-size:12.5px;color:var(--mut);margin-bottom:4px">Belum ada trek Scan Otomatis untuk ${k}.</div>
     <textarea id="rkl${k}" data-l="1" rows="2" placeholder="LN 2D ${k} (terisi otomatis, bisa diedit)" style="${TA}"></textarea>
     <div style="font-size:12.5px;color:#ff8d84;margin:6px 0 2px"><b>OFF ${k}</b> — digit yang tidak dipilih trek AI aktif mana pun · <span id="rkno${k}">0</span> digit</div>
     <textarea id="rko${k}" data-l="1" rows="1" placeholder="OFF digit ${k}, mis. 12345678" style="${TA}"></textarea>
@@ -5135,7 +5130,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     const d=R.pos[k],box=G('rka'+k);
     if(!d||!d.alive){
       G('rkl'+k).value='';if(resetOff)G('rko'+k).value='';
-      box.textContent=d&&d.tot?`Belum ada trek aktif (${d.tot} trek, semuanya patah).`:`Belum ada trek Bank Otomatis untuk ${k}.`;return;}
+      box.textContent=d&&d.tot?`Belum ada trek aktif (${d.tot} trek, semuanya patah).`:`Belum ada trek Scan Otomatis untuk ${k}.`;return;}
     const keys=Object.keys(d.by).map(Number).sort((x,y)=>x-y),txt=G('rkp'+k).value.trim();
     let use;if(!txt)use=keys.length?[keys[0]]:[];else{const ps=parseP(txt);use=keys.filter(t=>ps.has(t));}
     const arr=[...new Set(use.flatMap(t=>d.by[t]))].sort();
@@ -5176,13 +5171,13 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     G('rkout4').value=o4.join(sep);G('rkn4').textContent=o4.length;
     G('rkout3').value=o3.join(sep);G('rkn3').textContent=o3.length;
     const nS=R.span.reduce((a,t)=>a+t.w,0);
-    G('rka34').textContent=R.spanTot?`${nS} trek aktif dari ${R.spanTot} trek 3D · 4D${nS?' · '+[s4.txt,s3.txt].filter(Boolean).join(' · '):''}`:'Belum ada trek 3D · 4D di Bank Otomatis.';
+    G('rka34').textContent=R.spanTot?`${nS} trek aktif dari ${R.spanTot} trek 3D · 4D${nS?' · '+[s4.txt,s3.txt].filter(Boolean).join(' · '):''}`:'Belum ada trek 3D · 4D di Scan Otomatis.';
     const used=PV.filter(([k])=>new Set(two(G('rkl'+k).value)).size).map(p=>p[0]).concat(nS?['trek 3D·4D']:[]);
-    G('rkInfo').textContent=used.length?`Dipakai: ${used.join(' + ')} → 4D ${o4.length} angka · 3D ${o3.length} angka (3D memakai Tengah + Belakang)`:'Belum ada isi — jalankan Bank Otomatis di kartu atasnya.';
+    G('rkInfo').textContent=used.length?`Dipakai: ${used.join(' + ')} → 4D ${o4.length} angka · 3D ${o3.length} angka (3D memakai Tengah + Belakang)`:'Belum ada isi — jalankan Scan Otomatis di kartu atasnya.';
   }
-  function chips(){   // tidak ada pilihan pasaran lagi: satu rekap untuk seluruh Bank Otomatis
+  function chips(){   // tidak ada pilihan pasaran lagi: satu rekap untuk seluruh Scan Otomatis
     const ms=mkts();
-    G('rkChips').innerHTML=ms.length?`<span style="font-size:12.5px;color:var(--mut)">Satu rekap untuk semua pasaran di Bank Otomatis: <b style="color:var(--fg)">${ms.map(esc).join(' · ')}</b></span>`:'<span style="font-size:12.5px;color:var(--mut)">Belum ada trek Bank Otomatis — jalankan dulu di kartu Bank Otomatis.</span>';
+    G('rkChips').innerHTML=ms.length?`<span style="font-size:12.5px;color:var(--mut)">Satu rekap untuk semua pasaran di Scan Otomatis: <b style="color:var(--fg)">${ms.map(esc).join(' · ')}</b></span>`:'<span style="font-size:12.5px;color:var(--mut)">Belum ada trek Scan Otomatis — jalankan dulu di kartu Scan Otomatis.</span>';
   }
   function refresh(force){
     chips();compute();
