@@ -4380,11 +4380,18 @@ function aiRun(){
     o4.forEach(r=>{S.Depan.add(r.n.slice(0,2));S.Tengah.add(r.n.slice(1,3));S.Belakang.add(r.n.slice(2,4));});
     o3.forEach(r=>{S.Tengah.add(r.n.slice(0,2));S.Belakang.add(r.n.slice(1,3));});
     R4P.forEach(k=>{L[k]=[...S[k]].map(n=>R[k].find(r=>r.n===n)).filter(Boolean).sort((x,y)=>y.sc-x.sc||(x.n<y.n?-1:1));});
-  }else{   // rekap kosong: Top N biasa, 4D/3D berantai dari Top yang tampil
-    R4P.forEach(k=>{L[k]=R[k].slice(0,N);});
-    L.Tengah.forEach(t=>L.Belakang.forEach(b=>{if(t.n[1]!==b.n[0])return;o3.push({n:t.n+b.n[1],sc:(t.sc+b.sc)/2,sub:t.n+'·'+b.n});
-      L.Depan.forEach(d=>{if(d.n[1]===t.n[0])o4.push({n:d.n[0]+t.n+b.n[1],sc:(d.sc+t.sc+b.sc)/3,sub:d.n+'·'+t.n+'·'+b.n});});}));
-    o4=srt(o4);o3=srt(o3);
+  }else{   // rekap kosong: Top N biasa, 4D/3D berantai dari Top yang tampil; kalau tidak nyambung (banyak trek patah) Top diperlebar otomatis
+    const chainFrom=n=>{const l={},a3=[],a4=[];R4P.forEach(k=>{l[k]=R[k].slice(0,n);});
+      l.Tengah.forEach(t=>l.Belakang.forEach(b=>{if(t.n[1]!==b.n[0])return;a3.push({n:t.n+b.n[1],sc:(t.sc+b.sc)/2,sub:t.n+'·'+b.n});
+        l.Depan.forEach(d=>{if(d.n[1]===t.n[0])a4.push({n:d.n[0]+t.n+b.n[1],sc:(d.sc+t.sc+b.sc)/3,sub:d.n+'·'+t.n+'·'+b.n});});}));
+      return {n,l,a3,a4};};
+    const NMAX=Math.min(40,Math.max(N,...R4P.map(k=>R[k].length)));
+    let cur=chainFrom(N),fb=null;
+    while(!cur.a4.length&&cur.n<NMAX){if(cur.a3.length&&!fb)fb=cur;cur=chainFrom(cur.n+1);}
+    if(!cur.a4.length&&fb)cur=fb;
+    R4P.forEach(k=>{L[k]=cur.l[k];});o4=srt(cur.a4);o3=srt(cur.a3);
+    if(cur.n>N)H.push(`<div style="color:#ffc72c;margin:6px 0">↔ Top diperlebar otomatis dari ${N} ke ${cur.n} supaya 4D/3D bisa nyambung (setelah data baru banyak trek patah, jadi skor tinggi hanya sedikit).</div>`);
+    else if(!o4.length&&!o3.length)H.push('<div style="color:#ff8a80;margin:6px 0">Belum ada 4D/3D yang nyambung walau Top sudah dilebarkan sampai '+cur.n+'. Naikkan <b>Patah</b> di Rekap (izinkan trek yang patah ikut) atau tunggu trek baru masuk Bank.</div>');
   }
   {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
    H.push('<button type="button" data-cp="'+all.replace(/\n/g,'&#10;')+'" style="width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#111;font-weight:800;cursor:pointer">📋 Salin semua (2D Depan · Tengah · Belakang · 4D · 3D)</button>');}
