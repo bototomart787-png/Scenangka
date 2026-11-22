@@ -9,7 +9,7 @@ Format paito-data.json:
     "start_date": "2026-01-01",   ← tanggal result[0] (paling lama)
     "results": ["1234", "5678"],  ← urut LAMA→BARU
     "skip_weekdays": [1, 4],
-    "count": 150,
+    "count": 300,
     "updated": "2026-06-06 17:00 WIB"
   }
 }
@@ -17,7 +17,7 @@ Format paito-data.json:
 
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, date, timezone, timedelta
 
 WIB = timezone(timedelta(hours=7))
 NOW = datetime.now(WIB)
@@ -235,35 +235,43 @@ def main():
             skip_count += 1
             continue
 
-        results = history_to_results(history)
-        if not results:
-            print(f"  [{slug[:25]:25s}] SKIP — tidak ada angka valid di history")
-            skip_count += 1
-            continue
+        old_entry   = old_db.get(slug, {})
+        old_results = old_entry.get('results', [])
 
-        # start_date: pakai dari old_db kalau sudah ada (jangan ubah!)
-        old_entry  = old_db.get(slug, {})
-        start_date = old_entry.get('start_date') or results[0]  # fallback: angka pertama
-
-        # Ambil start_date dari history yang sudah di-sort
+        # history valid urut LAMA→BARU (tanggal akurat dari result.json)
         valid_hist = [
             h for h in history
             if h.get('result') and len(str(h['result'])) == 4
-            and str(h['result']).isdigit()
+            and str(h['result']).isdigit() and h.get('date')
         ]
-        valid_hist.sort(key=lambda h: h.get('date', ''))
-        if valid_hist and not old_entry.get('start_date'):
-            start_date = valid_hist[0].get('date', '')
+        valid_hist.sort(key=lambda h: h['date'])
+        results    = [h['result'] for h in valid_hist]
+        first_hist = valid_hist[0]['date'] if valid_hist else ''
 
-        # Merge dengan old results — pertahankan historis lama
-        old_results = old_entry.get('results', [])
-        if old_results:
-            # Gabung: old sebagai base, new sebagai update terbaru
-            old_set = set(old_results[-300:])
-            extra   = [r for r in results if r not in old_set]
-            merged  = old_results + extra
-        else:
-            merged = results
+        # Pertahankan hasil LAMA yang tanggalnya lebih tua dari history sekarang
+        # (dibandingkan per TANGGAL, bukan per nilai angka: angka kembar tetap ikut).
+        prefix = []
+        old_start = old_entry.get('start_date')
+        try:
+            skip = set(SKIP_WEEKDAYS.get(slug, []))
+            d = date.fromisoformat(str(old_start))
+            fh = date.fromisoformat(first_hist)
+            for r in old_results:
+                while d.weekday() in skip:
+                    d += timedelta(days=1)
+                if d >= fh:
+                    break
+                prefix.append(r)
+                d += timedelta(days=1)
+        except Exception:
+            prefix = []   # start_date lama tidak terbaca → pakai history saja (aman)
+
+        merged     = prefix + results
+        start_date = old_start if prefix else first_hist
+        if not merged:
+            print(f"  [{slug[:25]:25s}] SKIP — tidak ada angka valid di history")
+            skip_count += 1
+            continue
 
         new_db[slug] = {
             'name':          SLUG_NAMES.get(slug, slug),

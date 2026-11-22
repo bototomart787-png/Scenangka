@@ -23,7 +23,9 @@ TODAY = NOW.strftime('%d/%m')
 BASE      = 'https://angkanet18.com'
 DIRECT_IP = '159.65.133.131'
 
-HISTORY_MAX = 150  # simpan max 150 hari per pasaran (butuh ~14 minggu untuk trek mingguan)
+HISTORY_MAX = 300  # simpan max 300 entry per pasaran (data lama dipertahankan, data baru ditambah tiap run)
+RECENT_DAYS = 365  # baris dari halaman web hanya diterima kalau tanggalnya <= 365 hari ke belakang
+                   # (batas 365 karena tanggal DD/MM tanpa tahun hanya bisa ditebak aman dalam 1 tahun)
 
 # ===== DAFTAR 65 PASARAN =====
 PASARAN = {
@@ -161,6 +163,36 @@ def is_fake(result):
     return any(re.match(p, result) for p in FAKE_PATTERNS)
 
 
+# ===== HELPER TANGGAL (level modul; dipakai extract_all_rows & fetch_paito_harian) =====
+_DATE_PAT = re.compile(r'^(?:(\d{2})[/-](\d{2})[/-](\d{4})|(\d{4})[/-](\d{2})[/-](\d{2}))$')
+_DDMM_PAT = re.compile(r'^(\d{1,2})[/-](\d{1,2})$')
+
+def parse_date(text):
+    m = _DATE_PAT.match(text)
+    if m:
+        if m.group(1):
+            return (int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        return (int(m.group(4)), int(m.group(5)), int(m.group(6)))
+    m2 = _DDMM_PAT.match(text)
+    if m2:
+        dd, mm = int(m2.group(1)), int(m2.group(2))
+        if 1 <= dd <= 31 and 1 <= mm <= 12:
+            year = NOW.year
+            if (mm, dd) > (NOW.month, NOW.day):
+                year -= 1
+            return (year, mm, dd)
+    return None
+
+def is_recent(d_tuple, max_days=None):
+    """Hanya terima tanggal max_days (bawaan RECENT_DAYS) hari ke belakang."""
+    import datetime as _dt
+    try:
+        d_ord = _dt.date(d_tuple[0], d_tuple[1], d_tuple[2]).toordinal()
+        return 0 <= (NOW.toordinal() - d_ord) <= (max_days or RECENT_DAYS)
+    except Exception:
+        return False
+
+
 # ===== HISTORY HELPER =====
 def update_history(old_data: dict, new_result: str, date_str: str) -> list:
     """
@@ -183,7 +215,7 @@ def update_history(old_data: dict, new_result: str, date_str: str) -> list:
     else:
         history = [{'date': date_str, 'result': new_result}] + history
 
-    # Sort descending tanggal, potong 30
+    # Sort descending tanggal, potong HISTORY_MAX
     history.sort(key=lambda h: h.get('date', ''), reverse=True)
     return history[:HISTORY_MAX]
 
@@ -249,7 +281,7 @@ def extract_all_rows(html, anchor_date=None, active_weekdays=None, libur_days=No
 
     today_ord = NOW.toordinal()
 
-    def is_recent(d_tuple, max_days=150):
+    def is_recent(d_tuple, max_days=RECENT_DAYS):
         """Hanya terima tanggal max_days hari ke belakang, tolak yg jadul."""
         try:
             import datetime as _dt
@@ -345,7 +377,7 @@ def extract_all_rows(html, anchor_date=None, active_weekdays=None, libur_days=No
         el_pos     = {id(el): i for i, el in enumerate(all_els)}
 
         # Kumpulkan semua posisi elemen yang berisi tanggal valid (teks pendek saja)
-        # Hanya tanggal recent (max 150 hari), abaikan tanggal jadul dari meta/script
+        # Hanya tanggal recent (max RECENT_DAYS hari), abaikan tanggal jadul dari meta/script
         date_pos_list = []
         for el in all_els:
             if not hasattr(el, 'get_text'):
@@ -1060,6 +1092,8 @@ def main():
                 if extra:
                     base_history = merge_rows_into_history(base_history, extra)
                 entry['history'] = base_history
+                if old.get('bf_stop'):
+                    entry['bf_stop'] = old['bf_stop']   # ingat: backfill hari ini sudah dicoba
                 result_data[key] = entry
                 print(f"  [{key.upper():6s}] History: {len(entry['history'])} entry")
             else:
@@ -1096,6 +1130,7 @@ def main():
         for k in PASARAN
         if len(result_data.get(k, {}).get('history', [])) < BACKFILL_THRESHOLD
         and result_data.get(k, {}).get('result', '----') != '----'
+        and result_data.get(k, {}).get('bf_stop') != TODAY_STR   # hari ini halaman sudah dicoba & tidak menambah data
     ]
 
     if needs_backfill:
@@ -1153,6 +1188,10 @@ def main():
                     new_hist = merge_rows_into_history(cur_hist, rows)
                     result_data[key]['history'] = new_hist
                     added = len(new_hist) - len(cur_hist)
+                    if added <= 0:
+                        result_data[key]['bf_stop'] = TODAY_STR   # tidak ada tambahan → jangan fetch lagi sampai besok
+                    else:
+                        result_data[key].pop('bf_stop', None)
                     print(f"  [BF {key.upper():6s}] {len(new_hist)} entry (+{added})"
                           f"  [{rows[-1]['date']} → {rows[0]['date']}]")
                 else:
