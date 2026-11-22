@@ -3926,7 +3926,7 @@ try{const q=JSON.parse(localStorage.getItem(R4EXK)||'{}');Object.keys(R4EX).forE
 const R4AUTO={r4ai:new Set(),r4ai3:new Set()};   // baris yang diisi otomatis dari Bank (tanpa tanda #cb/#ai); baris ketikan manual tidak disentuh
 function r4exSave(){try{const o={};Object.keys(R4EX).forEach(k=>o[k]=[...R4EX[k]]);localStorage.setItem(R4EXK,JSON.stringify(o));}catch(_){}}
 const r4tk=(vk,i)=>vk+'|'+i.c+'|'+[...(i.s||[])].map(String).sort().join('');
-const R4AIVK=new Set(['ai2dd','ai2dt','ai2db','ai3d']),R4TKOPEN=new Set();   // hanya trek AI / CT / CB yang ditampilkan di tab posisi
+const R4AIVK=new Set(['ai2dd','ai2dt','ai2db','ai3d']),R4TKOPEN=new Set();let R4X=null;   // item Bank pasaran terakhir yang diproses (untuk menggambar ulang panel trek CB / AI 3D)   // hanya trek AI / CT / CB yang ditampilkan di tab posisi
 function r4trkList(x,g){
   const k=R4G[g],ix={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[k]||[2,3],el=$('r4d'+k),t=el?el.value.trim():'',DG=t?r4parse(t):null,list=[];
   Object.keys(R4_SLOT).filter(vk=>R4AIVK.has(vk)).forEach(vk=>{
@@ -3937,38 +3937,46 @@ function r4trkList(x,g){
   return list;
 }
 const escT=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const r4srt=(a,b)=>b.length-a.length||(a<b?-1:a>b?1:0);   // digit terbanyak di atas, paling sedikit di bawah; sama panjang urut angka
 function r4cbPanel(vk,label,hostId,x){
   const host=$(hostId);if(!host)return;
   const P=x.M.pos[vk],items=((P&&P.items)||[]).filter(i=>i.s&&(i.s.size||i.s.length)).map(i=>({key:r4tk(vk,i),d:i.d,c:i.c,s:[...i.s].map(Number).sort((a,b)=>a-b)}));
   items.forEach(r=>{r.ex=R4EX.CB.has(r.key);});
-  if(!items.length){host.innerHTML='';return;}
-  const on=items.filter(r=>!r.ex),ex=items.filter(r=>r.ex),cnt={};on.forEach(r=>r.s.forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
+  if(!items.length){host.innerHTML='<div class="hint" style="padding:4px 0 8px">🔎 Trek '+label+': belum ada trek di Bank untuk pasaran ini.</div>';return;}
+  const on=items.filter(r=>!r.ex).sort((p,q)=>r4srt(p.s.join(''),q.s.join(''))),ex=items.filter(r=>r.ex),cnt={};on.forEach(r=>r.s.forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
   const rank=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]||a-b),mx=rank.length?cnt[rank[0]]:1;
   const rankTxt=rank.map(d=>d+': '+cnt[d]).join('\n'),trkTxt=on.map(r=>r.s.join('')).join('\n');
   const bs='padding:2px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12.5px';
   const chip=(r,act)=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px;${act==='inc'?'opacity:.6;text-decoration:line-through':''}">${r.s.join('')}<button data-r4tkx="CB" data-key="${encodeURIComponent(r.key)}" data-act="${act}" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none;font-weight:800">${act==='inc'?'↺':'✕'}</button></span>`;
   const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
-  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(a-b));
+  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(b-a));
   const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`+byD.get(z).map(r=>chip(r,'ex')).join('')).join('');
-  host.innerHTML=`<details data-r4tkd="${vk}" ${R4TKOPEN.has(vk)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek ${label} dari Bank (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
+  host.innerHTML=`<details data-r4tkd="${vk}" ${R4TKOPEN.has(vk)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek ${label} yang ikut rekap (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
     +(on.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button data-r4cp="rank" data-pos="${vk}" style="${bs}">📋 Salin peringkat</button><button data-r4cp="trk" data-pos="${vk}" style="${bs}">📋 Salin semua trek</button></div>
       <div style="font-weight:700;margin:4px 0">Peringkat digit <span style="font-weight:400;font-size:12px;color:var(--mut)">(terbanyak di atas, jumlah trek yang memuat digit itu)</span></div>
       ${rank.map(d=>`<div style="display:flex;align-items:center;gap:8px;margin:2px 0;font-size:13px"><b style="width:16px;text-align:right">${d}</b><span style="display:inline-block;height:10px;border-radius:5px;background:#3fd08a;width:${Math.max(4,Math.round(cnt[d]/mx*55))}%"></span><span style="color:var(--mut)">${cnt[d]} trek</span></div>`).join('')}
       <textarea readonly rows="1" data-r4cpbox="rank" style="position:absolute;left:-9999px;top:0">${escT(rankTxt)}</textarea><textarea readonly rows="1" data-r4cpbox="trk" style="position:absolute;left:-9999px;top:0">${escT(trkTxt)}</textarea>
       <div style="font-weight:700;margin:10px 0 2px">Semua trek <span style="font-weight:400;font-size:12px;color:var(--mut)">(✕ = keluarkan, Bank tidak terhapus)</span></div>
-      <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Semua trek ${label} dikeluarkan.</div>`)
+      <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Semua trek ${label} sudah dikeluarkan.</div>`)
     +(ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="CB" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`+ex.map(r=>chip(r,'inc')).join(''):'')+`</details>`;
+}
+function r4panelsCB(){   // panel trek di kotak CB 4D dan AI/CT 3D: peringkat digit, salin, ✕ keluarkan (sama seperti panel 2D)
+  const x=R4X;if(!x)return;
+  [['cb','CB / CT 4D','r4tkcb'],['ai3d','AI / CT 3D','r4tkai3d']].forEach(a=>{
+    try{r4cbPanel(a[0],a[1],a[2],x);}
+    catch(e){const h=$(a[2]);if(h)h.innerHTML='<div class="hint" style="color:#ff8a80">⚠ Panel trek '+a[1]+' gagal: '+escT(e.message)+'</div>';}
+  });
 }
 function r4trkRender(k){
   const el=$('r4tk'+k);if(!el)return;const g=Object.keys(R4G).find(z=>R4G[z]===k),list=R4TRK[g];
   if(!list){el.innerHTML='';return;}
-  const on=list.filter(r=>!r.ex&&!r.dg),ex=list.filter(r=>r.ex),dg=list.filter(r=>!r.ex&&r.dg);
+  const on=list.filter(r=>!r.ex&&!r.dg).sort((p,q)=>r4srt(p.s.join(''),q.s.join(''))),ex=list.filter(r=>r.ex),dg=list.filter(r=>!r.ex&&r.dg);
   const cnt={};on.forEach(r=>r.s.forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
   const rank=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]||a-b),mx=rank.length?cnt[rank[0]]:1;
   const rankTxt=rank.map(d=>d+': '+cnt[d]).join('\n'),trkTxt=on.map(r=>r.s.join('')).join('\n');
   const bs='padding:2px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12.5px';
   const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
-  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(a-b));
+  const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(b-a));
   const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`
     +byD.get(z).map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;font-weight:800">✕</button></span>`).join('')).join('');
   const exH=ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="${k}" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`
@@ -4229,8 +4237,8 @@ function r4cbFill(x){
     const keep=ta.value.split('\n').filter(l=>{const t=l.trim();return t&&!prev.has(t)&&!/#(cb|ai)\s*$/.test(l);});
     ta.value=[...keep,...arr].join('\n');R4AUTO[ta.id]=new Set(arr);};
   const cb=[...lines('cb')],ai3=[...lines('ai3d')];
-  put($('r4ai'),cb);                 // 4D: trek CB
-  put($('r4ai3'),ai3);   // 3D: hanya trek AI/CT 3D (tanpa CB)
+  put($('r4ai'),[...cb].sort(r4srt));                 // 4D: trek CB (digit terbanyak di atas)
+  put($('r4ai3'),[...ai3].sort(r4srt));   // 3D: hanya trek AI/CT 3D (tanpa CB), digit terbanyak di atas
 }
 function r4auto(v){
   try{_shbMemo=shbSummary0();}catch(_){_shbMemo=null;}   // hitung Bank sekali saja, bukan puluhan kali
@@ -4252,7 +4260,7 @@ function r4auto0(v){
     $('r4Tgt').value=tgt0;
     try{$('bkGrp').value=grp0;$('bkGrp').onchange();$('bkGrp').value=grp0;bkGo(true);}catch(_){}
   }
-  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});try{r4cbFill(x);}catch(_){}r4render();R4P.forEach(k=>{try{r4trkRender(k);}catch(_){}});try{r4cbPanel('cb','CB (colok bebas)','r4tkcb',x);r4cbPanel('ai3d','AI 3D','r4tkai3d',x);}catch(_){}
+  r4cur=v;r4chips();R4P.forEach(k=>{if(r4rank(k))r4fill(k);});try{r4cbFill(x);}catch(_){}r4render();R4P.forEach(k=>{try{r4trkRender(k);}catch(_){}});R4X=x;r4panelsCB();
   const n=k=>r4set(k).size;
   try{aiRun();}catch(_){}   // skor AI otomatis ikut terhitung setiap rekap pasaran selesai
   st.textContent=`✓ ${x.M.name}: Depan ${n('Depan')} LN · Tengah ${n('Tengah')} LN · Belakang ${n('Belakang')} LN (Patah kosong = Angka Jadi; isi Patah di bawah untuk ubah)`+(errs.length?' · gagal: '+errs.join('; '):'');
