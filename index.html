@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rumus Harian + Rekap</title>
+<style>/* Fitur lama (tetap ada di belakang layar agar hitungan jalan) disembunyikan sejak awal, supaya tidak sempat muncul saat halaman loading */
+#mlCard,#isiCard,#fltCard,#topCard,#gridCard,#catCard,#hdnRekap,#hdnTop{display:none!important}</style>
 <style>
 :root{color-scheme:dark;--bg:#10132a;--fg:#f2f3fa;--mut:#b4bad0;--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.25);--ac:#ffc933;--acfg:#10132a;--off:#ff7b6b}
 html{min-height:100%;background:#12082e linear-gradient(155deg,#3a0f7a 0%,#0b2f8a 30%,#066a6a 58%,#8a3a0b 82%,#7a0f3d 100%) fixed}
@@ -4913,7 +4915,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
   const KEY='wb_ab_cfg_v1',SIGKEY='wb_ab_sig_v1';
   const AI3=['ai2dd','ai2dt','ai2db'];
   const DEF={mkts:[],pos:AI3.slice(),day:'0',P:'0',auto:true,rep:true,
-    rows:[[7,20,120],[6,20,80],[5,20,50],[4,20,40],[3,20,25],[2,20,18],[1,20,9]].map(([n,t,p])=>({n,on:true,trek:t,put:p}))};
+    rows:[[9,20,200,false],[8,20,160,false],[7,20,120,true],[6,20,80,true],[5,20,50,true],[4,20,40,true],[3,20,25,true],[2,20,18,true],[1,20,9,true]].map(([n,t,p,o])=>({n,on:o,trek:t,put:p}))};   // 8 & 9 digit: tersedia, bawaan mati (centang untuk dipakai)
   let cfg=JSON.parse(JSON.stringify(DEF));
   try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
     if(s&&typeof s==='object'){cfg={...cfg,...s};
