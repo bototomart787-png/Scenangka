@@ -1953,16 +1953,15 @@ const WB_G2 = 'BANK';
 const WB_G3 = 'REKAP';
 const WB_GRP_NOTE = {};
 WB_GRP_NOTE[WB_G0] = '🔒 Satu tombol: seluruh halaman Rumus disembunyikan dari member';
-WB_GRP_NOTE[WB_G1] = '🔍 Semua cara mencari trek (Rumus Harian, Scan Multi, Scan Otomatis, Uji trek)';
-WB_GRP_NOTE[WB_G2] = '📅 Bank Harian member (isinya bisa dilihat admin)';
+WB_GRP_NOTE[WB_G1] = '🔍 Semua cara mencari trek (Rumus Harian, Scan Otomatis, Uji trek)';
+WB_GRP_NOTE[WB_G2] = '📅 Satu Bank per member: isi manual + hasil Scan Otomatis (isinya bisa dilihat admin)';
 WB_GRP_NOTE[WB_G3] = '🎯 Rekap final, rekap 4D·3D, rekap angka 2D, dan catatan';
 const WB_FEATURES = [
   { grp:WB_G0, key:'rh_all',    label:'KUNCI SEMUA FITUR (seluruh halaman)', selectors:[] },
   { grp:WB_G1, key:'rh_rumus',  label:'Rumus Harian (Cari Rumus)',   selectors:['#rhCard'] },
-  { grp:WB_G1, key:'rh_multi',  label:'Scan Multi Pasaran',          selectors:['#mlCard'] },
-  { grp:WB_G1, key:'rh_auto',   label:'Scan Otomatis (cari trek & isi Bank Harian otomatis)', selectors:['#abCard'] },
+  { grp:WB_G1, key:'rh_auto',   label:'Scan Otomatis (cari trek & isi Bank Harian otomatis)', selectors:['#abCard','#mlCard'] },
   { grp:WB_G1, key:'rh_uji',    label:'Uji kekuatan trek lanjut',    selectors:['#utCard'] },
-  { grp:WB_G2, key:'rh_bank',   label:'Bank Harian',                 selectors:['#shBank'] },
+  { grp:WB_G2, key:'rh_bank',   label:'Bank (Bank Harian + hasil Scan Otomatis jadi satu)', selectors:['#shBank'] },
   { grp:WB_G3, key:'rh_final',  label:'① Rekap final otomatis & ② Kelompok rumus', selectors:['#admCard','#sumCard'] },
   { grp:WB_G3, key:'rh_4d3d',   label:'Rekap 4D · 3D otomatis (Depan·Tengah·Belakang, AI/CT/CB, Rengking)', selectors:['#r4Card'] },
   { grp:WB_G3, key:'rh_rekap',  label:'Rekap angka 2D: Isi data · Filter · LN TOP · LN dasar', selectors:['#fltCard','#topCard','#gridCard','#isiCard','#hdnRekap','#hdnTop'] },
@@ -2159,7 +2158,7 @@ function wbRumusLockHtml(mSet) {
   const n = ks.filter(k => mSet.has('rv:'+k)).length;
   return `<div style="margin:14px 0 6px;padding:10px 12px;border-radius:10px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.06)">
     <div style="font-size:12px;font-weight:800;color:#f59e0b">🔢 Kunci Rumus (semua pencarian) — ${n} dikunci</div>
-    <div style="font-size:10.5px;color:#8b949e;margin:4px 0 8px;line-height:1.5">Centang = <b style="color:#e6edf3">DIKUNCI</b>: rumus itu tidak muncul dan tidak ikut dicari di <b style="color:#e6edf3">Cari Rumus, Scan Multi, Scan Otomatis, dan Uji trek</b> milik member ini.</div>
+    <div style="font-size:10.5px;color:#8b949e;margin:4px 0 8px;line-height:1.5">Centang = <b style="color:#e6edf3">DIKUNCI</b>: rumus itu tidak muncul dan tidak ikut dicari di <b style="color:#e6edf3">Rumus Harian, Scan Otomatis, dan Uji trek</b> milik member ini.</div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <button onclick="wbMemberRumusAll(true)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);color:#f87171;font-size:11px;font-weight:800;cursor:pointer">🔒 Kunci semua rumus</button>
       <button onclick="wbMemberRumusAll(false)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.1);color:#10b981;font-size:11px;font-weight:800;cursor:pointer">🔓 Buka semua rumus</button>
