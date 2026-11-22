@@ -4341,8 +4341,9 @@ function aiShow(r){return r.n+' '+r.sc.toFixed(2);}
 function aiMk(){const key=String(r4cur||'').trim().toLowerCase(),d=DATA.find(x=>String(x.market).trim().toLowerCase()===key);return d?d.market:'';}   // nama pasaran di data (huruf besar/kecil beda)
 function aiChips(arr,title,note){   // daftar rapi: kotak angka + skor kecil + baris salin
   const chips=arr.map(r=>`<span style="display:inline-flex;flex-direction:column;align-items:center;min-width:46px;padding:4px 6px;margin:3px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:rgba(0,0,0,.25)"><b style="font-size:16px;letter-spacing:1px">${r.n}</b>${r.sub?`<span style="font-size:9px;opacity:.6">${r.sub}</span>`:''}<span style="font-size:10px;opacity:.7">${Math.round(r.sc*100)}</span></span>`).join('');
-  return `<div style="margin:12px 0 4px;font-weight:700;color:var(--ac)">${title}${note?` <span style="font-weight:400;font-size:11px;opacity:.7">${note}</span>`:''}</div>`
-    +(arr.length?`<div style="display:flex;flex-wrap:wrap">${chips}</div><div style="margin-top:4px;font:12px monospace;opacity:.85;word-break:break-all">${arr.map(r=>r.n).join('*')}</div>`:'<div style="opacity:.7">Tidak ada yang nyambung dari Top di atas. Naikkan Top (mis. 10–20).</div>');
+  const cp=arr.map(r=>r.n).join('*');
+  return `<div style="margin:12px 0 4px;font-weight:700;color:var(--ac);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>${title}${note?` <span style="font-weight:400;font-size:11px;opacity:.7">${note}</span>`:''}</span>${arr.length?`<button type="button" data-cp="${cp}" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1px solid var(--ac);background:rgba(255,201,51,.18);color:var(--ac);font-weight:700;cursor:pointer">Salin ${arr.length}</button>`:''}</div>`
+    +(arr.length?`<div style="display:flex;flex-wrap:wrap">${chips}</div><div data-cp="${cp}" style="margin-top:4px;font:12px monospace;opacity:.85;word-break:break-all;-webkit-user-select:text;user-select:text;cursor:copy">${cp}</div>`:'<div style="opacity:.7">Tidak ada yang nyambung dari Top di atas. Naikkan Top (mis. 10–20).</div>');
 }
 function aiRun(){
   const out=$('aiOut'),mk=aiMk(),N=Math.max(1,parseInt($('aiN').value,10)||10),W=Math.max(20,parseInt($('aiW').value,10)||200);
@@ -4380,12 +4381,21 @@ function aiRun(){
       L.Depan.forEach(d=>{if(d.n[1]===t.n[0])o4.push({n:d.n[0]+t.n+b.n[1],sc:(d.sc+t.sc+b.sc)/3,sub:d.n+'·'+t.n+'·'+b.n});});}));
     o4=srt(o4);o3=srt(o3);
   }
+  {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
+   H.push('<button type="button" data-cp="'+all.replace(/\n/g,'&#10;')+'" style="width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#111;font-weight:800;cursor:pointer">📋 Salin semua (2D Depan · Tengah · Belakang · 4D · 3D)</button>');}
   R4P.forEach(k=>H.push(aiChips(L[k],'2D '+k,TR[k]?'':'(tanpa trek, hanya data result)')));
   H.push(aiChips(o4,'4D','ab∈Depan · bc∈Tengah · cd∈Belakang (di bawah angka: potongan 2D-nya)'));
   H.push(aiChips(o3,'3D','bc∈Tengah · cd∈Belakang'));
   aiLast={R:L,N,s4:o4,s3:o3};out.innerHTML=H.join('');
 }
 $('aiGo').onclick=aiRun;
+$('aiOut').addEventListener('click',async e=>{   // Salin 2D Depan / Tengah / Belakang / 4D / 3D: ketuk tombol Salin atau barisnya
+  const t=e.target.closest('[data-cp]');if(!t)return;const txt=t.dataset.cp;let ok=false;
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true;}}catch(_){}
+  if(!ok){const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;opacity:0;left:0;top:0';document.body.appendChild(ta);ta.focus();ta.select();try{ok=document.execCommand('copy');}catch(_){}ta.remove();}
+  const b=t.tagName==='BUTTON'?t:t.previousElementSibling&&t.previousElementSibling.previousElementSibling&&t.previousElementSibling.previousElementSibling.querySelector('button');
+  if(b){const o=b.textContent;b.textContent=ok?'✓ Tersalin':'Gagal salin';setTimeout(()=>{b.textContent=o;},1200);}
+});
 {let _ait=0;const _re=()=>{if(!r4cur)return;clearTimeout(_ait);_ait=setTimeout(()=>{try{aiRun();}catch(_){}},900);};
 $('r4Card').addEventListener('input',_re);$('r4Card').addEventListener('change',_re);}   // skor ikut hitung ulang kalau Patah/Top/Digit/OFF diubah
 $('aiUse').onclick=()=>{
