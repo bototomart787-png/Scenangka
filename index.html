@@ -3259,7 +3259,11 @@ const shbSet=a=>{let old=[];try{old=shbGet();}catch(_){}
   try{const nk=new Set(a.map(shKey));old.forEach(it=>{if(!nk.has(shKey(it)))kdEnd(it);});a.forEach(kdEnsure);}catch(_){}};   // catat riwayat kunci: masuk Bank = masa hidup baru, keluar = masa hidup ditutup
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
 const shEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function chainOf(mkt,di){
+let _sigC='',_chM=new Map(),_evM=new Map(),kdVer=0;   // cache supaya centang/ganti pilihan tidak menghitung ulang ribuan trek
+function dataSig(){const n=DATA.length;return n+'|'+(n?DATA[0].date+DATA[0].num+'|'+DATA[n-1].date+DATA[n-1].num:'');}
+function memoReset(){const g=dataSig();if(g!==_sigC){_sigC=g;_chM.clear();_evM.clear();}}
+function chainOf(mkt,di){memoReset();const k=mkt+'|'+(di||0);let r=_chM.get(k);if(!r){r=chainOf0(mkt,di);_chM.set(k,r);}return r;}
+function chainOf0(mkt,di){
   let a=DATA.filter(d=>d.market===mkt);
   let s=a.slice().reverse();
   if(di)s=s.filter(d=>{const tt=wbTime(d.date);return !isNaN(tt)&&new Date(tt).getUTCDay()===RH_DOW[di];});
@@ -3272,13 +3276,13 @@ function kdSave(){clearTimeout(_kdT);_kdT=setTimeout(()=>{try{const K=kdLoad(),k
   if(ks.length>4000)ks.filter(k=>!K[k].curStart).sort((a,b)=>(K[a].last||0)-(K[b].last||0)).slice(0,ks.length-4000).forEach(k=>{delete K[k];});
   localStorage.setItem(KD_KEY,JSON.stringify(K));}catch(_){}},400);}
 function kdEnsure(it){const K=kdLoad(),k=shKey(it),now=Date.now(),ts=parseInt(it.id,10),st=ts>1e12?ts:now;let r=K[k];
-  if(!r){r=K[k]={nm:rhKeyName(it.spec,true)+' '+baseCode(it.base),mkt:it.mkt,vk:it.vk,first:st,curStart:st,n:1,brk:0,tot:0,lives:[],last:now};kdSave();}
-  else if(!r.curStart){r.curStart=now;r.n++;r.last=now;kdSave();}   // kunci lama kembali ke Bank → masa hidup baru, riwayat lama tetap dipakai
+  if(!r){r=K[k]={nm:rhKeyName(it.spec,true)+' '+baseCode(it.base),mkt:it.mkt,vk:it.vk,first:st,curStart:st,n:1,brk:0,tot:0,lives:[],last:now};kdVer++;kdSave();}
+  else if(!r.curStart){r.curStart=now;r.n++;r.last=now;kdVer++;kdSave();}   // kunci lama kembali ke Bank → masa hidup baru, riwayat lama tetap dipakai
   return r;}
 function kdEnd(it){const K=kdLoad(),r=K[shKey(it)];if(!r||!r.curStart)return;let e=null;try{e=shEval(it);}catch(_){}
   const rounds=(e&&e.since)||0,broke=e&&(e.brokeSince>0||!e.alive)?1:0;
   r.tot+=rounds;r.brk+=broke;r.lives.push({r:rounds,b:broke,t:new Date().toISOString().slice(0,10)});if(r.lives.length>12)r.lives.shift();
-  r.curStart=0;r.last=Date.now();kdSave();}
+  r.curStart=0;r.last=Date.now();kdVer++;kdSave();}
 const _cdMemo=new Map();let _cdLen=-1;
 function chainDatesOf(mkt,di){   // tanggal result, urutan sama dengan chainOf (lama→baru)
   if(_cdLen!==DATA.length){_cdMemo.clear();_cdLen=DATA.length;}
@@ -3288,7 +3292,8 @@ function chainDatesOf(mkt,di){   // tanggal result, urutan sama dengan chainOf (
   const r=s.map(d=>d.date);_cdMemo.set(k,r);return r;
 }
 function shWide(ch,spec,vk,L){for(let i=0;i<=ch.length-1-L;i++){const r=rhRows(ch,spec,vk,ch.length-1-i);if(r)return r;}return null;}
-function shEval(it){
+function shEval(it){memoReset();const k=it.id+'|'+it.L+'|'+it.P+'|'+kdVer;if(_evM.has(k))return _evM.get(k);const r=shEval0(it);_evM.set(k,r);return r;}
+function shEval0(it){
   const V=VARS[it.vk];if(!V||!DATA.length)return null;
   const ch=chainOf(it.mkt,it.day||0),rows=rhRows(ch,it.spec,it.vk,it.L);if(!rows)return null;
   const miss=evalBase(rows,it.base,V.mod,V);let streak=0;
@@ -3353,6 +3358,7 @@ function shbSummary0(){
     const e=shEval(it);list.push({it,e});
     const k=it.mkt.trim().toLowerCase(),M=out.mk[k]||(out.mk[k]={name:it.mkt,pos:{}}),V=VARS[it.vk];   // pasaran selalu tercatat sesuai isi bank
     if(!e||!e.alive)return;
+    {const kt=shKat(e,kc.min);if(kt)(M.kat||(M.kat={jos:0,rawan:0,bahaya:0}))[kt]++;}   // hitungan kategori per pasaran (untuk pesan saat saringan membuat rekap kosong)
     if(!kc[shKat(e,kc.min)])return;   // hanya kategori yang dicentang (Jos / Rawan / Bahaya patah) yang ikut rekap
     const P=M.pos[it.vk]||(M.pos[it.vk]={mod:V.mod,n:0,votes:{},items:[]});
     P.n++;e.set.forEach(x=>P.votes[x]=(P.votes[x]||0)+1);
@@ -3419,7 +3425,8 @@ function shbRender(){
 (function(){   // pilihan kategori trek yang ikut rekap
   const ids=[['jos','shKjos'],['rawan','shKrawan'],['bahaya','shKbhy']],mn=$('shKuatMin');if(!mn||!ids.every(x=>$(x[1])))return;
   const c=shKuatCfg();ids.forEach(([k,id])=>{$(id).checked=c[k];});mn.value=c.min;
-  const save=()=>{const o={min:Math.max(1,parseInt(mn.value,10)||20)};ids.forEach(([k,id])=>{o[k]=$(id).checked;});
+  let _tm=0;const save=()=>{clearTimeout(_tm);_tm=setTimeout(save0,60);};   // beri waktu centang tergambar dulu, lalu hitung
+  const save0=()=>{const o={min:Math.max(1,parseInt(mn.value,10)||10)};ids.forEach(([k,id])=>{o[k]=$(id).checked;});
     try{localStorage.setItem(SHK_KEY,JSON.stringify(o));}catch(_){}_shbCK='';_shbCV=null;shbRender();try{if(typeof r4kickLater==='function')r4kickLater(200);}catch(_){}};
   ids.forEach(([k,id])=>$(id).addEventListener('change',save));mn.addEventListener('change',save);
   const kd=$('shKD');if(kd)kd.addEventListener('toggle',()=>{try{kdRender();}catch(_){}});
@@ -4818,7 +4825,9 @@ function bkAuditHtml(x0,grp){   // audit: semua trek di Bank -> masuk rekap atau
   };
   const rowHtml=r=>`<details data-vk="${r.vk}" ${bkAuditRows.has(r.vk)?'open':''}><summary style="cursor:pointer;list-style:none;display:block">${line(r)}</summary><div style="padding:2px 0 8px 14px">${body(r)}<div class="hint" style="padding-top:4px">Tahan satu trek untuk melihat nama rumusnya. Yang dicoret = tidak ikut karena Digit.</div></div></details>`;
   return `<details id="bkAudit" ${bkAuditOpen?'open':''} style="margin-top:10px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Cek semua trek Bank: <span style="color:#3fd08a">${nIn} masuk</span> · <span style="color:#ff7b6b">${nOut} tidak masuk</span>${nWarn?` · <span style="color:#ffb347">${nWarn} bentrok</span>`:''} (dari ${tot} trek)</summary>`
-    +(rows.length?rows.map(rowHtml).join(''):'<div class="hint">Bank kosong.</div>')
+    +(rows.length?rows.map(rowHtml).join(''):(()=>{const k=x0.M.kat,kc=shKuatCfg();
+        if(k&&(k.jos+k.rawan+k.bahaya)>0&&!(kc.jos&&kc.rawan&&kc.bahaya))return `<div class="hint" style="color:#ffb347">Tidak ada trek yang lolos saringan kategori. ${shEsc(x0.M.name)} punya: 🟢 Jos ${k.jos} · 🟡 Rawan ${k.rawan} · 🔴 Bahaya patah ${k.bahaya}. Centang kategori lain di Bank Harian, atau turunkan "Jos = riwayat tahan minimal".</div>`;
+        return '<div class="hint">Bank kosong.</div>';})())
     +(nEmpty?`<div class="hint">${nEmpty} trek kosong (tanpa angka) dilewati.</div>`:'')
     +`<div class="hint">ON = trek pilih angka · OFF = trek buang angka. "Tidak masuk" karena tidak cocok mode ${lab} atau belum dicentang; centang di atas lalu Rekap final.</div></details>`;
 }
