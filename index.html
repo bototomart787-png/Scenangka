@@ -805,7 +805,7 @@ body.wb-alllk #wb-lockmsg{display:block}
     <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="shKbhy" style="width:22px;height:22px"> 🔴 Bahaya patah <span id="shNb" style="opacity:.7">(0)</span></label>
   </div>
   <div class="row" style="align-items:center;gap:8px;margin-top:4px"><span style="opacity:.8">Jos = riwayat tahan minimal</span><input id="shKuatMin" type="number" min="1" max="999" style="width:70px"><span style="opacity:.8">putaran, 0× patah</span></div>
-  <div class="hint" style="margin-top:2px">Setiap kombinasi kunci (pasaran + posisi + rumus + basis + hari) punya <b>riwayat sendiri</b> yang tetap diingat walau trek-nya sudah dibuang dari Bank. <b>🟢 Jos</b>: tidak pernah patah dan sudah teruji ≥ min putaran. <b>🟡 Rawan</b>: belum pernah patah tapi riwayatnya masih pendek. <b>🔴 Bahaya patah</b>: pernah patah (di masa lalu atau sekarang). Kalau kunci yang sama ditemukan lagi, riwayat lamanya ikut dipakai. Hanya kategori yang dicentang yang ikut rekap; Bank tidak dihapus.</div>
+  <div class="hint" style="margin-top:2px">Setiap kombinasi kunci (pasaran + posisi + rumus + basis + hari) punya <b>riwayat sendiri</b> yang tetap diingat walau trek-nya sudah dibuang dari Bank. <b>🟢 Jos</b>: tidak pernah patah dan sudah teruji ≥ min putaran, <u>dan</u> lebih lama dari yang bisa dicapai kebetulan (trek 8–9 digit butuh ±14–29 putaran, 3 digit cukup ±3). <b>🟡 Rawan</b>: belum pernah patah tapi riwayatnya masih pendek. <b>🔴 Bahaya patah</b>: pernah patah (di masa lalu atau sekarang). Kalau kunci yang sama ditemukan lagi, riwayat lamanya ikut dipakai. Hanya kategori yang dicentang yang ikut rekap; Bank tidak dihapus.</div>
   <details id="shKD" style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">📜 Riwayat kunci <span id="shKDn" style="opacity:.7">(0)</span></summary><div id="shKDList" style="margin-top:4px"></div><div class="hint">Disimpan di perangkat ini. Putaran dihitung dari result yang keluar sesudah kunci dicatat ke Bank.</div></details>
   <div class="row"><button id="shGab" class="pri">Gabung (0 dipilih)</button><button id="shPickAll">Pilih semua aktif</button></div>
   <textarea id="shGabBox" readonly rows="14" style="display:none;width:100%;margin-top:6px;font-family:monospace;font-size:13px"></textarea>
@@ -3009,7 +3009,21 @@ async function rhSearch(mkt,vk,onProg){
   const rm=new Int32Array(mod*W),combo=[];for(let k=1;k<=N;k++)combo[k]=[...(V.rng?arcs(mod,k):combos(mod,k))];
   const v=new Int8Array(LL+1);
   const cnt=new Int8Array(mod),ps=new Int16Array(N+1);
+  // Jalur cepat (Patah 0, bukan off/arc): basis = himpunan penghubung (hitting set) dari mask tiap baris. Hasilnya sama persis dengan jalur lama, tapi 2–6× lebih cepat (terutama 6–9 digit).
+  const HS=P===0&&!V.off&&!V.rng,pcT=new Uint8Array(1<<mod);for(let i=1;i<pcT.length;i++)pcT[i]=pcT[i>>1]+(i&1);
+  const hsM=new Int32Array(L),hsSt=new Int32Array(1<<mod);let hsId=0,hsN=0;
+  const cmN=HS?combo[N].map(cb=>{let m=0;for(const q of cb)m|=1<<q;return m;}):null;
+  function hsRec(cur,k){let pick=0,pp=99;for(let i=0;i<hsN;i++){const m=hsM[i];if(m&cur)continue;const c=pcT[m];if(c<pp){pp=c;pick=m;if(c<=1)break;}}
+    if(!pick)return true;if(k===0)return false;let m=pick;while(m){const b=m&-m;m^=b;if(hsRec(cur|b,k-1))return true;}return false;}
   function check(){            // basis tepat N digit (tidak ada yang lebih kecil), atau null
+    if(HS){
+      hsId++;hsN=0;
+      for(let r=0;r<L;r++){const m=bm[(E+r)*10+v[E+r]];if(!m)return null;if(hsSt[m]!==hsId){hsSt[m]=hsId;hsM[hsN++]=m;}}
+      if(!hsRec(0,N))return null;                  // N digit pun tak cukup
+      if(N>1&&hsRec(0,N-1))return null;            // ada basis yang lebih kecil
+      for(let c=0;c<cmN.length;c++){const mk=cmN[c];let ok=true;for(let i=0;i<hsN;i++)if(!(hsM[i]&mk)){ok=false;break;}if(ok)return combo[N][c];}
+      return null;
+    }
     rm.fill(0);
     for(let r=0;r<L;r++){const m=bm[(E+r)*10+v[E+r]],w=(r/30)|0,bit=1<<(r%30);for(let b=0;b<mod;b++)if((m>>b)&1)rm[b*W+w]|=bit;}
     for(let b=0;b<mod;b++){let c=0;for(let w=0;w<W;w++){let x=rm[b*W+w];while(x){x&=x-1;c++;}}cnt[b]=c;}
@@ -3083,7 +3097,8 @@ async function rhSearch(mkt,vk,onProg){
       }
       nx=it.next();
     }
-    const el=(performance.now()-tStart)/1000,eta=done?Math.round(el*(total-done)/done):0;
+    const el=(performance.now()-tStart)/1000;let eta=done?Math.round(el*(total-done)/done):0;
+    if(STOP&&count>0&&count<STOP){const e2=Math.round(el*(STOP-count)/count);if(e2<eta)eta=e2;}   // berhenti otomatis di target trek → sisa waktu dihitung dari laju temuan, bukan dari seluruh ruang pencarian
     if(onProg)onProg({pct:Math.round(done*100/total),count,eta,gi:curA+1,gn:keys.length,gk:keys[curA]});
     await new Promise(r=>setTimeout(r));
   }
@@ -3312,7 +3327,8 @@ function shEval0(it){
       if(rhHit(wide[k],setOf(it.base,wide[k].v,V.mod),V)){if(run)runSince++;}else{brokeSince++;run=false;}
     }
   }
-  return {miss,streak,alive:miss<=it.P,set,since,brokeSince,runSince,rounds:(kr?kr.tot:0)+(since||0),breaks:(kr?kr.brk:0)+(brokeSince>0?1:0),lives:kr?kr.n:1};
+  return {miss,streak,alive:miss<=it.P,set,since,brokeSince,runSince,rounds:(kr?kr.tot:0)+(since||0),breaks:(kr?kr.brk:0)+(brokeSince>0?1:0),lives:kr?kr.n:1,
+    p:(it.base||[]).length/V.mod,need:((it.base||[]).length>=V.mod)?9999:Math.ceil(Math.log(0.05)/Math.log(Math.max(0.05,(it.base||[]).length/V.mod)))};   // need = putaran yang dibutuhkan supaya tahan segitu < 5% kebetulan (basis lebar = peluang kena besar = butuh lebih lama)
 }
 const SHK_KEY='wb_kuat_v2';
 function shKuatCfg(){   // kategori trek yang ikut rekap + batas Jos (putaran tahan nyata)
@@ -3322,7 +3338,7 @@ function shKuatCfg(){   // kategori trek yang ikut rekap + batas Jos (putaran ta
   }catch(_){return {jos:true,rawan:true,bahaya:true,min:10};}
 }
 // berdasarkan RIWAYAT nyata kunci (termasuk masa hidup sebelumnya yang sudah dibuang): bahaya = pernah patah · jos = tidak pernah patah dan sudah tahan >= min putaran · rawan = tidak pernah patah tapi riwayatnya belum cukup
-function shKat(e,min){if(!e||!e.alive)return null;if((e.breaks||0)>0)return 'bahaya';return (e.rounds||0)>=min?'jos':'rawan';}
+function shKat(e,min){if(!e||!e.alive)return null;if((e.breaks||0)>0)return 'bahaya';return (e.rounds||0)>=Math.max(min,e.need||0)?'jos':'rawan';}   // Jos: tahan >= min putaran DAN lebih lama dari yang bisa dicapai kebetulan (basis 8–9 digit butuh jauh lebih lama)
 const shKey=it=>[String(it.mkt).trim().toLowerCase(),it.vk,rhKeyName(it.spec,false),baseCode(it.base),it.day||0].join('|');
 // satu trek = satu kunci per kelompok (pasaran+posisi); kalau dobel, yang dipakai L paling panjang (seri: P lebih besar, lalu yang lama)
 function shbPut(a,idx,it){
@@ -3413,7 +3429,7 @@ function shbRender(){
     if(e&&e.alive){
       const kt=shKat(e,kk.min),rw=e.rounds||0,ulang=(e.lives||1)>1?` · kunci kembali (${e.lives}× masuk Bank)`:'';
       mem=kt==='jos'?` · <span style="color:#1a9d1a;font-weight:700">🟢 JOS</span> <span style="color:#777">riwayat: tahan ${rw} putaran, 0× patah${ulang}</span>`
-         :kt==='rawan'?` · <span style="color:#b36b00;font-weight:700">🟡 RAWAN</span> <span style="color:#777">riwayat baru ${rw}/${kk.min} putaran, belum pernah patah${ulang}</span>`
+         :kt==='rawan'?` · <span style="color:#b36b00;font-weight:700">🟡 RAWAN</span> <span style="color:#777">riwayat baru ${rw}/${Math.max(kk.min,e.need||0)} putaran (basis ${(it.base||[]).length} digit), belum pernah patah${ulang}</span>`
          :` · <span style="color:#d22;font-weight:700">🔴 BAHAYA PATAH</span> <span style="color:#777">riwayat: patah ${e.breaks}×, total tahan ${rw} putaran${ulang}</span>`;
     }
     const mod=VARS[it.vk].mod;
