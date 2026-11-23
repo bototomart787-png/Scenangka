@@ -3602,7 +3602,9 @@ function trkByPos(arr,gname,c,rowFn){   // satu jenis: kelompok per posisi (depa
   return ks.map(vk=>{const l=m.get(vk).slice().sort((x,y)=>nn(y)-nn(x)||(pk(x)<pk(y)?-1:pk(x)>pk(y)?1:0)||((y.e?y.e.streak:0)-(x.e?x.e.streak:0)));
     let last=null;
     return `<div style="margin:12px 0 2px;padding:6px 10px;background:${c};color:#fff;border-radius:6px;font-weight:800;font-size:15px">${shEsc(SH_NAME[vk]||vk)} <span style="font-weight:400;font-size:12px">· ${l.length} trek</span></div>`
-      +l.map(x=>{const n=nn(x);let h='';if(n!==last){last=n;const cnt=l.filter(y=>nn(y)===n).length;h=`<div style="margin:8px 0 0;font-size:13px;font-weight:700;color:#ffc933">${n<0?'data kurang':'▸ '+n+' digit'} <span style="font-weight:400;color:#c9cfe4">· ${cnt} trek</span></div>`;}return h+rowFn(x);}).join('');}).join('');
+      +(()=>{const gr=[];l.forEach(x=>{const n=nn(x),g=gr[gr.length-1];if(g&&g.n===n)g.a.push(x);else gr.push({n,a:[x]});});   // satu lipatan per jumlah digit; ketuk judulnya untuk buka/tutup
+        return gr.map(g=>{const key='bk:dg:'+g.a[0].it.mkt+':'+vk+':'+g.n,op=trkOpen.has(key)||g.a.some(x=>shOpen.has(x.it.id));
+          return `<details data-tk="${key}" ${op?'open':''}><summary style="cursor:pointer;margin:8px 0 0;font-size:13px;font-weight:700;color:#ffc933">${g.n<0?'data kurang':g.n+' digit'} <span style="font-weight:400;color:#c9cfe4">· ${g.a.length} trek</span></summary>${g.a.map(rowFn).join('')}</details>`;}).join('');})()}).join('');
 }
 function trkGrouped(items,rowFn){   // trek di Bank dikelompokkan per jenis + diberi warna (On: dingin/hijau, Off: merah/oranye)
   const m=new Map();items.forEach(x=>{const k=trkGrp(x.it.vk);if(!m.has(k))m.set(k,[]);m.get(k).push(x);});
