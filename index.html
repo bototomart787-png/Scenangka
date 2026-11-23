@@ -5127,9 +5127,10 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
   }
 
   function renderChips(){
-    const ms=markets();cfg.mkts=cfg.mkts.filter(m=>ms.includes(m));
+    const ms=markets();   // JANGAN buang pilihan tersimpan di sini: saat halaman baru dibuka DATA belum dimuat → daftar pasaran kosong → pilihan (mis. Kamboja) ikut terhapus
+    const nOn=cfg.mkts.filter(m=>ms.includes(m)).length;
     G('abChips').innerHTML=ms.map(m=>`<button class="mc${cfg.mkts.includes(m)?' on':''}" data-m="${esc(m)}">${esc(m)}</button>`).join('');
-    G('abMSum').textContent=`Pilih pasaran — ${cfg.mkts.length} dari ${ms.length} dipilih`;refreshCnt();
+    G('abMSum').textContent=`Pilih pasaran — ${ms.length?nOn:cfg.mkts.length} dari ${ms.length||'?'} dipilih`;refreshCnt();
   }
   function renderVars(){
     const L=lkd(),ks=Object.keys(VARS).filter(k=>!L.has(k)),cb=(k,t)=>`<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--fg);margin:0"><input type="checkbox" data-v="${k}" ${cfg.pos.includes(k)?'checked':''} style="width:20px;height:20px"> ${esc(t)}</label>`;
