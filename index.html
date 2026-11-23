@@ -805,7 +805,7 @@ body.wb-alllk #wb-lockmsg{display:block}
     <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="shKbhy" style="width:22px;height:22px"> 🔴 Bahaya patah <span id="shNb" style="opacity:.7">(0)</span></label>
   </div>
   <div class="row" style="align-items:center;gap:8px;margin-top:4px"><span style="opacity:.8">Jos = riwayat tahan minimal</span><input id="shKuatMin" type="number" min="1" max="999" style="width:70px"><span style="opacity:.8">putaran, 0× patah</span></div>
-  <div class="hint" style="margin-top:2px">Setiap kombinasi kunci (pasaran + posisi + rumus + basis + hari) punya <b>riwayat sendiri</b> yang tetap diingat walau trek-nya sudah dibuang dari Bank. <b>🟢 Jos</b>: tidak pernah patah dan sudah teruji ≥ min putaran, <u>dan</u> lebih lama dari yang bisa dicapai kebetulan (trek 8–9 digit butuh ±14–29 putaran, 3 digit cukup ±3). <b>🟡 Rawan</b>: belum pernah patah tapi riwayatnya masih pendek. <b>🔴 Bahaya patah</b>: pernah patah (di masa lalu atau sekarang). Kalau kunci yang sama ditemukan lagi, riwayat lamanya ikut dipakai. Hanya kategori yang dicentang yang ikut rekap; Bank tidak dihapus.</div>
+  <div class="hint" style="margin-top:2px">Setiap kombinasi kunci (pasaran + posisi + rumus + basis + hari) punya <b>riwayat sendiri</b> yang tetap diingat walau trek-nya sudah dibuang dari Bank. <b>🟢 Jos</b>: tidak pernah patah dan sudah teruji ≥ min putaran, <u>dan</u> lebih lama dari yang bisa dicapai kebetulan (makin lebar basisnya makin lama: AI 2D 9 digit kena 99% tanpa usaha, hanya 00 yang gagal, jadi hampir tidak pernah bisa Jos). <b>🟡 Rawan</b>: belum pernah patah tapi riwayatnya masih pendek. <b>🔴 Bahaya patah</b>: pernah patah (di masa lalu atau sekarang). Kalau kunci yang sama ditemukan lagi, riwayat lamanya ikut dipakai. Hanya kategori yang dicentang yang ikut rekap; Bank tidak dihapus.</div>
   <details id="shKD" style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">📜 Riwayat kunci <span id="shKDn" style="opacity:.7">(0)</span></summary><div id="shKDList" style="margin-top:4px"></div><div class="hint">Disimpan di perangkat ini. Putaran dihitung dari result yang keluar sesudah kunci dicatat ke Bank.</div></details>
   <div class="row"><button id="shGab" class="pri">Gabung (0 dipilih)</button><button id="shPickAll">Pilih semua aktif</button></div>
   <textarea id="shGabBox" readonly rows="14" style="display:none;width:100%;margin-top:6px;font-family:monospace;font-size:13px"></textarea>
@@ -2981,6 +2981,7 @@ function rhFastBase(rows,vk,P,maxd){
 let rhFinding=false,rhLoop=false,rhApplied=false,MULTI_RUN=false;
 const rhEtaTxt=eta=>eta>=90?Math.round(eta/60)+' menit':eta+' detik';
 let ML_OVR=null;   // pengaturan khusus Scan Multi (maks digit, stop trek) selama scan multi jalan
+function rhBinom(n,k){let r=1;for(let i=1;i<=k;i++)r=r*(n-k+i)/i;return Math.round(r);}
 const rhStopN=()=>{if(ML_OVR)return ML_OVR.stop;const e=document.getElementById('rhStopN');return e?Math.max(0,Math.min(999,parseInt(e.value)||0)):0;};   // 0 = tanpa batas; N = scan berhenti otomatis setelah dapat N trek
 // Inti pencarian trek untuk SATU pasaran + SATU jenis rumus (dipakai scan biasa & scan multi).
 // Kembali {err} atau {top,count,E,vk,L,P,N,mkt,day,cancelled}. Batal: set rhFinding=false.
@@ -3007,6 +3008,7 @@ async function rhSearch(mkt,vk,onProg){
   }
   const all=new Int32Array(W);for(let r=0;r<L;r++)all[(r/30)|0]|=1<<(r%30);
   const rm=new Int32Array(mod*W),combo=[];for(let k=1;k<=N;k++)combo[k]=[...(V.rng?arcs(mod,k):combos(mod,k))];
+  const STOPE=STOP?Math.min(STOP,combo[N].length):0;   // hasil dihitung per HIMPUNAN prediksi unik: basis N digit dari mod hanya punya C(mod,N) kemungkinan (9 dari 10 = 10, 8 dari 10 = 45) → target di atas itu mustahil dicapai
   const v=new Int8Array(LL+1);
   const cnt=new Int8Array(mod),ps=new Int16Array(N+1);
   // Jalur cepat (Patah 0, bukan off/arc): basis = himpunan penghubung (hitting set) dari mask tiap baris. Hasilnya sama persis dengan jalur lama, tapi 2–6× lebih cepat (terutama 6–9 digit).
@@ -3091,21 +3093,21 @@ async function rhSearch(mkt,vk,onProg){
           const mk=x=>MB[x]||'';
           const sp=b<0?{terms:[{tok:keys[a],mb:mk(m1)}],ops:[],final:mk(f)}
                       :{terms:[{tok:keys[a],mb:mk(m1)},{tok:keys[b],mb:mk(m2)}],ops:[op?'-':'+'],final:mk(f)};
-          if(!ex){count++;if(STOP&&count>=STOP)stopHit=true;}
+          if(!ex){count++;if(STOPE&&count>=STOPE)stopHit=true;}
           seen.set(pm,{sp,base:[...bs],old,pred,n:ex?ex.n+1:1});
         }else ex.n++;
       }
       nx=it.next();
     }
     const el=(performance.now()-tStart)/1000;let eta=done?Math.round(el*(total-done)/done):0;
-    if(STOP&&count>0&&count<STOP){const e2=Math.round(el*(STOP-count)/count);if(e2<eta)eta=e2;}   // berhenti otomatis di target trek → sisa waktu dihitung dari laju temuan, bukan dari seluruh ruang pencarian
-    if(onProg)onProg({pct:Math.round(done*100/total),count,eta,gi:curA+1,gn:keys.length,gk:keys[curA]});
+    if(STOPE&&count>0&&count<STOPE){const e2=Math.round(el*(STOPE-count)/count);if(e2<eta)eta=e2;}   // berhenti otomatis di target trek → sisa waktu dihitung dari laju temuan, bukan dari seluruh ruang pencarian
+    if(onProg)onProg({pct:Math.round(done*100/total),count,max:STOPE,eta,gi:curA+1,gn:keys.length,gk:keys[curA]});
     await new Promise(r=>setTimeout(r));
   }
   }finally{rhLoop=false;}
   const cancelled=!nx.done&&!stopHit;
   const top=[...seen.values()].sort((x,y)=>x.old-y.old||y.n-x.n).slice(0,150);
-  return {top,count,E,vk,L,P,N,mkt,day,cancelled,stopped:stopHit,stop:STOP};
+  return {top,count,E,vk,L,P,N,mkt,day,cancelled,stopped:stopHit,stop:STOPE,maxUniq:combo[N].length};
 }
 function RJ(V,arr,fmt,sep){
   if(!V||!V.rng)return arr.map(fmt).join(sep);
@@ -3327,8 +3329,11 @@ function shEval0(it){
       if(rhHit(wide[k],setOf(it.base,wide[k].v,V.mod),V)){if(run)runSince++;}else{brokeSince++;run=false;}
     }
   }
+  // peluang kebetulan per putaran: AI/CT/CB = angka ikut kalau SALAH SATU digitnya ada di basis (2D → 2 digit, 3D → 3, 4D → 4), jadi basis 9 digit pada AI 2D kena 99% (hanya 00 yang gagal)
+  let mkN=1;try{mkN=Math.max(1,V.mark?V.mark([0,1,2,3]).length:1);}catch(_){}
+  const dB=(it.base||[]).length/V.mod,pK=V.off?Math.pow(1-dB,mkN):1-Math.pow(1-dB,mkN);
   return {miss,streak,alive:miss<=it.P,set,since,brokeSince,runSince,rounds:(kr?kr.tot:0)+(since||0),breaks:(kr?kr.brk:0)+(brokeSince>0?1:0),lives:kr?kr.n:1,
-    p:(it.base||[]).length/V.mod,need:((it.base||[]).length>=V.mod)?9999:Math.ceil(Math.log(0.05)/Math.log(Math.max(0.05,(it.base||[]).length/V.mod)))};   // need = putaran yang dibutuhkan supaya tahan segitu < 5% kebetulan (basis lebar = peluang kena besar = butuh lebih lama)
+    p:pK,need:pK>=0.9999?9999:Math.ceil(Math.log(0.05)/Math.log(Math.max(0.05,pK)))};   // pK = peluang kena per putaran karena kebetulan; need = putaran agar tahan segitu < 5% kebetulan
 }
 const SHK_KEY='wb_kuat_v2';
 function shKuatCfg(){   // kategori trek yang ikut rekap + batas Jos (putaran tahan nyata)
@@ -3429,7 +3434,7 @@ function shbRender(){
     if(e&&e.alive){
       const kt=shKat(e,kk.min),rw=e.rounds||0,ulang=(e.lives||1)>1?` · kunci kembali (${e.lives}× masuk Bank)`:'';
       mem=kt==='jos'?` · <span style="color:#1a9d1a;font-weight:700">🟢 JOS</span> <span style="color:#777">riwayat: tahan ${rw} putaran, 0× patah${ulang}</span>`
-         :kt==='rawan'?` · <span style="color:#b36b00;font-weight:700">🟡 RAWAN</span> <span style="color:#777">riwayat baru ${rw}/${Math.max(kk.min,e.need||0)} putaran (basis ${(it.base||[]).length} digit), belum pernah patah${ulang}</span>`
+         :kt==='rawan'?` · <span style="color:#b36b00;font-weight:700">🟡 RAWAN</span> <span style="color:#777">riwayat baru ${rw}/${e.need>=9999?'∞':Math.max(kk.min,e.need||0)} putaran (basis ${(it.base||[]).length} digit, kena kebetulan ±${Math.round((e.p||0)*100)}%/putaran), belum pernah patah${ulang}</span>`
          :` · <span style="color:#d22;font-weight:700">🔴 BAHAYA PATAH</span> <span style="color:#777">riwayat: patah ${e.breaks}×, total tahan ${rw} putaran${ulang}</span>`;
     }
     const mod=VARS[it.vk].mod;
@@ -5127,7 +5132,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
   function renderPlan(){
     const hd='display:grid;grid-template-columns:1fr 84px 84px;gap:6px;align-items:center;margin:3px 0';
     G('abPlan').innerHTML=`<div style="${hd};font-size:12px;color:var(--mut)"><span>Digit basis</span><span>Trek</span><span>Put</span></div>`
-      +cfg.rows.map(r=>`<div style="${hd}"><label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--fg);margin:0"><input type="checkbox" data-on="${r.n}" ${r.on?'checked':''} style="width:20px;height:20px"> ${r.n} digit</label><input type="number" inputmode="numeric" min="1" max="999" data-t="${r.n}" value="${r.trek}"><input type="number" inputmode="numeric" min="3" max="300" data-u="${r.n}" value="${r.put}"></div>`).join('');
+      +cfg.rows.map(r=>`<div style="${hd}"><label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--fg);margin:0"><input type="checkbox" data-on="${r.n}" ${r.on?'checked':''} style="width:20px;height:20px"> ${r.n} digit${r.n>=6?` <span style=\"opacity:.6;font-size:11px\">(maks ${rhBinom(10,r.n)} unik)</span>`:''}</label><input type="number" inputmode="numeric" min="1" max="999" data-t="${r.n}" value="${r.trek}"><input type="number" inputmode="numeric" min="3" max="300" data-u="${r.n}" value="${r.put}"></div>`).join('');
   }
   window.wbAbRefresh=()=>{try{renderVars();}catch(e){}};
   function renderAll(){
@@ -5178,7 +5183,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
         i++;
         ML_OVR={L:r.put,P:cfg.P,day:cfg.day,max:r.n,stop:r.trek};
         const tag=`${m} · ${VARS[k].name} · ${effN(k,r.n)} digit · ${r.put} put`;
-        const res=await rhSearch(m,k,p=>{prog.innerHTML=`🤖 ${i}/${jobs.length} · <b>${esc(tag)}</b> · ${p.pct}% · ${p.count}/${r.trek} trek · sisa ±${rhEtaTxt(p.eta)} — ketuk tombol untuk batal`;});
+        const res=await rhSearch(m,k,p=>{prog.innerHTML=`🤖 ${i}/${jobs.length} · <b>${esc(tag)}</b> · ${p.pct}% · ${p.count}/${p.max||r.trek} trek · sisa ±${rhEtaTxt(p.eta)} — ketuk tombol untuk batal`;});
         if(res.err){lines.push(`⚠️ ${esc(tag)}: ${esc(res.err)}`);if(res.cancelled)cancelled=true;continue;}
         const take=(res.top||[]).slice(0,r.trek);
         let a=shbGet();
@@ -5186,7 +5191,8 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
         const idx=new Map(a.map((x,i)=>[shKey(x),i]));let n=0;
         take.forEach(f=>{const it=shbMake(m,cfg.day,k,f.sp,f.base,res.L,res.P);it.auto=1;n+=shbPut(a,idx,it);});
         shbSet(a);added+=n;
-        lines.push(`${take.length>=r.trek?'✅':'🟡'} ${esc(tag)}: ${take.length}/${r.trek} trek${take.length<r.trek?' (hanya segini yang ketemu)':''}`);
+        {const tgt=Math.min(r.trek,res.maxUniq||r.trek);
+         lines.push(`${take.length>=tgt?'✅':'🟡'} ${esc(tag)}: ${take.length}/${tgt} trek${r.trek>tgt?` (target ${r.trek} dibatasi: basis ${res.N} digit hanya punya ${res.maxUniq} kemungkinan unik)`:''}${take.length<tgt?' (hanya segini yang ketemu)':''}`);}
         if(res.cancelled){cancelled=true;break;}
       }
     }finally{
