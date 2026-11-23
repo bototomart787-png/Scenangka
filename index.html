@@ -1503,27 +1503,27 @@ function wbAuthTab(tab, btn) {
 }
 
 // ── KETUK LOGO WB 5x → TAMPILKAN LOGIN ADMIN ───────────────
+// Delegasi di document (fase capture): tetap jalan walau elemen dibuat ulang / ada handler lain.
+// Area ketuk = logo + judul + subjudul. Jeda antar ketukan maks 3 detik. Cadangan: buka halaman dengan #admin
 (function(){
   let n = 0, timer = null;
-  function bind(){
-    const logo = document.querySelector('#wb-auth-overlay .wb-auth-logo-icon');
-    if(!logo) return;
-    logo.addEventListener('click', function(e){
-      e.stopPropagation();
-      n++;
-      clearTimeout(timer);
-      timer = setTimeout(() => { n = 0; }, 2000); // reset kalau jeda >2 detik
-      if(n >= 5){
-        n = 0;
-        const tab = document.getElementById('wb-tab-admin');
-        if(tab){
-          tab.style.display = '';
-          wbAuthTab('admin', tab);
-        }
-      }
-    });
+  function showAdmin(){
+    const tab = document.getElementById('wb-tab-admin');
+    if(!tab) return;
+    if(typeof wbOpenAuth === 'function') wbOpenAuth('admin');
+    tab.style.display = '';
+    wbAuthTab('admin', tab);
   }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  document.addEventListener('click', function(e){
+    const t = e.target;
+    if(!t || !t.closest || !t.closest('#wb-auth-overlay .wb-auth-logo')) return;
+    n++;
+    clearTimeout(timer);
+    timer = setTimeout(() => { n = 0; }, 3000);
+    if(n >= 5){ n = 0; showAdmin(); }
+  }, true);
+  if(/admin/i.test(location.hash)) window.addEventListener('load', showAdmin);
+  window.wbShowAdminLogin = showAdmin;   // bisa juga dipanggil dari konsol
 })();
 
 function wbOpenAuth(tab) {
