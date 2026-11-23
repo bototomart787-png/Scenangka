@@ -3008,7 +3008,8 @@ async function rhSearch(mkt,vk,onProg){
   }
   const all=new Int32Array(W);for(let r=0;r<L;r++)all[(r/30)|0]|=1<<(r%30);
   const rm=new Int32Array(mod*W),combo=[];for(let k=1;k<=N;k++)combo[k]=[...(V.rng?arcs(mod,k):combos(mod,k))];
-  const STOPE=STOP||0;   // hasil dihitung per HIMPUNAN prediksi unik: basis N digit dari mod hanya punya C(mod,N) kemungkinan (9 dari 10 = 10, 8 dari 10 = 45) → target di atas itu mustahil dicapai
+  const STOPE=STOP||0;   // trek dihitung per kombinasi rumus+basis yang berbeda (bukan per himpunan prediksi)
+     // hasil dihitung per HIMPUNAN prediksi unik: basis N digit dari mod hanya punya C(mod,N) kemungkinan (9 dari 10 = 10, 8 dari 10 = 45) → target di atas itu mustahil dicapai
   const v=new Int8Array(LL+1);
   const cnt=new Int8Array(mod),ps=new Int16Array(N+1);
   // Jalur cepat (Patah 0, bukan off/arc): basis = himpunan penghubung (hitting set) dari mask tiap baris. Hasilnya sama persis dengan jalur lama, tapi 2–6× lebih cepat (terutama 6–9 digit).
@@ -3089,14 +3090,15 @@ async function rhSearch(mkt,vk,onProg){
       if(bs){
         let Bm=0;for(const x of bs)Bm|=1<<x;
         let old=0;for(let q=0;q<E;q++)if(V.off?(bm[q*10+v[q]]&Bm):!(bm[q*10+v[q]]&Bm))old++;   // zonk di baris lama
-        const pred=setOf(bs,v[LL],mod);let pm=0;for(const x of pred)pm|=1<<x;   // kunci = himpunan hasil
-        const ex=seen.get(pm);
-        if(!ex||old<ex.old){
+        const pred=setOf(bs,v[LL],mod);
+        const key=Bm+'|'+v.join(',');   // kunci = rumus + basis yang benar-benar sama (deret angka & basis identik). Prediksi boleh sama, yang dibuang hanya duplikat persis
+        const ex=seen.get(key);
+        if(!ex){
           const mk=x=>MB[x]||'';
           const sp=b<0?{terms:[{tok:keys[a],mb:mk(m1)}],ops:[],final:mk(f)}
                       :{terms:[{tok:keys[a],mb:mk(m1)},{tok:keys[b],mb:mk(m2)}],ops:[op?'-':'+'],final:mk(f)};
-          if(!ex){count++;if(STOPE&&count>=STOPE)stopHit=true;}
-          seen.set(pm,{sp,base:[...bs],old,pred,n:ex?ex.n+1:1});
+          count++;if(STOPE&&count>=STOPE)stopHit=true;
+          seen.set(key,{sp,base:[...bs],old,pred,n:1});
         }else ex.n++;
       }
       nx=it.next();
@@ -3108,7 +3110,7 @@ async function rhSearch(mkt,vk,onProg){
   }
   }finally{rhLoop=false;}
   const cancelled=!nx.done&&!stopHit;
-  const top=[...seen.values()].sort((x,y)=>x.old-y.old||y.n-x.n).slice(0,150);
+  const top=[...seen.values()].sort((x,y)=>x.old-y.old||y.n-x.n).slice(0,Math.max(150,STOPE));
   return {top,count,E,vk,L,P,N,mkt,day,cancelled,stopped:stopHit,stop:STOPE,maxUniq:combo[N].length};
 }
 function RJ(V,arr,fmt,sep){
