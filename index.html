@@ -896,7 +896,7 @@ body.wb-alllk #wb-lockmsg{display:block}
   <div id="r4Pos"></div>
   <div class="r4box"><div class="ph"><span>AI / CT / CB 4D · <span id="r4nAI">0</span> baris</span></div><div class="hint" style="padding-top:6px">Satu baris = satu kumpulan digit (mis. 1235). Angka 4D hanya lolos jika memuat salah satu digit di tiap baris. AI, CT, dan CB diperlakukan sama. <b>Rengking</b> kosong = semua baris wajib kena. Isi Rengking (mis. 3) = angka diurutkan menurut jumlah baris yang kena: 1 = paling banyak kena, 3 = tiga tingkat teratas — jadi trek yang patah tidak mengosongkan hasil.</div><label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:700"><input type="checkbox" id="r4onAI" data-r4x="1" checked style="width:22px;height:22px;flex:0 0 auto"> Aktif (ON = ikut menyaring · OFF = diabaikan, isi tetap tersimpan)</label><div class="r4row"><b>Rengking</b><input id="r4kAI" data-r4x="1" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4kmAI" data-r4x="1" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="hint" id="r4kiAI" style="padding-top:4px"></div><textarea id="r4ai" rows="5" style="min-height:120px" data-r4x="1" placeholder="AI/CT/CB 4D — satu baris satu kumpulan digit"></textarea></div>
 <div id="r4tkcb" style="padding:2px 0 8px"></div>
-  <div class="r4box"><div class="ph"><span>4D OFF (mati total) · <span id="r4nOF">0 angka</span></span><button id="r4offClr" style="padding:2px 10px">Kosongkan</button></div><div class="hint" style="padding-top:6px">Tulis <b>4 digit</b> (mis. 1234) = angka itu dibuang. Tulis <b>1–3 digit</b> (mis. 34) = semua angka 4D dan 3D yang membawa digit 3 atau 4 dibuang.</div><textarea id="r4off" rows="4" style="min-height:96px" data-r4x="1" placeholder="4D OFF — pisah * , # . atau spasi"></textarea></div>
+  <div class="r4box"><div class="ph"><span>4D OFF (mati total) · <span id="r4nOF">kosong</span></span><button id="r4offClr" style="padding:2px 10px">Kosongkan</button></div><div class="hint" style="padding-top:6px">Digit yang ditulis di sini <b>mati total</b>: semua angka 2D, 3D, dan 4D yang membawa digit itu dibuang. Contoh <b>3498</b> = angka yang memuat 3, 4, 9, atau 8 hilang semua.</div><textarea id="r4off" rows="4" style="min-height:96px" data-r4x="1" placeholder="digit mati total, mis. 3498"></textarea></div>
   <div id="r4Info" class="hint" style="margin:6px 0"></div>
   <div class="r4box"><div class="ph"><span>Hasil 4D (ab∈Depan · bc∈Tengah · cd∈Belakang) · <span id="r4nO">0</span> angka</span></div><textarea id="r4out" rows="3" readonly placeholder="Hasil 4D tampil di sini"></textarea></div>
   <div class="rkrow"><button class="pri" id="r4Copy">Salin 4D</button><button id="r4Use">Pakai di tab 4D</button></div>
@@ -4002,7 +4002,7 @@ function r4parse(t){
   });
   return ps;
 }
-function r4offAll(){return new Set(($('r4off').value.match(/\d+/g)||[]).filter(t=>t.length<4).join('').split('').filter(Boolean));}   // digit OFF mati total (kotak 4D OFF, isi 1–3 digit)
+function r4offAll(){return new Set(($('r4off').value.match(/\d/g)||[]));}   // kotak OFF = DIGIT mati total: semua digit yang ditulis (mis. 3498 → 3,4,9,8)
 function r4off(pos){return new Set([...$('r4o'+pos).value.replace(/\D/g,'')]);}
 function r4ct(pos){const e=$('r4c'+pos);return e?[...new Set(e.value.replace(/\D/g,''))]:[];}
 function r4ctf(pos,arr){   // CT: LN yang tidak membawa digit CT dibuang dari daftar
@@ -4154,10 +4154,10 @@ function r4render(){
   const D=r4set('Depan'),T=r4set('Tengah'),B=r4set('Belakang'),sep=$('sep').value,o4=[],o3=[];
   R4P.forEach(k=>{$('r4n'+k).textContent=r4set(k).size;const C=r4ct(k),h=$('r4cn'+k);
     if(h)h.textContent=C.length?'CT '+C.join(' & ')+' ('+(($('r4cm'+k).value==='all')?'semua digit wajib ada':'salah satu digit ada')+') → '+r4set(k).size+' dari '+toks($('r4'+k).value,2).length+' LN':'';});
-  const AIr=$('r4ai').value.split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),A4=$('r4onAI').checked,A3=$('r4onAI3').checked,AI=A4?AIr:[],OFF=new Set(toks($('r4off').value,4)),OFFD=r4offAll();   // OFF: 4 digit = angka persis dibuang · 1–3 digit (mis. 34) = SEMUA angka yang membawa digit itu dibuang
+  const AIr=$('r4ai').value.split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),A4=$('r4onAI').checked,A3=$('r4onAI3').checked,AI=A4?AIr:[],OFF=new Set(),OFFD=r4offAll();   // OFF = digit mati total (tidak ada lagi mode 'angka persis')   // OFF: 4 digit = angka persis dibuang · 1–3 digit (mis. 34) = SEMUA angka yang membawa digit itu dibuang
   const AI3r=($('r4ai3')?$('r4ai3').value:'').split('\n').map(x=>new Set(x.replace(/\D/g,''))).filter(z=>z.size),AI3=A3?AI3r:[];
   const P4=r4aiPool(AIr,'r4kAI','r4kmAI','r4kiAI',A4),P3=r4aiPool(AI3r,'r4kAI3','r4kmAI3','r4kiAI3',A3);
-  $('r4nAI').textContent=AIr.length+(A4?'':' (OFF)');$('r4nOF').textContent=OFF.size+' angka'+(OFFD.size?' + digit '+[...OFFD].sort().join(' '):'');if($('r4nAI3'))$('r4nAI3').textContent=AI3r.length+(A3?'':' (OFF)');
+  $('r4nAI').textContent=AIr.length+(A4?'':' (OFF)');$('r4nOF').textContent=OFFD.size?'digit '+[...OFFD].sort().join(' '):'kosong';if($('r4nAI3'))$('r4nAI3').textContent=AI3r.length+(A3?'':' (OFF)');
   const XD=r4off('Depan'),XT=r4off('Tengah'),XB=r4off('Belakang');
   R4P.forEach(k=>{const X=r4off(k),el=$('r4ok'+k);$('r4no'+k).textContent=X.size;if(el)el.textContent=X.size?'Otomatis dibuang dari LN '+k+': angka yang membawa digit '+[...X].join(', '):'';});
   const rk4=A4?r4rkRange($('r4kAI').value):null,rk3=A3?r4rkRange($('r4kAI3').value):null,c4=[],c3=[];
