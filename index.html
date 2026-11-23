@@ -3014,6 +3014,7 @@ async function rhSearch(mkt,vk,onProg){
   // Jalur cepat (Patah 0, bukan off/arc): basis = himpunan penghubung (hitting set) dari mask tiap baris. Hasilnya sama persis dengan jalur lama, tapi 2–6× lebih cepat (terutama 6–9 digit).
   const HS=P===0&&!V.off&&!V.rng,pcT=new Uint8Array(1<<mod);for(let i=1;i<pcT.length;i++)pcT[i]=pcT[i>>1]+(i&1);
   const hsM=new Int32Array(L),hsSt=new Int32Array(1<<mod);let hsId=0,hsN=0;
+  const hsS=mod-N+1,hsTot=rhBinom(mod,hsS),hsCov=Array.from({length:mod+1},(_,c)=>c>=1&&c<=hsS?rhBinom(mod-c,hsS-c):0);   // filter cepat: basis < N digit ada kecuali SEMUA himpunan hsS digit memuat satu mask
   const cmN=HS?combo[N].map(cb=>{let m=0;for(const q of cb)m|=1<<q;return m;}):null;
   function hsRec(cur,k){let pick=0,pp=99;for(let i=0;i<hsN;i++){const m=hsM[i];if(m&cur)continue;const c=pcT[m];if(c<pp){pp=c;pick=m;if(c<=1)break;}}
     if(!pick)return true;if(k===0)return false;let m=pick;while(m){const b=m&-m;m^=b;if(hsRec(cur|b,k-1))return true;}return false;}
@@ -3021,6 +3022,7 @@ async function rhSearch(mkt,vk,onProg){
     if(HS){
       hsId++;hsN=0;
       for(let r=0;r<L;r++){const m=bm[(E+r)*10+v[E+r]];if(!m)return null;if(hsSt[m]!==hsId){hsSt[m]=hsId;hsM[hsN++]=m;}}
+      if(N>1){let cv=0;for(let i=0;i<hsN;i++)cv+=hsCov[pcT[hsM[i]]];if(cv<hsTot)return null;}   // pasti ada basis < N digit → tolak tanpa rekursi (kunci kecepatan 8–9 digit)
       if(!hsRec(0,N))return null;                  // N digit pun tak cukup
       if(N>1&&hsRec(0,N-1))return null;            // ada basis yang lebih kecil
       for(let c=0;c<cmN.length;c++){const mk=cmN[c];let ok=true;for(let i=0;i<hsN;i++)if(!(hsM[i]&mk)){ok=false;break;}if(ok)return combo[N][c];}
