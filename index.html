@@ -3413,6 +3413,7 @@ function kdRender(){const box=$('shKDList');if(!box)return;const K=kdLoad(),ks=O
 function shbRender(){
   const {out,list}=shbSummary();
   try{localStorage.setItem(SHR_KEY,JSON.stringify(out));}catch(e){}
+  try{if(typeof bkSumRefresh==='function')bkSumRefresh();}catch(e){}   // daftar trek yang ikut rekap ikut diperbarui begitu isi Bank berubah
   try{if(typeof r4chips==='function')r4chips();}catch(e){}   // chip pasaran Rekap 4D·3D ikut isi bank
   const el=$('shList');if(!el)return;
   const alive=list.filter(x=>x.e&&x.e.alive).length;
