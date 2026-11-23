@@ -3008,7 +3008,7 @@ async function rhSearch(mkt,vk,onProg){
   }
   const all=new Int32Array(W);for(let r=0;r<L;r++)all[(r/30)|0]|=1<<(r%30);
   const rm=new Int32Array(mod*W),combo=[];for(let k=1;k<=N;k++)combo[k]=[...(V.rng?arcs(mod,k):combos(mod,k))];
-  const STOPE=STOP?Math.min(STOP,combo[N].length):0;   // hasil dihitung per HIMPUNAN prediksi unik: basis N digit dari mod hanya punya C(mod,N) kemungkinan (9 dari 10 = 10, 8 dari 10 = 45) → target di atas itu mustahil dicapai
+  const STOPE=STOP||0;   // hasil dihitung per HIMPUNAN prediksi unik: basis N digit dari mod hanya punya C(mod,N) kemungkinan (9 dari 10 = 10, 8 dari 10 = 45) → target di atas itu mustahil dicapai
   const v=new Int8Array(LL+1);
   const cnt=new Int8Array(mod),ps=new Int16Array(N+1);
   // Jalur cepat (Patah 0, bukan off/arc): basis = himpunan penghubung (hitting set) dari mask tiap baris. Hasilnya sama persis dengan jalur lama, tapi 2–6× lebih cepat (terutama 6–9 digit).
@@ -5132,7 +5132,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
   function renderPlan(){
     const hd='display:grid;grid-template-columns:1fr 84px 84px;gap:6px;align-items:center;margin:3px 0';
     G('abPlan').innerHTML=`<div style="${hd};font-size:12px;color:var(--mut)"><span>Digit basis</span><span>Trek</span><span>Put</span></div>`
-      +cfg.rows.map(r=>`<div style="${hd}"><label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--fg);margin:0"><input type="checkbox" data-on="${r.n}" ${r.on?'checked':''} style="width:20px;height:20px"> ${r.n} digit${r.n>=6?` <span style=\"opacity:.6;font-size:11px\">(maks ${rhBinom(10,r.n)} unik)</span>`:''}</label><input type="number" inputmode="numeric" min="1" max="999" data-t="${r.n}" value="${r.trek}"><input type="number" inputmode="numeric" min="3" max="300" data-u="${r.n}" value="${r.put}"></div>`).join('');
+      +cfg.rows.map(r=>`<div style="${hd}"><label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--fg);margin:0"><input type="checkbox" data-on="${r.n}" ${r.on?'checked':''} style="width:20px;height:20px"> ${r.n} digit</label><input type="number" inputmode="numeric" min="1" max="999" data-t="${r.n}" value="${r.trek}"><input type="number" inputmode="numeric" min="3" max="300" data-u="${r.n}" value="${r.put}"></div>`).join('');
   }
   window.wbAbRefresh=()=>{try{renderVars();}catch(e){}};
   function renderAll(){
@@ -5191,8 +5191,8 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
         const idx=new Map(a.map((x,i)=>[shKey(x),i]));let n=0;
         take.forEach(f=>{const it=shbMake(m,cfg.day,k,f.sp,f.base,res.L,res.P);it.auto=1;n+=shbPut(a,idx,it);});
         shbSet(a);added+=n;
-        {const tgt=Math.min(r.trek,res.maxUniq||r.trek);
-         lines.push(`${take.length>=tgt?'✅':'🟡'} ${esc(tag)}: ${take.length}/${tgt} trek${r.trek>tgt?` (target ${r.trek} dibatasi: basis ${res.N} digit hanya punya ${res.maxUniq} kemungkinan unik)`:''}${take.length<tgt?' (hanya segini yang ketemu)':''}`);}
+        {const tgt=r.trek;
+         lines.push(`${take.length>=tgt?'✅':'🟡'} ${esc(tag)}: ${take.length}/${tgt} trek${take.length<tgt?' (hanya segini yang ketemu)':''}`);}
         if(res.cancelled){cancelled=true;break;}
       }
     }finally{
