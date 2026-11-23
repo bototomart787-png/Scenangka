@@ -4598,7 +4598,9 @@ build();
 const BK=[['Harian','wb_harian_rekap_v1'],['Shio','wb_shio_rekap_v1']];
 function bkRead(){
   const mk=new Map();
-  BK.forEach(([nm,key])=>{try{const j=JSON.parse(localStorage.getItem(key)||'null');
+  BK.forEach(([nm,key])=>{try{let j=null;
+    if(nm==='Harian'&&typeof shbSummary==='function'){try{j=shbSummary().out;}catch(_){}}   // Bank Harian dibaca langsung (salinan di browser bisa gagal tersimpan kalau isi Bank besar)
+    if(!j)j=JSON.parse(localStorage.getItem(key)||'null');
     if(j&&j.mk)Object.entries(j.mk).forEach(([k,M])=>{
       const m=mk.get(k)||{name:M.name,srcs:[],pos:{}};m.srcs.push(nm);
       Object.entries(M.pos||{}).forEach(([vk,P])=>{const T=m.pos[vk]||(m.pos[vk]={items:[]});T.items=T.items.concat(P.items||[]);});
