@@ -2483,9 +2483,37 @@ function requireLogin(){
       el.textContent=msg; el.style.display='block'; clearTimeout(el._t); el._t=setTimeout(()=>{el.style.display='none';},5000);
     }catch(e){}
   }
+  // Kompresi LZW (murni ASCII → kode < 0xD000, aman untuk localStorage): Bank ribuan trek jadi ±5x lebih kecil,
+  // supaya tidak mentok kuota penyimpanan browser (±5 juta karakter) yang membuat trek baru gagal tersimpan diam-diam.
+  const LIM=0xD000,PFX='LZ1:';
+  function lzc(t){const d=new Map();let n=128,w='';const o=[];
+    for(let i=0;i<t.length;i++){const c=t[i],wc=w+c;
+      if(wc.length===1||d.has(wc)){w=wc;continue;}
+      o.push(w.length===1?w.charCodeAt(0):d.get(w));
+      if(n<LIM)d.set(wc,n++);
+      w=c;}
+    if(w)o.push(w.length===1?w.charCodeAt(0):d.get(w));
+    let r='';for(let i=0;i<o.length;i+=8000)r+=String.fromCharCode.apply(null,o.slice(i,i+8000));
+    return r;}
+  function lzd(z){if(!z.length)return '';const d=[];let n=128;
+    const ch=c=>c<128?String.fromCharCode(c):d[c-128];
+    let w=ch(z.charCodeAt(0));const o=[w];
+    for(let i=1;i<z.length;i++){const c=z.charCodeAt(i);
+      let e=c<128?String.fromCharCode(c):(c-128<d.length?d[c-128]:(c===n?w+w[0]:null));
+      if(e===null)throw new Error('LZ rusak');
+      o.push(e);
+      if(n<LIM){d.push(w+e[0]);n++;}
+      w=e;}
+    return o.join('');}
+  const asciiJson=a=>JSON.stringify(a).replace(/[\u0080-\uffff]/g,c=>'\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4));
+  let _zRaw=null,_zTxt='[]';
   window.WBS_read=function(){
     if(isMem()&&window.WB_BANK){ try{ return JSON.stringify(WB_BANK.getSync('rumusKu')); }catch(e){ return '[]'; } }
-    try{ return localStorage.getItem(LOCAL)||'[]'; }catch(e){ return '[]'; }
+    try{ const raw=localStorage.getItem(LOCAL)||'[]';
+      if(raw.slice(0,4)!==PFX) return raw;                 // format lama (belum terkompresi) tetap terbaca
+      if(raw===_zRaw) return _zTxt;
+      const t=lzd(raw.slice(4));_zRaw=raw;_zTxt=t;return t;
+    }catch(e){ return '[]'; }
   };
   window.WBS_write=function(a){
     if(!Array.isArray(a)) return false;
@@ -2494,7 +2522,8 @@ function requireLogin(){
       if(lim&&a.length>lim){ a=a.slice(0,lim); warn('⚠️ Bank penuh — batas '+lim+' trek dari admin. Trek di atas batas tidak disimpan.'); }
       return WB_BANK.setSync(a,'rumusKu');
     }
-    try{ localStorage.setItem(LOCAL,JSON.stringify(a)); return true; }catch(e){ return false; }
+    try{ const raw=PFX+lzc(asciiJson(a)); localStorage.setItem(LOCAL,raw); _zRaw=null; return true; }
+    catch(e){ warn('⚠️ Penyimpanan HP penuh — trek baru TIDAK tersimpan. Hapus trek/riwayat lama dulu.'); return false; }
   };
 })();
 
@@ -3276,8 +3305,8 @@ const shbGet=()=>{try{let a=JSON.parse(WBS_read()||'[]');if(!Array.isArray(a))re
   const d=shbDedupe(a);if(d.length!==a.length){a=d;WBS_write(a);}
   return a;}catch(e){return [];}};
 const shbSet=a=>{let old=[];try{old=shbGet();}catch(_){}
-  WBS_write(a);
-  try{const nk=new Set(a.map(shKey));old.forEach(it=>{if(!nk.has(shKey(it)))kdEnd(it);});a.forEach(kdEnsure);}catch(_){}};   // catat riwayat kunci: masuk Bank = masa hidup baru, keluar = masa hidup ditutup
+  if(WBS_write(a)===false)return false;   // gagal simpan (penyimpanan penuh) → jangan catat riwayat kunci, beri tahu pemanggil
+  try{const nk=new Set(a.map(shKey));old.forEach(it=>{if(!nk.has(shKey(it)))kdEnd(it);});a.forEach(kdEnsure);}catch(_){}return true;};   // catat riwayat kunci: masuk Bank = masa hidup baru, keluar = masa hidup ditutup
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
 const shEsc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let _sigC='',_chM=new Map(),_evM=new Map(),kdVer=0;   // cache supaya centang/ganti pilihan tidak menghitung ulang ribuan trek
@@ -5186,7 +5215,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     btn.textContent='⏹ Stop scan otomatis';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
     // mistik di formulir dikosongkan sementara supaya pencarian bebas (bukan terkunci rumus yang terakhir dibuka)
     const mid=['rhM1','rhM2','rhM4'],keep=mid.map(id=>G(id)?G(id).value:'');mid.forEach(id=>{if(G(id))G(id).value='';});
-    const lines=[];let i=0,added=0,cancelled=false;log.innerHTML='';
+    const lines=[];let i=0,added=0,failed=0,cancelled=false;log.innerHTML='';
     try{
       for(const {m,k,r} of jobs){
         if(!rhFinding){cancelled=true;break;}
@@ -5200,7 +5229,8 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
         if(cfg.rep&&!res.cancelled)a=a.filter(x=>!(x.auto&&x.mkt===m&&x.vk===k&&(x.base||[]).length===res.N));
         const idx=new Map(a.map((x,i)=>[shKey(x),i]));let n=0;
         take.forEach(f=>{const it=shbMake(m,cfg.day,k,f.sp,f.base,res.L,res.P);it.auto=1;n+=shbPut(a,idx,it);});
-        shbSet(a);added+=n;
+        if(shbSet(a)===false){failed++;lines.push(`❌ ${esc(tag)}: ${take.length} trek TIDAK tersimpan — penyimpanan browser penuh`);if(res.cancelled){cancelled=true;break;}continue;}
+        added+=n;
         {const tgt=r.trek;
          lines.push(`${take.length>=tgt?'✅':'🟡'} ${esc(tag)}: ${take.length}/${tgt} trek${take.length<tgt?' (hanya segini yang ketemu)':''}`);}
         if(res.cancelled){cancelled=true;break;}
@@ -5211,8 +5241,8 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
       btn.textContent='▶ Jalankan sekarang';btn.style.background='';btn.style.borderColor='';btn.style.color='';
       try{shbRender();}catch(e){}
     }
-    if(!cancelled){try{localStorage.setItem(SIGKEY,sig());}catch(e){}}
-    prog.textContent=cancelled?'Scan otomatis dihentikan — hasil yang sudah selesai tetap masuk Bank.':`Selesai: ${jobs.length} pencarian, ${added} trek baru masuk Bank Harian.`;
+    if(!cancelled&&!failed){try{localStorage.setItem(SIGKEY,sig());}catch(e){}}
+    prog.textContent=cancelled?'Scan otomatis dihentikan — hasil yang sudah selesai tetap masuk Bank.':`Selesai: ${jobs.length} pencarian, ${added} trek baru masuk Bank Harian.${failed?' ⚠️ '+failed+' pencarian GAGAL disimpan: penyimpanan browser penuh.':''}`;
     log.innerHTML=lines.map(l=>`<div style="padding:1px 0">${l}</div>`).join('');
     refreshStatus();
   }
