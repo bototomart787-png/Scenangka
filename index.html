@@ -797,7 +797,7 @@ body.wb-alllk #wb-lockmsg{display:block}
 <div class="card k4" id="shBank">
   <h2>📅 Bank Harian <span id="shN" style="font-weight:400;font-size:13px"></span></h2>
   <div class="cm" style="font-size:12.5px;color:#777;margin-bottom:6px">Rumus yang disimpan di sini dihitung ulang dari result terbaru. Rumus patah (zonk &gt; batas patah) tidak ikut rekap. Simpan ke bank lewat tombol 💾 Simpan; hasil salin membawa link.</div>
-  <div class="row"><button id="shSave" class="pri">💾 Simpan rumus di atas</button><button id="shRefresh">↻ Hitung ulang</button><button id="shDelPatah">Hapus patah</button><button id="shDelAll">Kosongkan</button></div>
+  <div class="row"><button id="shSave" class="pri">💾 Simpan rumus di atas</button><button id="shRefresh">↻ Hitung ulang</button><button id="shDelPatah">Hapus patah</button><button id="shDelAll">Kosongkan</button><button id="shRestore">↩ Pulihkan cadangan</button></div>
   <div style="margin-top:8px;font-weight:700">Trek yang ikut rekap (centang):</div>
   <div class="row" style="align-items:center;gap:14px;flex-wrap:wrap;margin-top:2px">
     <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="shKjos" style="width:22px;height:22px"> 🟢 Trek Jos <span id="shNj" style="opacity:.7">(0)</span></label>
@@ -2519,7 +2519,7 @@ function requireLogin(){
 
 // ── Jembatan Bank Harian RUMUSKU ↔ penyimpanan: member = Worker (per akun, tidak bentrok), admin = HP sendiri ──
 (function(){
-  const LOCAL='wb_harian_bank_v1';
+  const LOCAL='wb_harian_bank_v2',LEGACY='wb_harian_bank_v1';   // v2 = format terkompresi. Tab LAMA yang masih terbuka hanya mengenal v1, jadi tidak bisa lagi menimpa Bank ini
   function isMem(){ try{ const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null'); return !!(u&&!u.isAdmin&&u.id); }catch(e){ return false; } }
   let _warn=0;
   function warn(msg){
@@ -2557,7 +2557,8 @@ function requireLogin(){
   let _zRaw=null,_zTxt='[]';
   window.WBS_read=function(){
     if(isMem()&&window.WB_BANK){ try{ return JSON.stringify(WB_BANK.getSync('rumusKu')); }catch(e){ return '[]'; } }
-    try{ const raw=localStorage.getItem(LOCAL)||'[]';
+    try{ let raw=localStorage.getItem(LOCAL);if(raw===null)raw=localStorage.getItem(LEGACY);   // pertama kali: ambil dari Bank lama (v1), tulis berikutnya masuk v2
+      raw=raw||'[]';
       if(raw.slice(0,4)!==PFX) return raw;                 // format lama (belum terkompresi) tetap terbaca
       if(raw===_zRaw) return _zTxt;
       const t=lzd(raw.slice(4));_zRaw=raw;_zTxt=t;return t;
@@ -3354,6 +3355,7 @@ const shbGet=()=>{try{let a=JSON.parse(WBS_read()||'[]');if(!Array.isArray(a))re
   const d=shbDedupe(a);if(d.length!==a.length){a=d;WBS_write(a);}
   return a;}catch(e){return [];}};
 const shbSet=a=>{let old=[];try{old=shbGet();}catch(_){}
+  if(old.length>=100&&a.length<old.length*0.5){try{localStorage.setItem('wb_harian_bank_bak',JSON.stringify(old));}catch(_){}}   // Bank menyusut drastis → simpan cadangan terakhir (tombol ↩ Pulihkan)
   if(WBS_write(a)===false)return false;   // gagal simpan (penyimpanan penuh) → jangan catat riwayat kunci, beri tahu pemanggil
   try{const nk=new Set(a.map(shKey));old.forEach(it=>{if(!nk.has(shKey(it)))kdEnd(it);});a.forEach(kdEnsure);}catch(_){}return true;};   // catat riwayat kunci: masuk Bank = masa hidup baru, keluar = masa hidup ditutup
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
@@ -3551,6 +3553,9 @@ function shbRender(){
     }
     if(t.id==='shRefresh'){shbRender();return;}
     if(t.id==='shDelPatah'){shbSet(shbGet().filter(it=>{const e=shEval(it);return !e||e.alive;}));shbRender();return;}
+    if(t.id==='shRestore'){let b=[];try{b=JSON.parse(localStorage.getItem('wb_harian_bank_bak')||'[]');}catch(_){}
+      if(!Array.isArray(b)||!b.length){alert('Belum ada cadangan Bank.');return;}
+      if(confirm('Pulihkan cadangan Bank ('+b.length+' rumus)? Bank sekarang ('+shbGet().length+' rumus) akan digantikan.')){shSel.clear();shbSet(b);shbRender();}return;}
     if(t.id==='shDelAll'){if(shbGet().length&&confirm('Kosongkan seluruh Bank Harian?')){shSel.clear();shbSet([]);shbRender();}return;}
     if(t.id==='shCopyRek'){
       const {out}=shbSummary(),txt=shbText(out),ta=$('shCopyBox');
