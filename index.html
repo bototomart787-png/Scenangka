@@ -980,14 +980,71 @@ body.wb-alllk #wb-lockmsg{display:block}
       const m=memo.get(k);if(m&&m.raw===v)return m.txt;
       try{const t=unesc(lzd(v.slice(4)));memo.set(k,{raw:v,txt:t});return t;}catch(e){return null;}
     };
+    const BIG=150000,pend=new Map(),jobs=new Map();   // nilai sangat besar: ditulis tertunda & dikompres bertahap (tidak membekukan layar)
+    function mkInc(v){
+      const t=esc(String(v)),d=new Map();let n=128,w='',i=0;const o=[];
+      return {
+        step(ms){const t0=performance.now();
+          while(i<t.length){
+            for(let q=0;q<4000&&i<t.length;q++,i++){const c=t[i],wc=w+c;
+              if(wc.length===1||d.has(wc)){w=wc;continue;}
+              o.push(w.length===1?w.charCodeAt(0):d.get(w));
+              if(n<LIM)d.set(wc,n++);
+              w=c;}
+            if(performance.now()-t0>ms)return false;}
+          return true;},
+        done(){if(w){o.push(w.length===1?w.charCodeAt(0):d.get(w));w='';}
+          let r='';for(let k=0;k<o.length;k+=8000)r+=String.fromCharCode.apply(null,o.slice(k,k+8000));
+          return P+r;}
+      };}
+    function persistNow(k){const v=pend.get(k);if(v===undefined)return;
+      let z=v;try{const c=P+lzc(esc(v));if(c.length<v.length)z=c;}catch(e){}
+      try{si.call(LS,k,z);}catch(e){try{console.warn('Penyimpanan penuh, gagal menulis',k);}catch(_){}}
+      if(pend.get(k)===v)pend.delete(k);jobs.delete(k);}
+    function persistLater(k){const old=jobs.get(k);if(old)clearTimeout(old.timer);
+      const job={timer:setTimeout(()=>{
+        const v=pend.get(k);if(v===undefined){jobs.delete(k);return;}
+        let inc;try{inc=mkInc(v);}catch(e){persistNow(k);return;}
+        (function tick(){if(jobs.get(k)!==job||pend.get(k)!==v)return;
+          try{if(!inc.step(10)){setTimeout(tick,6);return;}
+            const z=inc.done();try{si.call(LS,k,z.length<v.length?z:v);}catch(e){try{console.warn('Penyimpanan penuh, gagal menulis',k);}catch(_){}}
+            if(pend.get(k)===v)pend.delete(k);jobs.delete(k);
+          }catch(e){persistNow(k);}})();
+      },800)};jobs.set(k,job);}
+    function flushAll(){for(const k of [...pend.keys()]){const j=jobs.get(k);if(j)clearTimeout(j.timer);persistNow(k);}}
+    window.addEventListener('pagehide',flushAll);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushAll();});
+    const gi0=Storage.prototype.getItem;   // sudah dibungkus di atas: tambahkan lapisan "tertunda"
+    Storage.prototype.getItem=function(k){if(this===LS&&pend.has(k))return pend.get(k);return gi0.call(this,k);};
+    const ri=Storage.prototype.removeItem;
+    Storage.prototype.removeItem=function(k){if(this===LS){pend.delete(k);const j=jobs.get(k);if(j){clearTimeout(j.timer);jobs.delete(k);}memo.delete(k);}return ri.call(this,k);};
     Storage.prototype.setItem=function(k,v){
       if(this===LS){
         v=String(v);
+        if(v.length>BIG&&v.slice(0,4)!==P){pend.set(k,v);memo.delete(k);persistLater(k);return;}
+        if(pend.has(k)){pend.delete(k);const j=jobs.get(k);if(j){clearTimeout(j.timer);jobs.delete(k);}}
         if(v.length>MIN&&v.slice(0,4)!==P){try{const z=P+lzc(esc(v));if(z.length<v.length)v=z;}catch(e){}}
         memo.delete(k);
       }
       return si.call(this,k,v);
     };
+    window.__wbzEnc=v=>P+lzc(esc(String(v)));   // kompres sinkron (dipakai saat halaman ditutup)
+    window.__wbzInc=function(v){   // kompres bertahap: dikerjakan per irisan kecil supaya layar tidak beku
+      const t=esc(String(v)),d=new Map();let n=128,w='',i=0;const o=[];
+      return {
+        step(ms){const t0=performance.now();
+          while(i<t.length){
+            for(let q=0;q<4000&&i<t.length;q++,i++){const c=t[i],wc=w+c;
+              if(wc.length===1||d.has(wc)){w=wc;continue;}
+              o.push(w.length===1?w.charCodeAt(0):d.get(w));
+              if(n<LIM)d.set(wc,n++);
+              w=c;}
+            if(performance.now()-t0>ms)return false;}
+          return true;},
+        done(){if(w){o.push(w.length===1?w.charCodeAt(0):d.get(w));w='';}
+          let r='';for(let k=0;k<o.length;k+=8000)r+=String.fromCharCode.apply(null,o.slice(k,k+8000));
+          return P+r;}
+      };};
     window.__wbzStat=()=>{let raw=0;for(let i=0;i<LS.length;i++){const k=LS.key(i),v=gi.call(LS,k)||'';raw+=k.length+v.length;}return raw;};   // karakter yang benar-benar terpakai di kuota
     window.__wbzRaw=k=>gi.call(LS,k);
   }catch(e){}
@@ -2555,8 +2612,29 @@ function requireLogin(){
     return o.join('');}
   const asciiJson=a=>JSON.stringify(a).replace(/[\u0080-\uffff]/g,c=>'\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4));
   let _zRaw=null,_zTxt='[]';
+  // Penulisan Bank ke penyimpanan DITUNDA & dikompres bertahap di latar (Bank puluhan ribu trek memampatkan ±2 detik: dulu layar beku tiap pencarian).
+  // Bacaan selalu dari memori (terbaru). Dipaksa tulis saat scan selesai (WBS_idle) dan saat halaman ditutup/disembunyikan.
+  let _mem=null,_timer=0,_job=0,_ok=true,_dirty=false,_waiters=[];
+  const _si=Storage.prototype.setItem;
+  function _done(){const w=_waiters;_waiters=[];w.forEach(f=>f(_ok));}
+  function _start(){
+    _timer=0;const my=++_job,txt=_mem;if(txt===null){_done();return;}
+    let inc;try{inc=window.__wbzInc?window.__wbzInc(txt):null;}catch(e){inc=null;}
+    const fin=z=>{try{_si.call(localStorage,LOCAL,z);_ok=true;if(my===_job)_dirty=false;}
+      catch(e){_ok=false;warn('⚠️ Penyimpanan HP penuh — trek baru TIDAK tersimpan. Hapus trek/riwayat lama dulu.');}
+      if(my===_job)_done();};
+    if(!inc){fin(txt);return;}
+    (function tick(){if(my!==_job)return;
+      try{if(!inc.step(10)){setTimeout(tick,6);return;}fin(inc.done());}catch(e){fin(txt);} })();
+  }
+  function _flushSync(){if(!_dirty||_mem===null)return;if(_timer){clearTimeout(_timer);_timer=0;}
+    _job++;try{_si.call(localStorage,LOCAL,window.__wbzEnc?window.__wbzEnc(_mem):_mem);_ok=true;_dirty=false;}catch(e){_ok=false;}_done();}
+  window.WBS_idle=function(){return new Promise(res=>{if(!_dirty){res(_ok);return;}_waiters.push(res);if(_timer){clearTimeout(_timer);_start();}});};
+  window.addEventListener('pagehide',_flushSync);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushSync();});
   window.WBS_read=function(){
     if(isMem()&&window.WB_BANK){ try{ return JSON.stringify(WB_BANK.getSync('rumusKu')); }catch(e){ return '[]'; } }
+    if(_mem!==null) return _mem;
     try{ let raw=localStorage.getItem(LOCAL);if(raw===null)raw=localStorage.getItem(LEGACY);   // pertama kali: ambil dari Bank lama (v1), tulis berikutnya masuk v2
       raw=raw||'[]';
       if(raw.slice(0,4)!==PFX) return raw;                 // format lama (belum terkompresi) tetap terbaca
@@ -2571,8 +2649,8 @@ function requireLogin(){
       if(lim&&a.length>lim){ a=a.slice(0,lim); warn('⚠️ Bank penuh — batas '+lim+' trek dari admin. Trek di atas batas tidak disimpan.'); }
       return WB_BANK.setSync(a,'rumusKu');
     }
-    try{ localStorage.setItem(LOCAL,JSON.stringify(a)); _zRaw=null; return true; }   // dikompres otomatis oleh patch localStorage di atas
-    catch(e){ warn('⚠️ Penyimpanan HP penuh — trek baru TIDAK tersimpan. Hapus trek/riwayat lama dulu.'); return false; }
+    try{ _mem=JSON.stringify(a); _dirty=true; _job++; if(_timer)clearTimeout(_timer); _timer=setTimeout(_start,1500); return _ok; }
+    catch(e){ return false; }
   };
 })();
 
@@ -5305,7 +5383,8 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
       btn.textContent='▶ Jalankan sekarang';btn.style.background='';btn.style.borderColor='';btn.style.color='';
       try{shbRender();}catch(e){}
     }
-    if(!cancelled&&!failed){try{localStorage.setItem(SIGKEY,sig());}catch(e){}}
+    if(window.WBS_idle){const ok=await WBS_idle();if(ok===false){failed++;lines.push('❌ penyimpanan browser penuh: Bank terakhir TIDAK tersimpan');}}
+  if(!cancelled&&!failed){try{localStorage.setItem(SIGKEY,sig());}catch(e){}}
     prog.textContent=cancelled?'Scan otomatis dihentikan — hasil yang sudah selesai tetap masuk Bank.':`Selesai: ${jobs.length} pencarian, ${added} trek baru masuk Bank Harian.${failed?' ⚠️ '+failed+' pencarian GAGAL disimpan: penyimpanan browser penuh.':''}`;
     log.innerHTML=lines.map(l=>`<div style="padding:1px 0">${l}</div>`).join('');
     refreshStatus();
