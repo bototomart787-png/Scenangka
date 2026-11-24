@@ -2666,6 +2666,7 @@ function requireLogin(){
         }
       }
       _idb=db;_useIdb=true;if(typeof v==='string')_mem=v;
+      try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}   // cegah browser membuang Bank saat memori HP menipis
     }catch(e){}
     _loaded=true;
     try{if(typeof shbRender==='function')shbRender();}catch(e){}
@@ -3363,7 +3364,7 @@ function rhFeatSync(){   // Maks digit, dan Cari trek hanya ada di mode Otomatis
   const auto=$('rhMode').value==='auto';
   $('rhMaxWrap').style.display=auto?'':'none';
   $('rhFindOut').style.display=auto?'':'none';
-  const sv=$('shSave');if(sv){const ok=auto&&wbIsAdmin();sv.disabled=!ok;sv.style.opacity=ok?'':'.45';}
+  const sv=$('shSave');if(sv){const ok=auto&&wbCanSave();sv.disabled=!ok;sv.style.opacity=ok?'':'.45';}
 }
 function rhRun(){rhFeatSync();rhShow(rhCompute());}
 function rhStep(d){
@@ -3462,10 +3463,19 @@ function rhGabText(box){
 })();
 
 // ===== Hanya admin yang boleh simpan ke Bank =====
-function wbIsAdmin(){return true;   // simpan ke Bank Harian dibuka untuk semua pengguna
+function wbIsAdmin(){
+  try{if(typeof WB_ADMIN_CRED!=='undefined'&&WB_ADMIN_CRED&&WB_ADMIN_CRED.token)return true;}catch(e){}   // admin baru login (token dari server)
+  try{const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null');if(u&&(u.isAdmin===true||u.id==='ADMIN'))return true;}catch(e){}   // sesi admin tersimpan
   const chk=ls=>{try{for(let i=0;i<ls.length;i++){const k=ls.key(i);if(k&&k.indexOf('wb_logged_member__')===0){const o=JSON.parse(ls.getItem(k)||'null');if(o&&(o.isAdmin===true||o.id==='ADMIN'))return true;}}}catch(e){}return false;};
   try{if(chk(localStorage))return true;}catch(e){}
   try{if(window.parent&&window.parent!==window){if(window.parent.WB_IS_ADMIN===true||chk(window.parent.localStorage))return true;}}catch(e){}
+  return false;
+}
+// Boleh simpan ke Bank: admin (IndexedDB, tanpa batas) ATAU member yang sudah login dan fitur Bank-nya tidak dikunci admin (Worker milik member, batas dari admin)
+function wbCanSave(){
+  if(wbIsAdmin())return true;
+  try{const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null');
+    if(u&&u.id&&!u.isAdmin){const L=wbGetEffectiveLocked(wbCurrentMemberKey());return !(L.has('rh_all')||L.has('rh_bank'));}}catch(e){}
   return false;
 }
 // ===== Bank Harian (sendiri) + rekap untuk tab Bank/Prediksi =====
@@ -3572,6 +3582,7 @@ function shbPut(a,idx,it){
 }
 function shbDedupe(a){const out=[],idx=new Map();a.forEach(it=>shbPut(out,idx,it));return out;}
 function shbAdd(list){
+  if(!wbCanSave())return 0;   // admin, atau member login yang fiturnya tidak dikunci
   const a=shbGet(),idx=new Map(a.map((x,i)=>[shKey(x),i]));let n=0;
   list.forEach(it=>{n+=shbPut(a,idx,it);});
   shbSet(a);shbRender();return n;
@@ -3703,7 +3714,7 @@ function shbRender(){
       if(shRkClosed.has(key))shRkClosed.delete(key);else shRkClosed.add(key);shRkSave();shbRender();return;}
     if(t.dataset&&t.dataset.shdel){shSel.delete(t.dataset.shdel);shbSet(shbGet().filter(x=>x.id!==t.dataset.shdel));shbRender();return;}
     if(t.id==='shSave'){
-      if(!wbIsAdmin()){msg('🔒 Hanya admin');return;}
+      if(!wbCanSave()){msg('🔒 Fitur terkunci / belum login');return;}
       if($('rhMode').value!=='auto'){msg('Hanya mode Otomatis');return;}
       const c=rhCompute();if(!c.ok){msg('Rumus belum valid');return;}
       const n=shbAdd([shbMake($('market').value,$('rhDay').value,c.vk,c.spec,c.base,c.L,c.P)]);msg(n?'Tersimpan ✓':'Sudah ada di bank (dipakai yang terpanjang)');return;
@@ -3725,7 +3736,7 @@ function shbRender(){
   });
   $('rhFindOut').addEventListener('click',e=>{
     const t=e.target;if(t.id!=='rhGabBank')return;
-    if(!wbIsAdmin()){t.textContent='🔒 Hanya admin';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
+    if(!wbCanSave()){t.textContent='🔒 Terkunci';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
     if($('rhMode').value!=='auto'){t.textContent='Hanya mode Otomatis';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
     const box=$('rhFindOut'),F=box._found||[],ctx=box._ctx;
     const idx=[...box.querySelectorAll('input[data-ck]:checked')].map(c=>+c.dataset.ck);
@@ -4034,7 +4045,7 @@ function mlInit(){
   $('mlPickAll').onclick=()=>{$('mlOut').querySelectorAll('.mlb[data-bi]').forEach(el=>el.querySelectorAll('input[data-ck]').forEach((c,i)=>c.checked=i<5));};
   $('mlSaveBank').onclick=e=>{
     const t=e.currentTarget;
-    if(!wbIsAdmin()){t.textContent='🔒 Hanya admin';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
+    if(!wbCanSave()){t.textContent='🔒 Terkunci';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}
     if($('rhMode').value!=='auto'){t.textContent='Hanya mode Otomatis';setTimeout(()=>t.textContent='💾 Simpan dicentang ke Bank',1600);return;}let n=0,pil=0,full=0;const sv=[];
     $('mlOut').querySelectorAll('.mlb[data-bi]').forEach(el=>{
       const F=el._found||[],ctx=el._ctx,idx=[...el.querySelectorAll('input[data-ck]:checked')].map(c=>+c.dataset.ck);
@@ -5434,6 +5445,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 
   async function run(fromAuto){
     const prog=G('abProg'),log=G('abLog'),btn=G('abGo');
+    if(!wbCanSave()||(!wbIsAdmin()&&wbGetEffectiveLocked(wbCurrentMemberKey()).has('rh_auto'))){if(!fromAuto)prog.textContent='🔒 Fitur ini dikunci admin / belum login.';return;}
     if(window.WBS_isLoaded&&!WBS_isLoaded()){try{await window.WBS_ready;}catch(e){}}   // jangan mulai sebelum Bank selesai dimuat dari IndexedDB
     if(busy){rhFinding=false;return;}                                  // ketuk lagi = batal
     if(typeof DATA==='undefined'||!DATA.length){prog.textContent='Data belum termuat.';return;}
