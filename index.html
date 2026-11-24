@@ -946,6 +946,54 @@ body.wb-alllk #wb-lockmsg{display:block}
 </div>
 
 <script>
+/* Kompresi transparan localStorage: nilai > 1500 karakter disimpan terkompresi (LZW, prefix 'LZ2:') dan dibaca balik otomatis.
+   Semua data besar (Bank Harian, riwayat kunci, rekap, kuat) jadi ±5–15x lebih kecil → muat jauh lebih banyak sebelum kuota browser penuh. */
+(function(){
+  if(window.__wbz)return;window.__wbz=1;
+  const LIM=0xD000,P='LZ2:',MIN=1500,LS=window.localStorage;
+  function lzc(t){const d=new Map();let n=128,w='';const o=[];
+    for(let i=0;i<t.length;i++){const c=t[i],wc=w+c;
+      if(wc.length===1||d.has(wc)){w=wc;continue;}
+      o.push(w.length===1?w.charCodeAt(0):d.get(w));
+      if(n<LIM)d.set(wc,n++);
+      w=c;}
+    if(w)o.push(w.length===1?w.charCodeAt(0):d.get(w));
+    let r='';for(let i=0;i<o.length;i+=8000)r+=String.fromCharCode.apply(null,o.slice(i,i+8000));
+    return r;}
+  function lzd(z){if(!z.length)return '';const d=[];let n=128;
+    let w=z.charCodeAt(0)<128?String.fromCharCode(z.charCodeAt(0)):null;if(w===null)throw new Error('LZ rusak');
+    const o=[w];
+    for(let i=1;i<z.length;i++){const c=z.charCodeAt(i);
+      let e=c<128?String.fromCharCode(c):(c-128<d.length?d[c-128]:(c===n?w+w[0]:null));
+      if(e===null)throw new Error('LZ rusak');
+      o.push(e);
+      if(n<LIM){d.push(w+e[0]);n++;}
+      w=e;}
+    return o.join('');}
+  const esc=t=>t.replace(/[\\\u0080-\uffff]/g,c=>'\\'+('0000'+c.charCodeAt(0).toString(16)).slice(-4));
+  const unesc=t=>t.replace(/\\([0-9a-f]{4})/g,(m,h)=>String.fromCharCode(parseInt(h,16)));
+  try{
+    const gi=Storage.prototype.getItem,si=Storage.prototype.setItem,memo=new Map();
+    Storage.prototype.getItem=function(k){
+      const v=gi.call(this,k);
+      if(this!==LS||typeof v!=='string'||v.slice(0,4)!==P)return v;
+      const m=memo.get(k);if(m&&m.raw===v)return m.txt;
+      try{const t=unesc(lzd(v.slice(4)));memo.set(k,{raw:v,txt:t});return t;}catch(e){return null;}
+    };
+    Storage.prototype.setItem=function(k,v){
+      if(this===LS){
+        v=String(v);
+        if(v.length>MIN&&v.slice(0,4)!==P){try{const z=P+lzc(esc(v));if(z.length<v.length)v=z;}catch(e){}}
+        memo.delete(k);
+      }
+      return si.call(this,k,v);
+    };
+    window.__wbzStat=()=>{let raw=0;for(let i=0;i<LS.length;i++){const k=LS.key(i),v=gi.call(LS,k)||'';raw+=k.length+v.length;}return raw;};   // karakter yang benar-benar terpakai di kuota
+    window.__wbzRaw=k=>gi.call(LS,k);
+  }catch(e){}
+})();
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════
 // ADMIN SYSTEM — CONFIG (dari index.html, JSONBin)
 // ═══════════════════════════════════════════════════════════
@@ -2522,7 +2570,7 @@ function requireLogin(){
       if(lim&&a.length>lim){ a=a.slice(0,lim); warn('⚠️ Bank penuh — batas '+lim+' trek dari admin. Trek di atas batas tidak disimpan.'); }
       return WB_BANK.setSync(a,'rumusKu');
     }
-    try{ const raw=PFX+lzc(asciiJson(a)); localStorage.setItem(LOCAL,raw); _zRaw=null; return true; }
+    try{ localStorage.setItem(LOCAL,JSON.stringify(a)); _zRaw=null; return true; }   // dikompres otomatis oleh patch localStorage di atas
     catch(e){ warn('⚠️ Penyimpanan HP penuh — trek baru TIDAK tersimpan. Hapus trek/riwayat lama dulu.'); return false; }
   };
 })();
