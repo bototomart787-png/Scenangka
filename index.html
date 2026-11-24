@@ -2615,10 +2615,16 @@ function requireLogin(){
   // Penulisan Bank ke penyimpanan DITUNDA & dikompres bertahap di latar (Bank puluhan ribu trek memampatkan ±2 detik: dulu layar beku tiap pencarian).
   // Bacaan selalu dari memori (terbaru). Dipaksa tulis saat scan selesai (WBS_idle) dan saat halaman ditutup/disembunyikan.
   let _mem=null,_timer=0,_job=0,_ok=true,_dirty=false,_waiters=[];
+  let _idb=null,_useIdb=false,_loaded=false;
   const _si=Storage.prototype.setItem;
+  // ── IndexedDB: tempat simpan Bank utama (hampir tanpa batas kuota; 100 ribu+ trek muat). localStorage hanya cadangan jalur lama ──
+  const idbOpen=()=>new Promise(res=>{try{const rq=indexedDB.open('wb_bank_db',1);rq.onupgradeneeded=()=>{try{rq.result.createObjectStore('kv');}catch(e){}};rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(null);rq.onblocked=()=>res(null);}catch(e){res(null);}});
+  const idbGet=(db,k)=>new Promise(res=>{try{const rq=db.transaction('kv','readonly').objectStore('kv').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(undefined);}catch(e){res(undefined);}});
+  const idbPut=(db,k,v)=>new Promise(res=>{try{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);tx.onabort=()=>res(false);}catch(e){res(false);}});
   function _done(){const w=_waiters;_waiters=[];w.forEach(f=>f(_ok));}
   function _start(){
     _timer=0;const my=++_job,txt=_mem;if(txt===null){_done();return;}
+    if(_useIdb){idbPut(_idb,'bank',txt).then(ok=>{_ok=ok;if(!ok)warn('⚠️ Gagal menyimpan Bank ke penyimpanan HP — trek baru TIDAK tersimpan.');if(my===_job){if(ok)_dirty=false;_done();}});return;}
     let inc;try{inc=window.__wbzInc?window.__wbzInc(txt):null;}catch(e){inc=null;}
     const fin=z=>{try{_si.call(localStorage,LOCAL,z);_ok=true;if(my===_job)_dirty=false;}
       catch(e){_ok=false;warn('⚠️ Penyimpanan HP penuh — trek baru TIDAK tersimpan. Hapus trek/riwayat lama dulu.');}
@@ -2628,6 +2634,7 @@ function requireLogin(){
       try{if(!inc.step(10)){setTimeout(tick,6);return;}fin(inc.done());}catch(e){fin(txt);} })();
   }
   function _flushSync(){if(!_dirty||_mem===null)return;if(_timer){clearTimeout(_timer);_timer=0;}
+    if(_useIdb){_start();return;}   // IndexedDB tidak bisa sinkron: mulai tulis sekarang juga (jangan tunggu jeda)
     _job++;try{_si.call(localStorage,LOCAL,window.__wbzEnc?window.__wbzEnc(_mem):_mem);_ok=true;_dirty=false;}catch(e){_ok=false;}_done();}
   window.WBS_idle=function(){return new Promise(res=>{if(!_dirty){res(_ok);return;}_waiters.push(res);if(_timer){clearTimeout(_timer);_start();}});};
   window.addEventListener('pagehide',_flushSync);
@@ -2635,13 +2642,36 @@ function requireLogin(){
   window.WBS_read=function(){
     if(isMem()&&window.WB_BANK){ try{ return JSON.stringify(WB_BANK.getSync('rumusKu')); }catch(e){ return '[]'; } }
     if(_mem!==null) return _mem;
-    try{ let raw=localStorage.getItem(LOCAL);if(raw===null)raw=localStorage.getItem(LEGACY);   // pertama kali: ambil dari Bank lama (v1), tulis berikutnya masuk v2
+    return readLocalText();
+  };
+  function readLocalText(){
+    try{ let raw=localStorage.getItem(LOCAL);if(raw===null)raw=localStorage.getItem(LEGACY);   // Bank jalur lama (v2 terkompresi / v1)
       raw=raw||'[]';
       if(raw.slice(0,4)!==PFX) return raw;                 // format lama (belum terkompresi) tetap terbaca
       if(raw===_zRaw) return _zTxt;
       const t=lzd(raw.slice(4));_zRaw=raw;_zTxt=t;return t;
     }catch(e){ return '[]'; }
-  };
+  }
+  window.WBS_isLoaded=()=>_loaded;
+  window.WBS_ready=(async()=>{   // muat Bank dari IndexedDB; pertama kali: pindahkan dari localStorage lalu bebaskan kuotanya
+    try{
+      if(!window.indexedDB||isMem()){_loaded=true;return;}
+      const db=await idbOpen();if(!db){_loaded=true;return;}
+      let v=await idbGet(db,'bank');
+      if(typeof v!=='string'){
+        let raw=null;try{raw=readLocalText();}catch(e){}
+        if(raw&&raw!=='[]'){
+          if(await idbPut(db,'bank',raw)){const chk=await idbGet(db,'bank');
+            if(typeof chk==='string'&&chk.length===raw.length){v=raw;try{localStorage.removeItem(LOCAL);localStorage.removeItem(LEGACY);}catch(e){}}}   // hapus salinan lama HANYA setelah IndexedDB terbukti menyimpan utuh
+        }
+      }
+      _idb=db;_useIdb=true;if(typeof v==='string')_mem=v;
+    }catch(e){}
+    _loaded=true;
+    try{if(typeof shbRender==='function')shbRender();}catch(e){}
+  })();
+  window.WBS_backup=function(txt){try{if(_useIdb){idbPut(_idb,'bank_bak',txt);return;}localStorage.setItem('wb_harian_bank_bak',txt);}catch(e){}};
+  window.WBS_getBackup=async function(){try{if(_useIdb){const v=await idbGet(_idb,'bank_bak');if(typeof v==='string')return v;}return localStorage.getItem('wb_harian_bank_bak');}catch(e){return null;}};
   window.WBS_write=function(a){
     if(!Array.isArray(a)) return false;
     if(isMem()&&window.WB_BANK){
@@ -2649,6 +2679,7 @@ function requireLogin(){
       if(lim&&a.length>lim){ a=a.slice(0,lim); warn('⚠️ Bank penuh — batas '+lim+' trek dari admin. Trek di atas batas tidak disimpan.'); }
       return WB_BANK.setSync(a,'rumusKu');
     }
+    if(!_loaded&&window.indexedDB){warn('⏳ Bank masih dimuat — coba lagi sebentar.');return false;}
     try{ _mem=JSON.stringify(a); _dirty=true; _job++; if(_timer)clearTimeout(_timer); _timer=setTimeout(_start,1500); return _ok; }
     catch(e){ return false; }
   };
@@ -3440,15 +3471,17 @@ function wbIsAdmin(){return true;   // simpan ke Bank Harian dibuka untuk semua 
 // ===== Bank Harian (sendiri) + rekap untuk tab Bank/Prediksi =====
 const SHB_KEY='wb_harian_bank_v1',SHR_KEY='wb_harian_rekap_v1';
 const SH_NAME={};Object.keys(VARS).forEach(k=>{SH_NAME[k]=VARS[k].name;});
-const shbGet=()=>{try{let a=JSON.parse(WBS_read()||'[]');if(!Array.isArray(a))return [];
+let _pgTxt=null,_pgArr=null;   // hasil parse Bank dipakai ulang selama teksnya sama (Bank 100 ribu trek: parse ±0,2–1 detik tiap panggilan)
+const shbGet=()=>{try{const t0=WBS_read()||'[]';if(t0===_pgTxt&&_pgArr)return _pgArr.slice();let a=JSON.parse(t0);if(!Array.isArray(a))return [];
   if(a.some(x=>x&&x.vk==='ke')){   // migrasi: 'kepala ekor' sama dengan Ai belakang -> gabung ke ai2db, buang yang dobel
     const have=new Set(),out=[];a.forEach(x=>{if(!x)return;if(x.vk==='ke')x.vk='ai2db';const k=[x.mkt,x.vk,JSON.stringify(x.spec),(x.base||[]).join(','),x.day||0,x.L,x.P].join('|');if(have.has(k))return;have.add(k);out.push(x);});
     a=out;WBS_write(a);}
   a=a.filter(x=>x&&VARS[x.vk]);
   const d=shbDedupe(a);if(d.length!==a.length){a=d;WBS_write(a);}
-  return a;}catch(e){return [];}};
+  _pgTxt=WBS_read()||'[]';_pgArr=a;
+  return a.slice();}catch(e){return [];}};
 const shbSet=a=>{let old=[];try{old=shbGet();}catch(_){}
-  if(old.length>=100&&a.length<old.length*0.5){try{localStorage.setItem('wb_harian_bank_bak',JSON.stringify(old));}catch(_){}}   // Bank menyusut drastis → simpan cadangan terakhir (tombol ↩ Pulihkan)
+  if(old.length>=100&&a.length<old.length*0.5){try{WBS_backup(WBS_read()||JSON.stringify(old));}catch(_){}}   // Bank menyusut drastis → simpan cadangan terakhir (tombol ↩ Pulihkan)
   if(WBS_write(a)===false)return false;   // gagal simpan (penyimpanan penuh) → jangan catat riwayat kunci, beri tahu pemanggil
   try{const nk=new Set(a.map(shKey));old.forEach(it=>{if(!nk.has(shKey(it)))kdEnd(it);});a.forEach(kdEnsure);}catch(_){}return true;};   // catat riwayat kunci: masuk Bank = masa hidup baru, keluar = masa hidup ditutup
 const shF=(x,mod,V)=>mod===2?m2(x,V):mod===12?String(x).padStart(2,'0'):String(x);
@@ -3590,7 +3623,7 @@ function shRkSave(){try{localStorage.setItem('wb_shrk_closed',JSON.stringify([..
 function kdRender(){const box=$('shKDList');if(!box)return;const K=kdLoad(),ks=Object.keys(K).sort((a,b)=>(K[b].last||0)-(K[a].last||0));
   const nn=$('shKDn');if(nn)nn.textContent='('+ks.length+')';if(!$('shKD')||!$('shKD').open)return;
   box.innerHTML=ks.slice(0,60).map(k=>{const r=K[k];return `<div style="border-top:1px solid #ddd;padding:5px 0;font-size:12.5px"><b>${shEsc(r.nm)}</b> <span style="color:#777">· ${shEsc(r.mkt)}</span><br>${r.curStart?'📌 sedang di Bank':'🗑 sudah keluar dari Bank'} · ${r.n}× masuk Bank · tahan ${r.tot} putaran (masa hidup lama) · patah ${r.brk}×</div>`;}).join('')||'<div style="color:#777">Belum ada riwayat.</div>';}
-function shbRender(){
+function shbRender0(){
   const {out,list}=shbSummary();
   try{localStorage.setItem(SHR_KEY,JSON.stringify(out));}catch(e){}
   try{if(typeof bkSumRefresh==='function')bkSumRefresh();}catch(e){}   // daftar trek yang ikut rekap ikut diperbarui begitu isi Bank berubah
@@ -3624,6 +3657,33 @@ function shbRender(){
   el.innerHTML=list.length?shGroups(list).map(g=>shGroupHtml(g,shRow)).join(''):'<div style="color:#777;padding:6px 0">Bank Harian masih kosong. Simpan rumus dari hasil Cari trek (centang → 💾) atau tombol Simpan di atas.</div>';
 }
 
+// ── Hitung Bank besar BERTAHAP di latar (irisan ±12 ms) supaya layar tetap bisa disentuh/digeser; rekap digambar sekali setelah selesai ──
+let _shPreBusy=false,_shPreAgain=false;
+const _shbSummaryOrig=shbSummary;
+shbSummary=function(){   // selama penghitungan bertahap: pakai ringkasan terakhir (jangan memaksa hitung ulang serentak)
+  if(_shPreBusy)return _shbCV||{out:{ts:Date.now(),mk:{}},list:[]};
+  return _shbSummaryOrig();};
+function shbRender(){
+  let need=0;
+  try{memoReset();const a=shbGet();for(const it of a){if(!_evM.has(it.id+'|'+it.L+'|'+it.P+'|'+kdVer)){if(++need>600)break;}}}catch(_){}
+  if(need<=600)return shbRender0();
+  if(_shPreBusy){_shPreAgain=true;return;}
+  _shPreBusy=true;
+  const a=shbGet(),n=a.length;let i=0,phase=0;
+  const lab=$('shN');
+  (function step(){
+    const t0=performance.now();
+    try{
+      while(performance.now()-t0<12){
+        if(phase===0){if(i>=n){phase=1;i=0;continue;}try{kdEnsure(a[i]);}catch(_){}i++;}   // tahap 1: catat kunci (mengubah kdVer, harus selesai dulu)
+        else{if(i>=n)break;try{shEval(a[i]);}catch(_){}i++;}                                  // tahap 2: hitung tiap trek
+      }
+    }catch(_){}
+    if(phase===1&&i>=n){_shPreBusy=false;const again=_shPreAgain;_shPreAgain=false;try{shbRender0();}catch(e){}if(again)setTimeout(shbRender,50);return;}
+    if(lab)lab.textContent=`(menghitung ${phase===0?'kunci':'trek'} ${i}/${n}…)`;
+    setTimeout(step,6);
+  })();
+}
 (function(){   // pilihan kategori trek yang ikut rekap
   const ids=[['jos','shKjos'],['rawan','shKrawan'],['bahaya','shKbhy']],mn=$('shKuatMin');if(!mn||!ids.every(x=>$(x[1])))return;
   const c=shKuatCfg();ids.forEach(([k,id])=>{$(id).checked=c[k];});mn.value=c.min;
@@ -3637,6 +3697,7 @@ function shbRender(){
   const msg=t=>{const b=$('shSave');if(b){const o=b.textContent;b.textContent=t;setTimeout(()=>b.textContent='💾 Simpan rumus di atas',1600);}};
   $('shBank').addEventListener('click',async e=>{
     const t=e.target;
+    {const mo=t.closest&&t.closest('[data-shmore]');if(mo){e.preventDefault();const kk=mo.getAttribute('data-shmore');shRowCap.set(kk,(shRowCap.get(kk)||150)+300);shbRender();return;}}
     const rkh=t.closest&&t.closest('[data-rkall],[data-rkmk]');
     if(rkh){const key=rkh.hasAttribute('data-rkall')?'all':'mk:'+rkh.getAttribute('data-rkmk');
       if(shRkClosed.has(key))shRkClosed.delete(key);else shRkClosed.add(key);shRkSave();shbRender();return;}
@@ -3649,7 +3710,7 @@ function shbRender(){
     }
     if(t.id==='shRefresh'){shbRender();return;}
     if(t.id==='shDelPatah'){shbSet(shbGet().filter(it=>{const e=shEval(it);return !e||e.alive;}));shbRender();return;}
-    if(t.id==='shRestore'){let b=[];try{b=JSON.parse(localStorage.getItem('wb_harian_bank_bak')||'[]');}catch(_){}
+    if(t.id==='shRestore'){let b=[];try{b=JSON.parse((await WBS_getBackup())||'[]');}catch(_){}
       if(!Array.isArray(b)||!b.length){alert('Belum ada cadangan Bank.');return;}
       if(confirm('Pulihkan cadangan Bank ('+b.length+' rumus)? Bank sekarang ('+shbGet().length+' rumus) akan digantikan.')){shSel.clear();shbSet(b);shbRender();}return;}
     if(t.id==='shDelAll'){if(shbGet().length&&confirm('Kosongkan seluruh Bank Harian?')){shSel.clear();shbSet([]);shbRender();}return;}
@@ -3798,6 +3859,13 @@ function trkGrouped(items,rowFn){   // trek di Bank dikelompokkan per jenis + di
     return `<details data-tk="${key}" ${(trkOpen.has(key)||m.get(k).some(x=>shOpen.has(x.it.id)))?'open':''} style="margin:8px 0 2px"><summary style="cursor:pointer;font-weight:700;color:${c}">● ${k} <span style="font-size:12px;font-weight:400;color:#777">· ${off?'off':'on'} · ${m.get(k).length}</span></summary>`
      +`<div style="border-left:4px solid ${c};padding-left:6px">${trkByPos(m.get(k),k,c,rowFn)}</div></details>`;}).join('');
 }
+const shRowCap=new Map();   // batas baris yang digambar per pasaran (14 ribu baris = 170 ribu elemen: layar HP berhenti lama)
+function shTopItems(items,cap){   // tampilkan yang terkuat dulu: aktif, lalu trek beruntun & riwayat terpanjang
+  if(items.length<=cap)return items;
+  const sc=x=>x.e&&x.e.alive?1e6+(x.e.streak||0)*100+Math.min(99,x.e.rounds||0):-1;
+  const top=items.map((x,i)=>[sc(x),i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]).slice(0,cap).map(a=>items[a[1]]);
+  const have=new Set(top.map(x=>x.it.id));items.forEach(x=>{if(shOpen.has(x.it.id)&&!have.has(x.it.id))top.push(x);});   // rumus yang sedang dibuka detailnya tetap tampil
+  return top;}
 function shGroupHtml(g,rowFn){
   if(!shGrpSeen.has(g.mkt)){shGrpSeen.add(g.mkt);shGrpClosed.add(g.mkt);}
   const alive=g.items.filter(x=>x.e&&x.e.alive).length,closed=shGrpClosed.has(g.mkt)&&!g.items.some(x=>shOpen.has(x.it.id)),k=shEnc(g.mkt);   // rumus yang sedang dibuka detailnya tidak ikut tersembunyi
@@ -3805,7 +3873,8 @@ function shGroupHtml(g,rowFn){
    +`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 0">`
    +`<a href="#" data-shgrp="${k}" style="flex:1 1 140px;text-decoration:none;color:inherit"><b>📍 ${shEsc(g.mkt)}</b> <span style="color:#777;font-size:12.5px">· ${g.items.length} rumus · ${alive} aktif</span> <span>${closed?'▼':'▲'}</span></a>`
    +`<button data-shgpick="${k}" style="padding:4px 10px">Pilih aktif</button></div>`
-   +(closed?'':trkGrouped(g.items,rowFn))+`</div>`;
+   +(closed?'':(()=>{const cap=shRowCap.get(k)||150,shown=shTopItems(g.items,cap);
+       return trkGrouped(shown,rowFn)+(g.items.length>shown.length?`<div style="margin:8px 0"><button data-shmore="${k}" style="padding:8px 14px;border-radius:8px">⬇ Tampilkan lebih banyak (${g.items.length-shown.length} rumus tersembunyi, yang terkuat tampil dulu)</button></div>`:'');})())+`</div>`;
 }
 const shHash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return (h>>>0).toString(36);};
 async function shCopyText(txt,btn,label,ta){
@@ -5365,6 +5434,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 
   async function run(fromAuto){
     const prog=G('abProg'),log=G('abLog'),btn=G('abGo');
+    if(window.WBS_isLoaded&&!WBS_isLoaded()){try{await window.WBS_ready;}catch(e){}}   // jangan mulai sebelum Bank selesai dimuat dari IndexedDB
     if(busy){rhFinding=false;return;}                                  // ketuk lagi = batal
     if(typeof DATA==='undefined'||!DATA.length){prog.textContent='Data belum termuat.';return;}
     const ms=cfg.mkts.filter(m=>markets().includes(m)),jobs=buildJobs(ms);
