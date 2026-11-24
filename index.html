@@ -3157,7 +3157,8 @@ async function rhSearch(mkt,vk,onProg){
   try{
   while(!nx.done&&rhFinding&&!stopHit){
     const t0=performance.now();
-    while(!nx.done&&!stopHit&&performance.now()-t0<40){
+    while(!nx.done&&!stopHit&&performance.now()-t0<16){
+      if((done&255)===255&&navigator.scheduling&&navigator.scheduling.isInputPending&&navigator.scheduling.isInputPending())break;   // ada sentuhan/geser → serahkan layar dulu
       const [a,b,op,m1,m2,f]=nx.value;done++;curA=a;
       const A=tokA[keys[a]][m1];
       if(b<0){const M=f?MOD[MB[f]]:null;for(let q=0;q<=LL;q++)v[q]=M?M[A[q]]:A[q];}
@@ -3183,7 +3184,7 @@ async function rhSearch(mkt,vk,onProg){
     const el=(performance.now()-tStart)/1000;let eta=done?Math.round(el*(total-done)/done):0;
     if(STOPE&&count>0&&count<STOPE){const e2=Math.round(el*(STOPE-count)/count);if(e2<eta)eta=e2;}   // berhenti otomatis di target trek → sisa waktu dihitung dari laju temuan, bukan dari seluruh ruang pencarian
     if(onProg)onProg({pct:Math.round(done*100/total),count,max:STOPE,eta,gi:curA+1,gn:keys.length,gk:keys[curA]});
-    await new Promise(r=>setTimeout(r));
+    await new Promise(r=>setTimeout(r,6));   // jeda singkat supaya layar sempat menanggapi sentuhan
   }
   }finally{rhLoop=false;}
   const cancelled=!nx.done&&!stopHit;
@@ -4128,6 +4129,12 @@ function r4trkList(x,g){
   return list;
 }
 const escT=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const R4CAP={};   // batas chip yang digambar per panel (ribuan chip membuat layar HP macet) — tombol "Tampilkan lebih banyak" menambah
+function r4rowsCap(k,keys,byD,chipFn){let bud=R4CAP[k]||150,hid=0;
+  const html=keys.map(z=>{const arr=byD.get(z),show=arr.slice(0,Math.max(0,bud));bud-=show.length;hid+=arr.length-show.length;
+    if(!show.length)return '';
+    return `<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${arr.length} trek</span></div>`+show.map(chipFn).join('');}).join('');
+  return html+(hid?`<div style="margin:8px 0"><button data-r4more="${k}" style="padding:6px 12px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:13px">⬇ Tampilkan lebih banyak (${hid} trek tersembunyi)</button></div>`:'');}
 const r4srt=(a,b)=>b.length-a.length||(a<b?-1:a>b?1:0);   // digit terbanyak di atas, paling sedikit di bawah; sama panjang urut angka
 function r4cbPanel(vk,label,hostId,x){
   const host=$(hostId);if(!host)return;
@@ -4141,7 +4148,7 @@ function r4cbPanel(vk,label,hostId,x){
   const chip=(r,act)=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px;${act==='inc'?'opacity:.6;text-decoration:line-through':''}">${r.s.join('')}<button data-r4tkx="CB" data-key="${encodeURIComponent(r.key)}" data-act="${act}" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none;font-weight:800">${act==='inc'?'↺':'✕'}</button></span>`;
   const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
   const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(b-a));
-  const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`+byD.get(z).map(r=>chip(r,'ex')).join('')).join('');
+  const rows=r4rowsCap(vk,keys,byD,r=>chip(r,'ex'));
   host.innerHTML=`<details data-r4tkd="${vk}" ${R4TKOPEN.has(vk)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek ${label} yang ikut rekap (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
     +(on.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button data-r4cp="rank" data-pos="${vk}" style="${bs}">📋 Salin peringkat</button><button data-r4cp="trk" data-pos="${vk}" style="${bs}">📋 Salin semua trek</button></div>
       <div style="font-weight:700;margin:4px 0">Peringkat digit <span style="font-weight:400;font-size:12px;color:var(--mut)">(terbanyak di atas, jumlah trek yang memuat digit itu)</span></div>
@@ -4149,7 +4156,7 @@ function r4cbPanel(vk,label,hostId,x){
       <textarea readonly rows="1" data-r4cpbox="rank" style="position:absolute;left:-9999px;top:0">${escT(rankTxt)}</textarea><textarea readonly rows="1" data-r4cpbox="trk" style="position:absolute;left:-9999px;top:0">${escT(trkTxt)}</textarea>
       <div style="font-weight:700;margin:10px 0 2px">Semua trek <span style="font-weight:400;font-size:12px;color:var(--mut)">(✕ = keluarkan, Bank tidak terhapus)</span></div>
       <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Semua trek ${label} sudah dikeluarkan.</div>`)
-    +(ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="CB" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`+ex.map(r=>chip(r,'inc')).join(''):'')+`</details>`;
+    +(ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="CB" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`+ex.slice(0,200).map(r=>chip(r,'inc')).join(''):'')+`</details>`;
 }
 function r4panelsCB(){   // panel trek di kotak CB 4D dan AI/CT 3D: peringkat digit, salin, ✕ keluarkan (sama seperti panel 2D)
   const x=R4X;if(!x)return;
@@ -4168,10 +4175,10 @@ function r4trkRender(k){
   const bs='padding:2px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12.5px';
   const byD=new Map();on.forEach(r=>{const z=r.d===undefined?'?':r.d;if(!byD.has(z))byD.set(z,[]);byD.get(z).push(r);});
   const keys=[...byD.keys()].sort((a,b)=>((a==='?')-(b==='?'))||(b-a));
-  const rows=keys.map(z=>`<div style="margin:6px 0 2px;font-weight:700;font-size:12.5px">${z==='?'?'digit ?':z+' digit'} <span style="font-weight:400;color:var(--mut)">· ${byD.get(z).length} trek</span></div>`
-    +byD.get(z).map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;font-weight:800">✕</button></span>`).join('')).join('');
+  const chipX=r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;letter-spacing:1px">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="ex" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;font-weight:800">✕</button></span>`;
+  const rows=r4rowsCap(k,keys,byD,chipX);
   const exH=ex.length?`<div style="margin-top:8px;font-size:12px;color:var(--mut)">Dikeluarkan (${ex.length}) <button data-r4tkall="${k}" style="${bs};margin-left:6px">↺ kembalikan semua</button></div>`
-    +ex.map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;opacity:.6;text-decoration:line-through">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="inc" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none">↺</button></span>`).join(''):'';
+    +ex.slice(0,200).map(r=>`<span title="${escT(r.c||'')}" style="display:inline-flex;align-items:center;margin:2px 6px 2px 0;padding:2px 6px 2px 8px;border-radius:8px;border:1px solid var(--bd);font-size:12.5px;opacity:.6;text-decoration:line-through">${r.s.join('')}<button data-r4tkx="${k}" data-key="${encodeURIComponent(r.key)}" data-act="inc" style="margin-left:6px;padding:0 6px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit;text-decoration:none">↺</button></span>`).join(''):'';
   el.innerHTML=`<details data-r4tkd="${k}" ${R4TKOPEN.has(k)?'open':''} style="margin:4px 0 8px"><summary style="cursor:pointer;color:var(--ac);font-weight:700">🔎 Trek AI / CT yang ikut rekap ${k} (${on.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>`
     +(on.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button data-r4cp="rank" data-pos="${k}" style="${bs}">📋 Salin peringkat</button><button data-r4cp="trk" data-pos="${k}" style="${bs}">📋 Salin semua trek</button></div>
       <div style="font-weight:700;margin:4px 0">Peringkat digit <span style="font-weight:400;font-size:12px;color:var(--mut)">(terbanyak di atas, jumlah trek yang memuat digit itu)</span></div>
@@ -4181,6 +4188,8 @@ function r4trkRender(k){
       <div style="max-height:320px;overflow:auto">${rows}</div>`:`<div class="hint" style="padding:6px 0">Belum ada trek AI / CT / CB untuk posisi ${k} di Bank.</div>`)
     +(dg.length?`<div style="font-size:12px;color:var(--mut);margin-top:8px">${dg.length} trek tidak ikut karena Digit ${escT($('r4d'+k).value)}.</div>`:'')+exH+`</details>`;
 }
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-r4more]');if(!b)return;const k=b.dataset.r4more;R4CAP[k]=(R4CAP[k]||150)+300;
+  try{if(k==='cb'||k==='ai3d')r4panelsCB();else r4trkRender(k);}catch(_){}});
 if(!document.getElementById('r4kl')){const dl=document.createElement('datalist');dl.id='r4kl';dl.innerHTML=['2','3','4','5','6','7','8','9','10','3-10','1-10'].map(v=>'<option value="'+v+'">').join('');document.body.appendChild(dl);}
 $('r4Pos').innerHTML=R4P.map(k=>`<div class="r4box"><div class="ph"><span>2D ${k} · <span id="r4n${k}">0</span> LN</span></div><div class="r4row"><b>Patah</b><input id="r4p${k}" data-r4p="${k}" placeholder="mis. 6 atau 1-13 (kosong = Angka Jadi)"></div><div class="r4row"><b>Top</b><input id="r4t${k}" data-r4p="${k}" inputmode="numeric" placeholder="batasi N angka teratas, mis. 10 (kosong = semua)"></div><div class="r4row"><b>Rengking</b><input id="r4k${k}" data-r4p="${k}" list="r4kl" inputmode="text" autocomplete="off" placeholder="off · 5 / 3-10" style="flex:0 0 104px"><input id="r4km${k}" data-r4p="${k}" inputmode="numeric" placeholder="manual, mis. 816934"></div><div class="r4row"><b>CT</b><input id="r4c${k}" data-r4p="${k}" inputmode="numeric" autocomplete="off" placeholder="mis. 56 (kosong = off)"><select id="r4cm${k}" data-r4p="${k}" style="flex:0 0 112px"><option value="any">salah satu</option><option value="all">semua</option></select></div><div class="hint" id="r4cn${k}" style="padding-top:0"></div><div class="r4row"><b>Digit</b><input id="r4d${k}" data-r4d="${k}" inputmode="text" value="1-9" placeholder="trek berapa digit, mis. 1-9 atau 4-7"></div><div class="hint" id="r4a${k}">Belum ada rekap 2D untuk ${k}.</div><div id="r4tk${k}" style="padding:2px 0 8px"></div><textarea id="r4${k}" rows="2" data-r4="${k}" placeholder="LN 2D ${k} (terisi otomatis, bisa diedit)"></textarea><div class="hint" style="padding-top:6px;color:#ff8d84"><b>OFF 2D ${k}</b> — digit yang mati total di posisi ${k} · <span id="r4no${k}">0</span> digit</div><textarea id="r4o${k}" rows="1" data-r4x="1" data-r4p="${k}" placeholder="OFF digit ${k}, mis. 12345678"></textarea><div class="hint" id="r4ok${k}" style="padding-top:6px"></div></div>`).join('');
 function r4parse(t){
