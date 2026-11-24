@@ -5032,6 +5032,8 @@ if(G('market'))G('market').addEventListener('change',()=>{userPicked=false;autoR
 $('tabs').addEventListener('click',e=>{if(!e.target.closest('button[data-n]'))return;
   const g=$('bkGrp');if(N===3)g.value='3D';else if(N===4)g.value='4D';else if(g.value==='3D'||g.value==='4D')g.value='KE';
   autoRun(false);bkSumRefresh();});
+// buka langsung di 4D: rekap 4D sudah membawa 2D depan/tengah/belakang + 3D, tinggal pilih Kelompok sesuai kebutuhan
+try{const g=$('bkGrp');if(g&&N!==4){g.value='4D';g.onchange();}}catch(_){}
 bkFill();autoRun(false);bkSumRefresh();
 
 })();
