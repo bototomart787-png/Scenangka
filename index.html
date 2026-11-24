@@ -2667,7 +2667,10 @@ m8:[8,7,6,5,9,3,2,1,0,4], m9:[9,8,7,6,5,4,3,2,1,0], m10:[4,2,1,8,0,6,5,9,3,7], m
 m12:[2,7,0,8,6,9,4,1,3,5], m13:[3,9,7,0,6,8,4,2,5,1], m14:[6,5,4,7,2,1,0,3,9,8], m15:[5,6,4,9,2,0,1,8,7,3],
 m16:[3,8,7,0,9,6,5,2,1,4], m17:[9,4,8,6,1,7,3,5,2,0], m18:[8,9,7,4,3,6,5,2,0,1], m19:[7,8,3,2,9,6,5,0,1,4]};
 const $ = id => document.getElementById(id);
-const wbTime=s=>{s=String(s||'').trim();const m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/.exec(s);return m?Date.UTC(+m[3],+m[2]-1,+m[1]):Date.parse(s);};
+const _wbT=new Map();
+const wbTime=s0=>{const k0=String(s0||'');let v=_wbT.get(k0);if(v!==undefined)return v;
+  const s=k0.trim();const m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/.exec(s);v=m?Date.UTC(+m[3],+m[2]-1,+m[1]):Date.parse(s);
+  if(_wbT.size>20000)_wbT.clear();_wbT.set(k0,v);return v;};   // tanggal yang sama dihitung ribuan kali → simpan hasilnya
 const nums = s => (s.match(/\d+/g) || []).map(Number);
 // ===== Normalisasi JSON (format fleksibel) =====
 // Didukung: [{market,date,result}] | {hk:[{date,result}]} | {hk:{"2026-01-01":"1234"}} | {hk:["1234",...]}
@@ -2759,23 +2762,27 @@ const RH_MBS=['ix','ty','ml','mb',...Array.from({length:20},(_,i)=>'m'+i)];
 const red=n=>{while(n>=10)n=String(n).split('').reduce((a,b)=>a+ +b,0);return n;};
 const shio=n=>n===0?4:((n-1)%12)+1;
 const jalur=n=>((shio(n)-1)%3)+1;              // jalur 1=shio 1,4,7,10 · 2=2,5,8,11 · 3=3,6,9,12 (sama dengan Scen Shio di Prediksi)           // 00 dihitung 100 → shio 4 (sama dengan Scen Shio & tabel)
-function srcDigit(r,t){const d=[...r].map(Number);
-  switch(t){case 'A':return d[0];case 'C':return d[1];case 'K':return d[2];case 'E':return d[3];
-  case 'J':return red(d[2]+d[3]);case 'Js':return Math.abs(d[2]-d[3]);case 'J4D':return red(d[0]+d[1]+d[2]+d[3]);
-  case 'J3D':return red(d[1]+d[2]+d[3]);case 'Jt':return red(d[1]+d[2]);case 'Jd':return red(d[0]+d[1]);}}
-function parseTok(tok){const m=/^(Js|J4D|J3D|Jt|Jd|[ACKEJ])(\d{1,2})$/.exec(tok);return m?{t:m[1],n:+m[2]}:null;}
+const _sdM=new Map();
+function srcDigit(r,t){let o=_sdM.get(r);
+  if(!o){const d=[...r].map(Number);
+    o={A:d[0],C:d[1],K:d[2],E:d[3],J:red(d[2]+d[3]),Js:Math.abs(d[2]-d[3]),J4D:red(d[0]+d[1]+d[2]+d[3]),J3D:red(d[1]+d[2]+d[3]),Jt:red(d[1]+d[2]),Jd:red(d[0]+d[1])};
+    if(_sdM.size>20000)_sdM.clear();_sdM.set(r,o);}
+  return o[t];}
+const _ptM=new Map();
+function parseTok(tok){let r=_ptM.get(tok);if(r!==undefined)return r;
+  const m=/^(Js|J4D|J3D|Jt|Jd|[ACKEJ])(\d{1,2})$/.exec(tok);r=m?{t:m[1],n:+m[2]}:null;_ptM.set(tok,r);return r;}
 // spec = {terms:[{tok,mb}], ops:['+','-'], final}
-function keyVal(ch,i,spec){
+function keyVal(ch,i,spec,noRef){
   let v=0;const parts=[];
   for(let k=0;k<spec.terms.length;k++){
     const T=spec.terms[k],p=parseTok(T.tok),j=i-(p.n-1);
     if(j<0)return null;
     let x=srcDigit(ch[j],p.t);if(T.mb)x=MOD[T.mb][x];
-    parts.push(T.tok+'='+x);
+    if(!noRef)parts.push(T.tok+'='+x);
     v=k===0?x:(spec.ops[k-1]==='+'?red(v+x):Math.abs(v-x));
   }
   if(spec.final)v=MOD[spec.final][v];
-  return {v,ref:parts.join(' ')+(spec.terms.length>1||spec.final?' → '+v:'')};
+  return {v,ref:noRef?'':parts.join(' ')+(spec.terms.length>1||spec.final?' → '+v:'')};
 }
 const D2=(d,a,b)=>d[a]*10+d[b];
 const m2=(x,V)=>V&&V.gg?(x===2?'J':'G'):(x===2?'B':'K');   // kelas 2 = besar / ganjil, 1 = kecil / genap
@@ -2863,16 +2870,24 @@ const rhMissTxt=(row,S,V)=>{if(!V)return '';
   return '';};   // trek off patah: tulis angka yang masuk
 const mapEl=(b,v,mod)=>{const x=(b+v)%mod;return mod===10?x:(x||mod);};
 // ch: hasil (oldest->newest, 4 digit). Baris uji i = n-1-L .. n-2 ; baris prediksi i = n-1
-function rhRows(ch,spec,vk,L){
-  const n=ch.length,V=VARS[vk],out=[];
+const _mkM=new Map();   // marks per (jenis rumus, hasil berikutnya): dipakai bersama oleh ribuan trek
+function rhMarks(vk,res){const k=vk+'|'+res;let m=_mkM.get(k);if(!m){m=VARS[vk].mark([...res].map(Number));if(_mkM.size>40000)_mkM.clear();_mkM.set(k,m);}return m;}
+function rhRows(ch,spec,vk,L,noRef){
+  const n=ch.length,out=[];
   for(let i=n-1-L;i<n;i++){
     if(i<0)return null;
-    const kv=keyVal(ch,i,spec);if(!kv)return null;
+    const kv=keyVal(ch,i,spec,noRef);if(!kv)return null;
     const row={res:ch[i],v:kv.v,ref:kv.ref,last:i===n-1};
-    if(!row.last)row.marks=V.mark([...ch[i+1]].map(Number));
+    if(!row.last)row.marks=rhMarks(vk,ch[i+1]);
     out.push(row);
   }
   return out;
+}
+function rhRowAt(ch,spec,vk,i){   // satu baris saja (untuk hitung beruntun mundur tanpa menghitung seluruh riwayat)
+  if(i<0)return null;const kv=keyVal(ch,i,spec,true);if(!kv)return null;
+  const row={res:ch[i],v:kv.v,ref:'',last:i===ch.length-1};
+  if(!row.last)row.marks=rhMarks(vk,ch[i+1]);
+  return row;
 }
 const setOf=(base,v,mod)=>base.map(b=>mapEl(b,v,mod));
 function evalBase(rows,base,mod,V){
@@ -3474,21 +3489,24 @@ function shWide(ch,spec,vk,L){for(let i=0;i<=ch.length-1-L;i++){const r=rhRows(c
 function shEval(it){memoReset();const k=it.id+'|'+it.L+'|'+it.P+'|'+kdVer;if(_evM.has(k))return _evM.get(k);const r=shEval0(it);_evM.set(k,r);return r;}
 function shEval0(it){
   const V=VARS[it.vk];if(!V||!DATA.length)return null;
-  const ch=chainOf(it.mkt,it.day||0),rows=rhRows(ch,it.spec,it.vk,it.L);if(!rows)return null;
+  const ch=chainOf(it.mkt,it.day||0),rows=rhRows(ch,it.spec,it.vk,it.L,true);if(!rows)return null;
   const miss=evalBase(rows,it.base,V.mod,V);let streak=0;
-  const wide=shWide(ch,it.spec,it.vk,it.L)||rows;   // trek lanjut: hitung beruntun sepanjang data, tidak mentok di baris uji L
-  for(let i=wide.length-2;i>=0;i--){const S=setOf(it.base,wide[i].v,V.mod);if(rhHit(wide[i],S,V))streak++;else break;}
-  const set=[...new Set(setOf(it.base,wide[wide.length-1].v,V.mod))].sort((a,b)=>a-b);
+  // trek lanjut: hitung beruntun mundur dari putaran terakhir, BERHENTI di patah pertama (dulu: seluruh riwayat dihitung untuk tiap trek)
+  const n=ch.length,lastRow=rhRowAt(ch,it.spec,it.vk,n-1)||rows[rows.length-1];
+  for(let i=n-2;i>=0;i--){const r=rhRowAt(ch,it.spec,it.vk,i);if(!r)break;
+    if(rhHit(r,setOf(it.base,r.v,V.mod),V))streak++;else break;}
+  const set=[...new Set(setOf(it.base,lastRow.v,V.mod))].sort((a,b)=>a-b);
   // MEMORI KUNCI: berapa putaran tahan sejak pertama dicatat ke Bank (tanggal dari id), dan pernah patah atau tidak
   let since=null,brokeSince=0,runSince=0;
   const kr=kdLoad()[shKey(it)],ts=kr&&kr.curStart?kr.curStart:parseInt(it.id,10);   // awal masa hidup kunci ini di Bank (dari riwayat)
   if(ts>1e12){
-    const c=new Date(ts),cut=Date.UTC(c.getFullYear(),c.getMonth(),c.getDate()),dts=chainDatesOf(it.mkt,it.day||0),start=ch.length-wide.length;
+    const c=new Date(ts),cut=Date.UTC(c.getFullYear(),c.getMonth(),c.getDate()),dts=chainDatesOf(it.mkt,it.day||0);
     since=0;let run=true;
-    for(let k=0;k<wide.length-1;k++){
-      const tt=wbTime(dts[start+k+1]);if(isNaN(tt)||tt<=cut)continue;   // hanya result SETELAH hari dicatat
+    const win=[];   // hanya putaran SETELAH hari dicatat: telusuri mundur dari terbaru, berhenti begitu tanggal <= hari dicatat
+    for(let i=n-2;i>=0;i--){const tt=wbTime(dts[i+1]);if(isNaN(tt))continue;if(tt<=cut)break;const r=rhRowAt(ch,it.spec,it.vk,i);if(!r)break;win.push(r);}
+    for(let k=win.length-1;k>=0;k--){
       since++;
-      if(rhHit(wide[k],setOf(it.base,wide[k].v,V.mod),V)){if(run)runSince++;}else{brokeSince++;run=false;}
+      if(rhHit(win[k],setOf(it.base,win[k].v,V.mod),V)){if(run)runSince++;}else{brokeSince++;run=false;}
     }
   }
   // peluang kebetulan per putaran: AI/CT/CB = angka ikut kalau SALAH SATU digitnya ada di basis (2D → 2 digit, 3D → 3, 4D → 4), jadi basis 9 digit pada AI 2D kena 99% (hanya 00 yang gagal)
