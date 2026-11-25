@@ -4775,4 +4775,82 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
 })();
 </script><script>
 try{ if(window.WB_BANK) WB_BANK.onReady(function(){ try{ if(typeof shbRender==='function') shbRender(); }catch(e){} }); }catch(e){}
+</script><script>
+/* ===== Jurnal uji maju: catat LN 2D/3D/4D hasil rekap, dinilai otomatis dengan result BERIKUTNYA ===== */
+(function(){
+try{
+var JK='wb_jurnal_v1',MAXE=150,CAP=3000;
+var POS=[['Depan','2D Depan',100,0,2],['Tengah','2D Tengah',100,1,3],['Belakang','2D Belakang',100,2,4],['3D','3D',1000,1,4],['4D','4D',10000,0,4]];
+var load=function(){try{var a=JSON.parse(localStorage.getItem(JK)||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}};
+var save=function(a){try{localStorage.setItem(JK,JSON.stringify(a.slice(-MAXE)));return true;}catch(_){return false;}};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+var norm=function(s){return String(s||'').trim().toLowerCase();};
+var toks=function(v,len){var o=[],seen={};(String(v||'').match(/\d+/g)||[]).forEach(function(t){if(t.length===len&&!seen[t]){seen[t]=1;o.push(t);}});return o;};
+function mktOf(name){var n=norm(name);if(!n||!DATA||!DATA.length)return null;for(var i=0;i<DATA.length;i++){if(norm(DATA[i].market)===n)return DATA[i].market;}return null;}
+function score(e){var ch,ds;try{ch=chainOf(e.mkt,0);ds=chainDatesOf(e.mkt,0);}catch(_){return {st:'muat'};}
+  if(!ch||!ch.length)return {st:'muat'};
+  var i=ds.lastIndexOf(e.asof);if(i<0)return {st:'hilang'};
+  if(i+1>=ch.length)return {st:'tunggu'};
+  return {st:'ok',tgt:ch[i+1],tdate:ds[i+1]};}
+function has(list,x){return (' '+list+' ').indexOf(' '+x+' ')>=0;}
+function msg(t,bad){var m=$('jrMsg');if(m){m.textContent=t;m.style.color=bad?'#ff8d84':'#3ddc6b';}}
+function rec(){
+  var cur=(typeof R4X!=='undefined'&&R4X&&R4X.M&&R4X.M.name)||(typeof r4cur!=='undefined'?r4cur:'');
+  var mk=mktOf(cur);
+  if(!mk){msg('Tekan nama pasaran di kartu Rekap dulu, lalu catat.',1);return;}
+  var ch=chainOf(mk,0),ds=chainDatesOf(mk,0);
+  if(!ch.length){msg('Data result belum termuat.',1);return;}
+  var asof=ds[ds.length-1],L={},P={},skip=[];
+  POS.forEach(function(p){var k=p[0],rg=p[2],len=k==='3D'?3:k==='4D'?4:2;
+    var el=$(k==='3D'?'r4out3':k==='4D'?'r4out':'r4'+k),t=toks(el&&el.value,len);
+    if(!t.length)return;
+    if(t.length>=rg||t.length>CAP){skip.push(p[1]);return;}
+    L[k]=t.join(' ');var pe=$('r4p'+k);if(pe&&pe.value.trim())P[k]=pe.value.trim();});
+  if(!Object.keys(L).length){msg('Belum ada LN yang bisa dicatat'+(skip.length?' ('+skip.join(', ')+' terlalu banyak/tanpa saringan)':'')+'.',1);return;}
+  var a=load(),ix=-1;a.forEach(function(e,i){if(e.mkt===mk&&e.asof===asof)ix=i;});
+  var ent={id:Date.now(),mkt:mk,asof:asof,L:L,P:P};
+  if(ix>=0)a[ix]=ent;else a.push(ent);
+  if(!save(a)){msg('Gagal menyimpan (penyimpanan penuh).',1);return;}
+  msg('Tercatat: '+mk+' · setelah result '+asof+' · '+Object.keys(L).map(function(k){return k+' '+L[k].split(' ').length;}).join(' · ')+(skip.length?' · dilewati: '+skip.join(', '):'')+(ix>=0?' (menimpa catatan periode sama)':''));
+  render(true);}
+var _last='';
+function render(force){
+  var out=$('jrOut');if(!out)return;
+  var a=load(),S={};POS.forEach(function(p){S[p[0]]={n:0,h:0,E:0,V:0};});
+  var rows=[];
+  a.forEach(function(e){var s=score(e);e._s=s;
+    var marks=[];
+    POS.forEach(function(p){var k=p[0];if(!e.L||!e.L[k])return;
+      var size=e.L[k].split(' ').length,pr=size/p[2];
+      if(s.st!=='ok'){marks.push(p[1]+' '+size+' LN …');return;}
+      var hit=has(e.L[k],s.tgt.slice(p[3],p[4]));
+      var q=S[k];q.n++;if(hit)q.h++;q.E+=pr;q.V+=pr*(1-pr);
+      marks.push(p[1]+' '+size+' '+(hit?'✅':'❌'));});
+    rows.push({e:e,s:s,marks:marks});});
+  var H='',any=false;
+  POS.forEach(function(p){var q=S[p[0]];if(!q.n)return;any=true;
+    var z=q.V>0?(q.h-q.E)/Math.sqrt(q.V):0,ver;
+    if(q.n<30)ver='data masih sedikit (&lt;30), belum bisa disimpulkan';
+    else if(Math.abs(z)<2)ver='tidak beda dari tebakan acak';
+    else ver=z>0?'di atas acak, ulangi dengan data lebih banyak sebelum dipercaya':'di bawah acak';
+    H+='<div style="border-top:1px solid rgba(255,255,255,.12);padding:6px 0"><b style="color:#ffc933">'+p[1]+'</b> · kena <b>'+q.h+'/'+q.n+'</b> ('+(q.h/q.n*100).toFixed(1)+'%) · acak murni <b>'+(q.E/q.n*100).toFixed(1)+'%</b> · selisih '+(z>=0?'+':'')+z.toFixed(1)+'σ<br><span style="color:var(--mut);font-size:12.5px">'+ver+'</span></div>';});
+  if(!any)H+='<div class="hint">Belum ada catatan yang sudah dinilai. Catat sekarang, lalu buka halaman ini lagi setelah result berikutnya keluar.</div>';
+  var pend=rows.filter(function(r){return r.s.st!=='ok';}).length;
+  if(a.length)H+='<div class="hint" style="margin-top:6px">'+a.length+' catatan · '+(a.length-pend)+' sudah dinilai · '+pend+' menunggu result</div>';
+  H+=rows.slice(-12).reverse().map(function(r){var e=r.e,s=r.s;
+    var hd=esc(e.mkt)+' · setelah '+esc(e.asof)+(s.st==='ok'?' → <b>'+esc(s.tgt)+'</b>':s.st==='hilang'?' → <i>result tidak ketemu (riwayat bergeser)</i>':' → menunggu');
+    return '<div style="border-top:1px solid rgba(255,255,255,.08);padding:4px 0;font-size:12.5px">'+hd+'<br><span style="color:var(--mut)">'+r.marks.join(' · ')+'</span></div>';}).join('');
+  if(!force&&H===_last)return;_last=H;out.innerHTML=H;}
+var card=document.createElement('div');card.className='card k6';card.id='jrCard';
+card.innerHTML='<h2>📓 Jurnal uji maju</h2><div class="hint">Catat LN hasil rekap (2D Depan · Tengah · Belakang, 3D, 4D) sebelum result keluar. Begitu result berikutnya masuk, catatan dinilai otomatis dan dibandingkan dengan peluang acak. Ini satu-satunya uji yang jujur: result yang dipakai menilai belum ada saat dicatat, jadi tidak bisa dicurangi oleh Bank yang hanya berisi trek selamat. Satu catatan per pasaran per periode.</div><div class="rkrow"><button class="pri" id="jrRec">📝 Catat prediksi sekarang</button><button class="red" id="jrDel">Hapus jurnal</button></div><div id="jrMsg" class="hint"></div><div id="jrOut"></div>';
+var ut=$('utCard');
+if(ut&&ut.parentNode)ut.parentNode.insertBefore(card,ut);else($('rkRoot')||document.body).appendChild(card);
+$('jrRec').onclick=function(){try{rec();}catch(e){msg('Gagal: '+e.message,1);}};
+var dt=0;$('jrDel').onclick=function(){var b=$('jrDel');
+  if(!dt){dt=setTimeout(function(){dt=0;b.textContent='Hapus jurnal';},4000);b.textContent='Yakin? ketuk lagi';return;}
+  clearTimeout(dt);dt=0;b.textContent='Hapus jurnal';try{localStorage.removeItem(JK);}catch(_){}msg('Jurnal dihapus.');render(true);};
+setTimeout(function(){try{render(true);}catch(_){}},1500);
+setInterval(function(){try{render();}catch(_){}},5000);
+}catch(e){try{console.error('jurnal',e);}catch(_){}}
+})();
 </script></body></html>
