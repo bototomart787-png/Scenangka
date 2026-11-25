@@ -4805,9 +4805,9 @@ function score(e){var ch,ds;try{ch=chainOf(e.mkt,0);ds=chainDatesOf(e.mkt,0);}ca
 function has(list,x){return (' '+list+' ').indexOf(' '+x+' ')>=0;}
 function msg(t,bad){var m=$('jrMsg');if(m){m.textContent=t;m.style.color=bad?'#ff8d84':'#3ddc6b';}}
 function rec(){
-  var cur=(typeof R4X!=='undefined'&&R4X&&R4X.M&&R4X.M.name)||(typeof r4cur!=='undefined'?r4cur:'');
-  var mk=mktOf(cur);
-  if(!mk){msg('Tekan nama pasaran di kartu Rekap dulu, lalu catat.',1);return;}
+  var c1=(typeof r4cur!=='undefined'?r4cur:''),c2=(typeof R4X!=='undefined'&&R4X&&R4X.M&&R4X.M.name)||'';
+  var mk=mktOf(c1)||mktOf(c2);   // sama seperti Uji jujur: pakai kunci pasaran yang dipilih (r4cur), nama di Bank sebagai cadangan
+  if(!mk){msg(!(c1||c2)?'Tekan nama pasaran di kartu Rekap dulu, lalu catat.':'Pasaran "'+(c2||c1)+'" tidak ada di data result.json, jadi tidak bisa dicatat.',1);return;}
   var ch=chainOf(mk,0),ds=chainDatesOf(mk,0);
   if(!ch.length){msg('Data result belum termuat.',1);return;}
   var asof=ds[ds.length-1],L={},P={},skip=[];
