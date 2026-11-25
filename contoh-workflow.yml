@@ -1,0 +1,7 @@
+# Tambahkan 2 langkah ini di workflow GitHub Action-mu,
+# SESUDAH langkah yang memperbarui result.json dan SEBELUM langkah commit/push.
+      - name: Gabung ke arsip kumulatif
+        run: python3 update_arsip.py result.json arsip.json
+
+      # Pastikan langkah commit-mu juga ikut menyimpan arsip.json, mis.:
+      #   git add result.json arsip.json
