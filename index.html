@@ -3862,7 +3862,13 @@ function jjRender(){
     return `<tr><td>${nm}</td><td>${hit}/${n}</td><td><b>${rate.toFixed(1)}%</b></td><td>${ch.toFixed(1)}%</td><td>${v}</td></tr>`;
   }).join('');
   const pend=ready?logs.filter(l=>jjNext(l.mk,l.asOf)==null).length:logs.length;
-  el.innerHTML=`<div style="font-weight:700;color:var(--ac);margin-bottom:4px">📊 Uji jujur ke depan · ${logs.length} catatan${pend?` · ${pend} menunggu result`:''}</div><div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr style="opacity:.7;text-align:left"><th>Jenis</th><th>Kena</th><th>Hasil</th><th>Kebetulan</th><th>Kesimpulan</th></tr>${rows}</table></div><div class="hint" style="margin-top:4px">“Kebetulan” = persentase kena kalau angka dipilih acak dengan ukuran daftar yang sama. Hanya hasil <b>setelah</b> daftar dicatat yang dihitung, jadi tidak bisa menipu diri sendiri. Selisih kecil dengan sampel sedikit hampir selalu kebetulan.</div><button type="button" data-jjdel="1" style="margin-top:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12px">🗑 Hapus semua catatan</button>`;
+  const JJO=window.__jjOpen||(window.__jjOpen={});
+  const jjEnt=logs.slice(-20).reverse().map(l=>{const r=ready?jjNext(l.mk,l.asOf):null,key=encodeURIComponent(l.mk+'|'+l.asOf);
+    const body=T.map(([nm,get,cut])=>{const lst=get(l);if(!lst||!lst.length)return '';const tg=r==null?null:cut(r);
+      return `<div style="margin:6px 0 2px;font-weight:700;color:#ffc933">${nm} · ${lst.length} LN${tg!=null?(lst.some(x=>String(x)===tg)?' ✅':' ❌'):''}</div><div style="word-break:break-word;max-height:140px;overflow:auto;font-family:ui-monospace,monospace">${lst.map(x=>String(x)===tg?`<b style="color:#3ddc6b">${x}</b>`:x).join(' · ')}</div>`;}).join('');
+    return `<details data-jjk="${key}" ${JJO[key]?'open':''} style="border-top:1px solid rgba(255,255,255,.1);padding:4px 0;font-size:12.5px"><summary style="cursor:pointer">${shEsc(l.mk)} · setelah ${shEsc(l.asOf)} ${r!=null?'→ <b>'+r+'</b>':'→ menunggu'}</summary>${body}</details>`;}).join('');
+  const jjList=`<details data-jjall="1" ${JJO.all?'open':''} style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;color:var(--ac)">📋 Lihat catatan (${logs.length}) <span style="font-weight:400;font-size:12px;color:var(--mut)">— ketuk untuk buka / tutup</span></summary>${jjEnt}</details>`;
+  el.innerHTML=`<div style="font-weight:700;color:var(--ac);margin-bottom:4px">📊 Uji jujur ke depan · ${logs.length} catatan${pend?` · ${pend} menunggu result`:''}</div><div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr style="opacity:.7;text-align:left"><th>Jenis</th><th>Kena</th><th>Hasil</th><th>Kebetulan</th><th>Kesimpulan</th></tr>${rows}</table></div><div class="hint" style="margin-top:4px">“Kebetulan” = persentase kena kalau angka dipilih acak dengan ukuran daftar yang sama. Hanya hasil <b>setelah</b> daftar dicatat yang dihitung, jadi tidak bisa menipu diri sendiri. Selisih kecil dengan sampel sedikit hampir selalu kebetulan.</div>${jjList}<button type="button" data-jjdel="1" style="margin-top:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:inherit;font-size:12px">🗑 Hapus semua catatan</button>`;
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('[data-jjlog],[data-jjdel]');if(!b)return;
@@ -3876,6 +3882,7 @@ document.addEventListener('click',e=>{
     const o=b.textContent;b.textContent='✓ Tercatat untuk result setelah '+asOf;setTimeout(()=>{b.textContent=o;},1800);
   }catch(err){alert('Gagal mencatat: '+err.message);}
 });
+{const jo=$('jjOut');if(jo)jo.addEventListener('toggle',ev=>{const t=ev.target,O=window.__jjOpen||(window.__jjOpen={});if(t&&t.dataset){if(t.dataset.jjall!==undefined)O.all=t.open;else if(t.dataset.jjk)O[t.dataset.jjk]=t.open;}},true);}
 setTimeout(()=>{try{jjRender();}catch(_){}},1500);
 $('aiOut').addEventListener('click',async e=>{   // Salin 2D Depan / Tengah / Belakang / 4D / 3D: ketuk tombol Salin atau barisnya
   const t=e.target.closest('[data-cp]');if(!t)return;const txt=t.dataset.cp;let ok=false;
