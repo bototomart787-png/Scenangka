@@ -3705,7 +3705,7 @@ function aiRun(){
   if(!mk){out.textContent='Data result untuk pasaran '+r4cur+' belum ada di file result.';return;}
   const allCh=chainOf(mk,0);if(!allCh.length){out.textContent='Data result pasaran '+mk+' belum ada.';return;}
   const ch=allCh.slice(-300);if(ch.length<20){out.textContent='Minimal 20 result diperlukan. Data tersedia: '+ch.length+'.';return;}
-  const R={},TR={},H=[`<div style="opacity:.8">${shEsc(mk)} · analisis ${ch.length} result terakhir${allCh.length>ch.length?' dari '+allCh.length+' result':''} · Top ${N} · rantai posisi wajib sambung · skor 0–100</div>`];
+  const R={},TR={},L={};let o4=[],o3=[];const H=[`<div style="opacity:.8">${shEsc(mk)} · analisis ${ch.length} result terakhir${allCh.length>ch.length?' dari '+allCh.length+' result':''} · Top ${N} · rantai posisi wajib sambung · skor 0–100</div>`];
   const XS=null;   // skor murni per posisi: isian (CT/Patah/Top/Rengking) satu posisi tidak ikut mempengaruhi skor posisi lain
   const UM={},BK={};R4P.forEach(k=>{UM[k]=aiUjiMult(mk,k);BK[k]=aiBankFn(mk,k);TR[k]=aiTrek(k);R[k]=aiRank(ch,k,W,TR[k],r4set(k),UM[k]?UM[k].m:1,BK[k],XS);});
   H.push('<div style="font-size:11px;opacity:.75;margin:4px 0">Suara Bank Harian + bobot uji ikut skor: '+R4P.map(k=>k[0]+' '+(BK[k]?BK[k].nv+' jenis':'-')).join(' · ')+'</div>');
