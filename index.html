@@ -3707,7 +3707,11 @@ function aiRun(){
   const ch=allCh.slice(-300);if(ch.length<20){out.textContent='Minimal 20 result diperlukan. Data tersedia: '+ch.length+'.';return;}
   const R={},TR={},L={};let o4=[],o3=[];const H=[`<div style="opacity:.8">${shEsc(mk)} · analisis ${ch.length} result terakhir${allCh.length>ch.length?' dari '+allCh.length+' result':''} · Top ${N} · rantai posisi wajib sambung · skor 0–100</div>`];
   const XS=null;   // skor murni per posisi: isian (CT/Patah/Top/Rengking) satu posisi tidak ikut mempengaruhi skor posisi lain
-  const UM={},BK={};R4P.forEach(k=>{UM[k]=aiUjiMult(mk,k);BK[k]=aiBankFn(mk,k);TR[k]=aiTrek(k);R[k]=aiRank(ch,k,W,TR[k],r4set(k),UM[k]?UM[k].m:1,BK[k],XS);});
+  const UM={},BK={},RC={};R4P.forEach(k=>{UM[k]=aiUjiMult(mk,k);BK[k]=aiBankFn(mk,k);TR[k]=aiTrek(k);R[k]=aiRank(ch,k,W,TR[k],r4set(k),UM[k]?UM[k].m:1,BK[k],XS);
+    // Daftar rantai dihitung dari seluruh 00–99 agar filter trek/LN yang terlalu sempit
+    // tidak membuat hasil 3D/4D kosong. Tampilan 2D tetap memakai peringkat utama di R.
+    RC[k]=aiRank(ch,k,W,null,null,null,BK[k],XS);
+  });
   H.push('<div style="font-size:11px;opacity:.75;margin:4px 0">Suara Bank Harian + bobot uji ikut skor: '+R4P.map(k=>k[0]+' '+(BK[k]?BK[k].nv+' jenis':'-')).join(' · ')+'</div>');
   H.push(R4P.map(k=>k[0]+': '+(UM[k]?'uji trek lanjut '+(100*UM[k].rate).toFixed(1)+'% vs acak '+(100*UM[k].p0).toFixed(1)+'% → bobot trek ×'+UM[k].m.toFixed(2):'belum ada uji (bobot normal)')).join('<br>').replace(/^/,'<div style="font-size:11px;opacity:.75;margin:4px 0">')+'</div>');
   const sm={};R4P.forEach(k=>{sm[k]={};R[k].forEach(r=>{sm[k][r.n]=r.sc;});});
@@ -3717,7 +3721,7 @@ function aiRun(){
   // Daftar 2D tetap menampilkan Top masing-masing; tidak dipotong hanya karena
   // sebuah pasangan belum mendapat sambungan di posisi berikutnya.
   const chainFrom=n=>{
-    const l={};R4P.forEach(k=>{l[k]=R[k].slice(0,n);});
+    const l={};R4P.forEach(k=>{l[k]=RC[k].slice(0,n);});
     const a3=[],a4=[],seen3=new Set(),seen4=new Set();
     l.Tengah.forEach(t=>l.Belakang.forEach(b=>{
       if(t.n[1]!==b.n[0])return;
@@ -3731,13 +3735,13 @@ function aiRun(){
     }));
     return {n,l,a3,a4};
   };
-  const NMAX=Math.min(40,Math.max(N,...R4P.map(k=>R[k].length)));
-  let cur=chainFrom(N);
+  const NMAX=100; // telusuri seluruh pasangan 00–99 bila Top awal belum membentuk rantai
+  let cur=chainFrom(Math.min(100,Math.max(1,N)));
   while(!cur.a4.length&&cur.n<NMAX)cur=chainFrom(cur.n+1);
-  R4P.forEach(k=>{L[k]=cur.l[k];});
+  R4P.forEach(k=>{L[k]=R[k].slice(0,Math.max(N,cur.n));});
   o4=cur.a4.sort((x,y)=>y.sc-x.sc||(x.n<y.n?-1:1)).slice(0,N);
   o3=cur.a3.sort((x,y)=>y.sc-x.sc||(x.n<y.n?-1:1)).slice(0,N);
-  if(cur.n>N)H.push(`<div style="color:#ffc72c;margin:6px 0">↔ Jangkauan Top diperlebar dari ${N} ke ${cur.n} agar rantai 4D tersambung.</div>`);
+  if(cur.n>N)H.push(`<div style="color:#ffc72c;margin:6px 0">↔ Pencarian rantai diperluas dari Top ${N} ke ${cur.n} kandidat per posisi agar sambungan ditemukan.</div>`);
   if(!o4.length&&!o3.length)H.push('<div style="color:#ff8a80;margin:6px 0">Belum ada pasangan yang tersambung. Coba tambah jumlah Top atau periksa data result.</div>');
   {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
    H.push('<button type="button" data-cp="'+all.replace(/\n/g,'&#10;')+'" style="width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#111;font-weight:800;cursor:pointer">📋 Salin semua (2D Depan · Tengah · Belakang · 4D · 3D)</button>');}
