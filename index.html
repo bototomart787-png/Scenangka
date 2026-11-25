@@ -3273,11 +3273,12 @@ try{const q=JSON.parse(localStorage.getItem(R4EXK)||'{}');Object.keys(R4EX).forE
 const R4AUTO={r4ai:new Set(),r4ai3:new Set()};   // baris yang diisi otomatis dari Bank (tanpa tanda #cb/#ai); baris ketikan manual tidak disentuh
 function r4exSave(){try{const o={};Object.keys(R4EX).forEach(k=>o[k]=[...R4EX[k]]);localStorage.setItem(R4EXK,JSON.stringify(o));}catch(_){}}
 const r4tk=(vk,i)=>vk+'|'+i.c+'|'+[...(i.s||[])].map(String).sort().join('');
-const R4AIVK=new Set(['ai2dd','ai2dt','ai2db','ai3d']),R4TKOPEN=new Set();let R4X=null;   // item Bank pasaran terakhir yang diproses (untuk menggambar ulang panel trek CB / AI 3D)   // hanya trek AI / CT / CB yang ditampilkan di tab posisi
+const R4AIVK=new Set(['ai2dd','ai2dt','ai2db','ai3d']),R4TKOPEN=new Set(),R4OWN={Depan:'ai2dd',Tengah:'ai2dt',Belakang:'ai2db'};let R4X=null;   // item Bank pasaran terakhir yang diproses (untuk menggambar ulang panel trek CB / AI 3D)   // hanya trek AI / CT / CB yang ditampilkan di tab posisi
 function r4trkList(x,g){
   const k=R4G[g],ix={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[k]||[2,3],el=$('r4d'+k),t=el?el.value.trim():'',DG=t?r4parse(t):null,list=[];
   Object.keys(R4_SLOT).filter(vk=>R4AIVK.has(vk)).forEach(vk=>{
     const sl=R4_SLOT[vk];if(!(sl.includes(ix[0])||sl.includes(ix[1])))return;
+    if(vk!==R4OWN[k])return;   // hanya trek posisi itu sendiri (Depan=ai 2d depan, dst), sama dengan jumlah di Bank
     const P=x.M.pos[vk];((P&&P.items)||[]).forEach(i=>{
       if(!(i.s&&(i.s.size||i.s.length)))return;const key=r4tk(vk,i);
       list.push({vk,key,d:i.d,c:i.c,s:[...i.s].map(Number).sort((a,b)=>a-b),ex:R4EX[k].has(key),dg:!!(DG&&DG.size&&!DIG_EXEMPT(vk)&&i.d!==undefined&&!DG.has(i.d))});});});
@@ -3410,7 +3411,7 @@ function r4rank(pos){   // Rengking N dari rekap suara Bank Harian pasaran terpi
     const ix2={Depan:[0,1],Tengah:[1,2],Belakang:[2,3]}[pos]||[2,3],ia=ix2[0],ib=ix2[1];
     const trk=[],cnt={};
     Object.keys(R4_SLOT).forEach(vk=>{
-      const P=M&&M.pos&&M.pos[vk];if(!P)return;const sl=R4_SLOT[vk],hA=sl.includes(ia),hB=sl.includes(ib);if(!hA&&!hB)return;
+      const P=M&&M.pos&&M.pos[vk];if(!P)return;if(R4AIVK.has(vk)&&vk!==R4OWN[pos])return;const sl=R4_SLOT[vk],hA=sl.includes(ia),hB=sl.includes(ib);if(!hA&&!hB)return;
       (P.items||[]).filter(i=>okI(i)&&!(R4EX[pos]&&R4EX[pos].has(r4tk(vk,i)))&&!((vk==='cb'||vk==='ai3d')&&R4EX.CB.has(r4tk(vk,i)))).forEach(i=>{if(!(i.s&&(i.s.size||i.s.length)))return;trk.push({S:[...i.s].map(String),hA,hB});cnt[vk]=(cnt[vk]||0)+1;});
     });
     const used=trk.length;
