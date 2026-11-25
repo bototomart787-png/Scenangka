@@ -1605,6 +1605,20 @@ function requireLogin(){
     }catch(e){ return '[]'; }
   }
   window.WBS_isLoaded=()=>_loaded;
+  // ── Cache hasil hitungan: DB sendiri, terpisah dari Bank, jadi member juga ikut awet. Kunci per-user supaya id trek tidak bentrok. ──
+  window.WBS_evcKey=function(){try{const u=JSON.parse(localStorage.getItem('wg_logged_member')||'null');return 'evc:'+((u&&(u.id||u.phone))||'admin');}catch(e){return 'evc:admin';}};
+  window.__evcLoaded=false;
+  let _evDb=null;
+  const _evOpen=async()=>{if(_evDb)return _evDb;_evDb=await idbOpen();return _evDb;};
+  window.WBS_evcReady=(async()=>{
+    try{if(window.indexedDB){
+      const db=await _evOpen();
+      if(db){const ev=await idbGet(db,window.WBS_evcKey());if(typeof ev==='string')window.__evcRaw=ev;}
+    }}catch(e){}
+    window.__evcLoaded=true;
+    try{if(typeof shbRender==='function')shbRender();}catch(e){}
+  })();
+  window.WBS_evcPut=async(v)=>{try{const db=await _evOpen();if(!db)return false;return await idbPut(db,window.WBS_evcKey(),v);}catch(e){return false;}};
   window.WBS_ready=(async()=>{   // muat Bank dari IndexedDB; pertama kali: pindahkan dari localStorage lalu bebaskan kuotanya
     try{
       if(!window.indexedDB||isMem()){_loaded=true;return;}
@@ -1618,7 +1632,6 @@ function requireLogin(){
         }
       }
       _idb=db;_useIdb=true;if(typeof v==='string')_mem=v;
-      try{const ev=await idbGet(db,'evc');if(typeof ev==='string')window.__evcRaw=ev;}catch(e){}   // cache hasil hitungan tiap trek (supaya tidak dihitung ulang tiap buka)
     }catch(e){}
     _loaded=true;
     try{if(typeof shbRender==='function')shbRender();}catch(e){}
@@ -2478,7 +2491,7 @@ const PC_VER='1';let _pc=null,_pcDirty=false,_pcT=0,_pcSaving=false;
 function pcInit(){if(_pc)return;_pc=new Map();try{const raw=window.__evcRaw;if(raw){const a=JSON.parse(raw);if(a&&a.v===PC_VER)for(const x of a.d)_pc.set(x[0],[x[1],x[2]]);}}catch(_){}window.__evcRaw=null;}
 function pcSig(it){const ch=chainOf(it.mkt,it.day||0),n=ch.length,kr=kdLoad()[shKey(it)];
   return n+'|'+ch[n-1]+'|'+ch[n-2]+'|'+it.L+'|'+it.P+'|'+(kr?kr.curStart+','+kr.tot+','+kr.brk+','+kr.n:'');}
-function pcSave(){if(_pcT){clearTimeout(_pcT);_pcT=0;}if(!_pcDirty||_pcSaving||!_pc||!window.WBS_kvPut)return;
+function pcSave(){if(_pcT){clearTimeout(_pcT);_pcT=0;}if(!_pcDirty||_pcSaving||!_pc||!window.WBS_evcPut)return;
   _pcSaving=true;_pcDirty=false;
   let ids;try{ids=new Set(shbGet().map(x=>x.id));}catch(_){_pcSaving=false;return;}
   const ent=[];_pc.forEach((v,id)=>{if(ids.has(id))ent.push([id,v[0],v[1]]);});
@@ -2486,8 +2499,11 @@ function pcSave(){if(_pcT){clearTimeout(_pcT);_pcT=0;}if(!_pcDirty||_pcSaving||!
   (function step(){const t0=performance.now();   // JSON dibangun bertahap (irisan kecil) supaya layar tidak beku
     while(i<ent.length&&performance.now()-t0<10){parts.push(JSON.stringify(ent.slice(i,i+1500)).slice(1,-1));i+=1500;}
     if(i<ent.length){setTimeout(step,6);return;}
-    WBS_kvPut('evc','{"v":"'+PC_VER+'","d":['+parts.filter(Boolean).join(',')+']}').then(ok=>{_pcSaving=false;if(!ok)_pcDirty=true;});})();}
+    WBS_evcPut('{"v":"'+PC_VER+'","d":['+parts.filter(Boolean).join(',')+']}').then(ok=>{_pcSaving=false;if(!ok)_pcDirty=true;});})();}
+addEventListener('pagehide',()=>{try{pcSave();}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){try{pcSave();}catch(e){}}});
 function shEval(it){memoReset();const k=it.id+'|'+it.L+'|'+it.P+'|'+kdVer;if(_evM.has(k))return _evM.get(k);
+  if(window.indexedDB&&!window.__evcLoaded){let r0;try{r0=shEval0(it);}catch(e){r0=null;}return r0;}   // cache belum dimuat: hitung tanpa menyentuh/menimpa cache
   pcInit();let r;const sg=pcSig(it),c=_pc.get(it.id);
   if(c&&c[0]===sg)r=c[1];
   else{try{r=shEval0(it);}catch(e){r=null;}   // satu trek rusak tidak boleh menggagalkan seluruh rekap
@@ -2637,6 +2653,7 @@ shbSummary=function(){   // selama penghitungan bertahap: pakai ringkasan terakh
   if(_shPreBusy)return _shbCV||{out:{ts:Date.now(),mk:{}},list:[]};
   return _shbSummaryOrig();};
 function shbRender(){
+  if(window.indexedDB&&window.__evcLoaded===false){const l=$('shN');if(l)l.textContent='(memuat cache hitungan…)';return;}   // tunggu cache dimuat dulu; WBS_evcReady memanggil shbRender lagi
   let need=0;
   try{memoReset();const a=shbGet();for(const it of a){if(!_evM.has(it.id+'|'+it.L+'|'+it.P+'|'+kdVer)){if(++need>600)break;}}}catch(_){}
   if(need<=600)return shbRender0();
