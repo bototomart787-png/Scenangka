@@ -3717,6 +3717,7 @@ function aiChips(arr,title,note){   // daftar rapi: kotak angka + skor kecil + b
     +(arr.length?`<div style="display:flex;flex-wrap:wrap">${chips}</div><div data-cp="${cp}" style="margin-top:4px;font:12px monospace;opacity:.85;word-break:break-all;-webkit-user-select:text;user-select:text;cursor:copy">${cp}</div>`:'<div style="opacity:.7">Tidak ada yang nyambung dari Top di atas. Naikkan Top (mis. 10–20).</div>');
 }
 function aiRun(){
+  window.__aiPure=true;   // selalu murni: hanya dari 300 result terakhir, tanpa Bank Harian/bobot uji/filter trek
   const out=$('aiOut'),mk=aiMk(),N=Math.max(1,parseInt($('aiN').value,10)||10),W=Math.min(300,Math.max(20,parseInt($('aiW').value,10)||300));
   if(!r4cur){out.textContent='Pilih pasaran dulu (tombol pasaran di atas).';return;}
   if(!mk){out.textContent='Data result untuk pasaran '+r4cur+' belum ada di file result.';return;}
@@ -3800,7 +3801,7 @@ $('aiLucky').onclick=function(){
   setTimeout(()=>{
     try{window.__aiPure=true;aiRun();}catch(err){out.textContent='⚠ Cari hoki gagal: '+(err&&err.message?err.message:String(err));}
     out.insertAdjacentHTML('afterbegin','<div style="color:#ffc72c;font-weight:700;margin:2px 0 6px">🍀 Cari hoki selesai · 300 result terakhir · '+new Date().toLocaleTimeString('id-ID')+'</div>');
-    window.__aiPure=false;out.style.opacity='1';b.disabled=false;b.textContent=old;
+    window.__aiPure=true;out.style.opacity='1';b.disabled=false;b.textContent=old;
     out.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
 };
