@@ -3723,6 +3723,9 @@ function aiRun(){
   const allCh=chainOf(mk,0);if(!allCh.length){out.textContent='Data result pasaran '+mk+' belum ada.';return;}
   const ch=allCh.slice(-300);if(ch.length<20){out.textContent='Minimal 20 result diperlukan. Data tersedia: '+ch.length+'.';return;}
   const R={},TR={},L={};let o4=[],o3=[];const H=[`<div style="opacity:.8">${shEsc(mk)} · analisis ${ch.length} result terakhir${allCh.length>ch.length?' dari '+allCh.length+' result':''} · Top ${N} · rantai posisi wajib sambung · skor 0–100</div>`];
+  {let h=5381;for(const x of ch){for(let i=0;i<x.length;i++)h=((h<<5)+h+x.charCodeAt(i))>>>0;}
+   const sv=(window.__aiPure?'MURNI':'NORMAL'),st=($('status')&&$('status').textContent||'').slice(0,90);
+   H.push('<div style="font-size:11px;color:#7dd3fc;margin:4px 0">🔎 Cek data ['+sv+'] · total '+allCh.length+' result · 3 terakhir: '+ch.slice(-3).reverse().join(', ')+' · kode data: '+h.toString(36).toUpperCase()+'<br>'+shEsc(st)+'</div>');}
   const XS=null;   // skor murni per posisi: isian (CT/Patah/Top/Rengking) satu posisi tidak ikut mempengaruhi skor posisi lain
   const UM={},BK={},RC={};R4P.forEach(k=>{if(window.__aiPure){UM[k]=null;BK[k]=null;TR[k]=null;R[k]=aiRank(ch,k,W,null,null,1,null,XS);}else{UM[k]=aiUjiMult(mk,k);BK[k]=aiBankFn(mk,k);TR[k]=aiTrek(k);R[k]=aiRank(ch,k,W,TR[k],r4set(k),UM[k]?UM[k].m:1,BK[k],XS);}
     // Daftar rantai dihitung dari seluruh 00–99 agar filter trek/LN yang terlalu sempit
