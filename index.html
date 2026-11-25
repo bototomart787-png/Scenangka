@@ -3741,6 +3741,22 @@ function aiRun(){
   R4P.forEach(k=>{L[k]=R[k].slice(0,Math.max(N,cur.n));});
   o4=cur.a4.sort((x,y)=>y.sc-x.sc||(x.n<y.n?-1:1)).slice(0,N);
   o3=cur.a3.sort((x,y)=>y.sc-x.sc||(x.n<y.n?-1:1)).slice(0,N);
+  // Selaraskan angka 2D yang ditampilkan dengan rantai 4D/3D yang benar-benar dipilih.
+  // Dengan begitu, setiap 4D yang terlihat memang tersusun dari pasangan di daftar 2D.
+  if(o4.length){
+    const maps={};R4P.forEach(k=>{maps[k]=new Map(RC[k].map(r=>[r.n,r]));L[k]=[];});
+    const seen={Depan:new Set(),Tengah:new Set(),Belakang:new Set()};
+    o4.forEach(q=>{const z=String(q.sub||'').split('·');if(z.length!==3)return;
+      [['Depan',z[0]],['Tengah',z[1]],['Belakang',z[2]]].forEach(([k,n])=>{
+        if(!seen[k].has(n)&&maps[k].has(n)){seen[k].add(n);L[k].push(maps[k].get(n));}
+      });
+    });
+    const three=new Set(o4.map(q=>{const z=String(q.sub||'').split('·');return z.length===3?z[1]+z[2][1]:'';}));
+    o3=o3.filter(q=>three.has(q.n));
+    if(!o3.length)o3=[...three].filter(Boolean).map(n=>({n,sc:0})).slice(0,N);
+  } else {
+    R4P.forEach(k=>{L[k]=R[k].slice(0,Math.max(N,cur.n));});
+  }
   if(cur.n>N)H.push(`<div style="color:#ffc72c;margin:6px 0">↔ Pencarian rantai diperluas dari Top ${N} ke ${cur.n} kandidat per posisi agar sambungan ditemukan.</div>`);
   if(!o4.length&&!o3.length)H.push('<div style="color:#ff8a80;margin:6px 0">Belum ada pasangan yang tersambung. Coba tambah jumlah Top atau periksa data result.</div>');
   {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
