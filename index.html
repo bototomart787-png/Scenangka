@@ -3771,7 +3771,18 @@ $('aiGo').onclick=aiRun;
 // Pastikan angka langsung muncul setelah pengguna memilih pasaran, tanpa harus menekan Hitung skor AI.
 function aiRefreshSelected(){if(r4cur){try{aiRun();}catch(err){$('aiOut').textContent='⚠ Prediksi gagal dihitung: '+(err&&err.message?err.message:String(err));}}}
 
-$('aiLucky').onclick=()=>{ $('aiW').value='300'; if(!$('aiN').value)$('aiN').value='10'; aiRun(); };
+$('aiLucky').onclick=function(){
+  const b=this,out=$('aiOut');
+  $('aiW').value='300'; if(!parseInt($('aiN').value,10))$('aiN').value='10';
+  if(!r4cur){out.textContent='Pilih pasaran dulu (tombol pasaran di atas), lalu tekan Cari hoki.';out.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const old=b.textContent;b.disabled=true;b.textContent='⏳ Mencari hoki...';out.style.opacity='.35';
+  setTimeout(()=>{
+    try{aiRun();}catch(err){out.textContent='⚠ Cari hoki gagal: '+(err&&err.message?err.message:String(err));}
+    out.insertAdjacentHTML('afterbegin','<div style="color:#ffc72c;font-weight:700;margin:2px 0 6px">🍀 Cari hoki selesai · 300 result terakhir · '+new Date().toLocaleTimeString('id-ID')+'</div>');
+    out.style.opacity='1';b.disabled=false;b.textContent=old;
+    out.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+};
 
 // ===== UJI JUJUR (ke depan): catat daftar hari ini, cek ke result berikutnya, bandingkan dengan peluang kebetulan =====
 const JJK='jujurLog_v1';
