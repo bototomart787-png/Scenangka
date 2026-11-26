@@ -4496,6 +4496,10 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     return JSON.stringify([cfg.mkts,selVks(),cfg.day,cfg.P,cfg.rows.filter(r=>r.on).map(r=>[r.n,r.trek,r.put]),last]);
   }
 
+  // layar dijaga tetap menyala selama scan jalan (supaya HP tidak menidurkan halaman di tengah scan)
+  let _wl=null;
+  async function wbWake(on){try{if(on){if(navigator.wakeLock&&!_wl){_wl=await navigator.wakeLock.request('screen');_wl.addEventListener('release',()=>{_wl=null;});}}else if(_wl){const w=_wl;_wl=null;await w.release();}}catch(e){}}
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&busy)wbWake(true);});
   async function run(fromAuto){
     const prog=G('abProg'),log=G('abLog'),btn=G('abGo');
     if(window.WBS_isLoaded&&!WBS_isLoaded()){try{await window.WBS_ready;}catch(e){}}   // jangan mulai sebelum Bank selesai dimuat dari IndexedDB
@@ -4505,7 +4509,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     if(!ms.length||!jobs.length){if(!fromAuto)prog.textContent='Pilih minimal 1 pasaran, 1 rumus, dan 1 baris rencana.';return;}
     if(fromAuto&&localStorage.getItem(SIGKEY)===sig()&&autoCount()){refreshStatus();return;}
     if(MULTI_RUN||rhFinding){prog.textContent='Ada scan lain yang sedang jalan — selesaikan atau batalkan dulu.';return;}
-    busy=true;MULTI_RUN=true;rhFinding=true;
+    busy=true;MULTI_RUN=true;rhFinding=true;wbWake(true);
     btn.textContent='⏹ Stop scan otomatis';btn.style.background='#c0392b';btn.style.borderColor='#c0392b';btn.style.color='#fff';
     // mistik di formulir dikosongkan sementara supaya pencarian bebas (bukan terkunci rumus yang terakhir dibuka)
     const mid=['rhM1','rhM2','rhM4'],keep=mid.map(id=>G(id)?G(id).value:'');mid.forEach(id=>{if(G(id))G(id).value='';});
@@ -4530,7 +4534,7 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
         if(res.cancelled){cancelled=true;break;}
       }
     }finally{
-      ML_OVR=null;MULTI_RUN=false;rhFinding=false;busy=false;
+      ML_OVR=null;MULTI_RUN=false;rhFinding=false;busy=false;wbWake(false);
       mid.forEach((id,j)=>{if(G(id))G(id).value=keep[j];});
       btn.textContent='▶ Jalankan sekarang';btn.style.background='';btn.style.borderColor='';btn.style.color='';
       try{shbRender();}catch(e){}
@@ -4559,6 +4563,27 @@ setTimeout(()=>{mks();if(sel.value)render(sel.value);},600);
     try{renderChips();refreshStatus();}catch(e){}
     if(cfg.auto)setTimeout(()=>{if(!busy)run(true);},800);
   },400);
+
+  // cek result.json berkala dan setiap halaman dibuka / kembali aktif: kalau ada data baru, DATA diganti
+  // lalu pemantau di atas menjalankan scan otomatis sendiri (bila "Jalan otomatis" dicentang)
+  let _rk='',_rbusy=false;
+  async function pollResult(){
+    if(_rbusy||busy||MULTI_RUN||rhFinding)return;
+    _rbusy=true;
+    try{
+      const q=new URLSearchParams(location.search).get('data'),u=q||'result.json';
+      const r=await fetch(u+(u.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});
+      if(!r.ok)return;
+      const t=await r.text(),k=t.length+'|'+t.slice(0,400);
+      if(!_rk){_rk=k;return;}          // panggilan pertama hanya jadi pembanding
+      if(k===_rk)return;
+      applyData(JSON.parse(t),u);_rk=k;
+    }catch(e){}finally{_rbusy=false;}
+  }
+  setTimeout(pollResult,4000);
+  setInterval(pollResult,180000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollResult();});
+  window.addEventListener('pageshow',pollResult);window.addEventListener('online',pollResult);window.addEventListener('focus',pollResult);
 })();
 </script><script>
 /* ===== Rekap Scan Otomatis: rekap 2D / 4D / 3D khusus trek otomatis (semua kelompok rumus) ===== */
