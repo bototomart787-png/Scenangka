@@ -3717,7 +3717,7 @@ function aiChips(arr,title,note){   // daftar rapi: kotak angka + skor kecil + b
   return `<div style="margin:12px 0 4px;font-weight:700;color:var(--ac);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>${title}${note?` <span style="font-weight:400;font-size:11px;opacity:.7">${note}</span>`:''}</span>${arr.length?`<button type="button" data-cp="${cp}" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1px solid var(--ac);background:rgba(255,201,51,.18);color:var(--ac);font-weight:700;cursor:pointer">Salin ${arr.length}</button>`:''}</div>`
     +(arr.length?`<div style="display:flex;flex-wrap:wrap">${chips}</div><div data-cp="${cp}" style="margin-top:4px;font:12px monospace;opacity:.85;word-break:break-all;-webkit-user-select:text;user-select:text;cursor:copy">${cp}</div>`:'<div style="opacity:.7">Tidak ada yang nyambung dari Top di atas. Naikkan Top (mis. 10–20).</div>');
 }
-window.__aiOff=true;   // angka hoki/prediksi dimatikan (tidak terbukti lebih baik dari acak)
+window.__aiOff=false;   // angka hoki/prediksi dimatikan (tidak terbukti lebih baik dari acak)
 /* ===== ARSIP: result lama yang dikumpulkan otomatis (arsip.json) =====*/
 window.__ARS=null;
 async function arsLoad(){window.__ARS=null;const U=['arsip.json','https://raw.githubusercontent.com/bototomart787-png/Scenangka/main/arsip.json'];   // utama: di situs ini; cadangan: repo sumber
@@ -3749,9 +3749,9 @@ function aiAckPanel(ch){   // analisis digit A·C·K·E (0-9): frekuensi, 50 ter
    +`<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:13px"><tr><th></th>${P.map(x=>`<th style="padding:3px 4px;color:var(--ac)">${x}</th>`).join('')}</tr>${rows}</table></div>`
    +`<div style="font-size:12px;margin-top:6px">Terbanyak: ${P.map((x,p)=>x+'='+top[p]).join(' · ')}<br>Tersedikit: ${P.map((x,p)=>x+'='+low[p]).join(' · ')}</div>`
    +`<div style="font-size:11px;opacity:.7;margin-top:4px">Uji chi-kuadrat: ${P.map((x,p)=>x+'='+chi[p].toFixed(1)).join(' · ')} (batas acak 16.9). Di bawah batas = sebaran masih wajar acak, digit panas/dingin belum tentu bermakna.</div></details>`;}
-function aiRun(){
-  if(window.__aiOff)return;
-  window.__aiPure=true;   // selalu murni: tanpa Bank Harian / bobot uji / isian LN
+function aiRunMode(pure){   // pure=true: MURNI (hanya data arsip/result) · pure=false: SKOR (trek + frekuensi + lama tidak keluar + Bank/uji)
+  if(window.__aiOff)return null;
+  window.__aiPure=!!pure;
   const out=$('aiOut'),mk=aiMk(),N=Math.max(1,parseInt($('aiN').value,10)||10);let W=Math.min(300,Math.max(20,parseInt($('aiW').value,10)||300));
   if(!r4cur){out.textContent='Pilih pasaran dulu (tombol pasaran di atas).';return;}
   if(!mk){out.textContent='Data result untuk pasaran '+r4cur+' belum ada di file result.';return;}
@@ -3820,12 +3820,23 @@ function aiRun(){
   if(!o4.length&&!o3.length)H.push('<div style="color:#ff8a80;margin:6px 0">Belum ada pasangan yang tersambung. Coba tambah jumlah Top atau periksa data result.</div>');
   {const all=[mk].concat(R4P.map(k=>'2D '+k+': '+L[k].map(r=>r.n).join('*')).concat(['4D: '+o4.map(r=>r.n).join('*'),'3D: '+o3.map(r=>r.n).join('*')])).join('\n');
    H.push('<button type="button" data-cp="'+all.replace(/\n/g,'&#10;')+'" style="width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#111;font-weight:800;cursor:pointer">📋 Salin semua (2D Depan · Tengah · Belakang · 4D · 3D)</button>');}
-  H.push('<button type="button" data-jjlog="1" style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:inherit;font-weight:700;cursor:pointer">💾 Catat prediksi ini untuk Uji jujur (dicek otomatis saat result berikutnya keluar)</button>');
+  if(pure)H.push('<button type="button" data-jjlog="1" style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:inherit;font-weight:700;cursor:pointer">💾 Catat prediksi ini untuk Uji jujur (dicek otomatis saat result berikutnya keluar)</button>');
   R4P.forEach(k=>H.push(aiChips(L[k],'2D '+k,TR[k]?'':'(tanpa trek, hanya data result)')));
   H.push(aiChips(o4,'4D','AB depan → BC tengah → CD belakang (rantai sambung)'));
   H.push(aiChips(o3,'3D','BC tengah → CD belakang (rantai sambung)'));
-  try{H.push(aiAckPanel(ch));}catch(_){}
-  aiLast={R:L,N,s4:o4,s3:o3};out.innerHTML=H.join('');try{jjRender();}catch(_){}
+  if(pure)try{H.push(aiAckPanel(ch));}catch(_){}
+  return {html:H.join(''),last:{R:L,N,s4:o4,s3:o3}};
+}
+function aiRun(){   // tampilkan DUA versi: Angka hasil SKOR dan Angka hasil MURNI
+  if(window.__aiOff)return;
+  const out=$('aiOut');
+  const m=aiRunMode(true);if(!m)return;
+  let sc=null;try{sc=aiRunMode(false);}catch(e){sc=null;}
+  window.__aiPure=true;aiLast=m.last;window.__aiLastSkor=sc&&sc.last;
+  const bx='border:1px solid var(--bd);border-radius:10px;padding:6px 10px;margin:8px 0',sm='cursor:pointer;font-weight:800;padding:6px 0;';
+  out.innerHTML='<details open style="'+bx+'"><summary style="'+sm+'color:#7ee787">🎯 Angka hasil MURNI <span style="font-weight:400;font-size:12px;color:var(--mut)">— hanya dari data result/arsip</span></summary>'+m.html+'</details>'
+   +(sc?'<details open style="'+bx+'"><summary style="'+sm+'color:#ffc72c">📈 Angka hasil SKOR <span style="font-weight:400;font-size:12px;color:var(--mut)">— dari trek + frekuensi + lama tidak keluar (+ Bank/uji bila ada)</span></summary>'+sc.html+'</details>':'<div style="color:#ff8a80;font-size:12px">Versi SKOR gagal dihitung.</div>');
+  try{jjRender();}catch(_){}
 }
 $('aiGo').onclick=aiRun;
 // Pastikan angka langsung muncul setelah pengguna memilih pasaran, tanpa harus menekan Hitung skor AI.
