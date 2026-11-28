@@ -3720,7 +3720,8 @@ function aiChips(arr,title,note){   // daftar rapi: kotak angka + skor kecil + b
 window.__aiOff=true;   // angka hoki/prediksi dimatikan (tidak terbukti lebih baik dari acak)
 /* ===== ARSIP: result lama yang dikumpulkan otomatis (arsip.json) =====*/
 window.__ARS=null;
-async function arsLoad(){try{const r=await fetch('arsip.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);window.__ARS=await r.json();}catch(e){window.__ARS=null;window.__ARSerr=String(e&&e.message||e);}
+async function arsLoad(){window.__ARS=null;const U=['arsip.json','https://raw.githubusercontent.com/bototomart787-png/Scenangka/main/arsip.json'];   // utama: di situs ini; cadangan: repo sumber
+  for(const u of U){try{const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j&&typeof j==='object'){window.__ARS=j;window.__ARSerr='';break;}}catch(e){window.__ARSerr=String(e&&e.message||e);}}
   try{const w=$('aiWin');if(w&&w.value!=='300')aiRun();}catch(_){}}
 function aiArsChain(mk,C){   // sambung arsip (lama) + C (result.json); hasil urut lama -> baru
   window.__arsNote='';
